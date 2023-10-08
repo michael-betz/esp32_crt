@@ -1,3 +1,5 @@
+// Using the SPI master driver, minimum gap is around 20 us between transactions
+
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
