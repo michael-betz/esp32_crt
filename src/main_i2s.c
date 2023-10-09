@@ -10,43 +10,56 @@
 #include "soc/rtc.h"
 
 
-#define EXAMPLE_BUFF_SIZE               1024 * 4
+// 40 MHz output without gaps
+// outputs 4 bytes with CS low, then 4 bytes with CS high
+// invert one of the CS lines so that this can drive 2x MCP4822 DACs
+
+#define I2S I2S_NUM_1
+#define EXAMPLE_BUFF_SIZE               1024 * 8
 
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 
 static void i2s_example_write_task(void *args)
 {
+	unsigned cnt = 0;
 	uint8_t *w_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
 	assert(w_buf);  // Check if w_buf allocation success
 
+	size_t w_bytes = EXAMPLE_BUFF_SIZE;
+
+	/* (Optional) Preload the data before enabling the TX channel, so that the valid data can be transmitted immediately */
+	// while (w_bytes == EXAMPLE_BUFF_SIZE) {
+	// 	/* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
+	// 	ESP_ERROR_CHECK(i2s_channel_preload_data(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes));
+	// }
+
 	/* Enable the TX channel */
 	ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
-
-	unsigned buf_id = 0;
-
 	while (1) {
-		for (int i = 0; i < EXAMPLE_BUFF_SIZE; i += 8) {
-			w_buf[i + 7] = 0x12;
-			w_buf[i + 6] = 0x34;
-			w_buf[i + 5] = 0x56;
-
-			w_buf[i + 4] = 0x78;
-			w_buf[i + 3] = buf_id >> 16;
-			w_buf[i + 2] = buf_id >> 8;
-
-			w_buf[i + 1] = buf_id;
-			w_buf[i] = 0x00;  // CS goes high here
-		}
-
 		/* Write i2s data */
-		size_t w_bytes = EXAMPLE_BUFF_SIZE;
-		if (!i2s_channel_write(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes, 1000) == ESP_OK) {
-			printf("Write Task: i2s write %d bytes\n", w_bytes);
+		if (i2s_channel_write(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes, 1000) == ESP_OK) {
+			printf("*");
+			fflush(stdout);
+
+			/* Assign w_buf */
+			for (int i = 0; i < EXAMPLE_BUFF_SIZE; i += 8) {
+				w_buf[i]     = 0x12;
+				w_buf[i + 1] = 0x34;
+				w_buf[i + 2] = 0x56;
+				w_buf[i + 3] = 0x78;
+
+				w_buf[i + 4] = cnt;
+				w_buf[i + 5] = cnt >> 8;
+				w_buf[i + 6] = cnt >> 16;
+				w_buf[i + 7] = cnt >> 24;
+
+				cnt++;
+			}
+
 		} else {
 			printf("Write Task: i2s write failed\n");
 		}
-
-		buf_id++;
+		// vTaskDelay(1);
 	}
 	free(w_buf);
 	vTaskDelete(NULL);
@@ -59,7 +72,13 @@ static void i2s_example_init_std_simplex(void)
 	 * it only requires the I2S controller id and I2S role
 	 * The tx and rx channels here are registered on different I2S controller,
 	 * Except ESP32 and ESP32-S2, others allow to register two separate tx & rx channels on a same controller */
-	i2s_chan_config_t tx_chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
+	i2s_chan_config_t tx_chan_cfg = {
+		.id = I2S,
+		.role = I2S_ROLE_MASTER,
+		.dma_desc_num = 6,
+		.dma_frame_num = 240,
+		.auto_clear = true,
+	};
 	ESP_ERROR_CHECK(i2s_new_channel(&tx_chan_cfg, &tx_chan, NULL));
 
 	/* Step 2: Setting the configurations of standard mode and initialize each channels one by one
@@ -75,12 +94,12 @@ static void i2s_example_init_std_simplex(void)
 		},
 		.slot_cfg = {
 			.data_bit_width = I2S_DATA_BIT_WIDTH_32BIT,
-			.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT,
+			.slot_bit_width = I2S_SLOT_BIT_WIDTH_AUTO,
 			.slot_mode = I2S_SLOT_MODE_STEREO,
 			.slot_mask = I2S_STD_SLOT_BOTH,
-			.ws_width = 1,
-			.ws_pol = true,
-			.bit_shift = true,
+			.ws_width = 32,
+			.ws_pol = false,
+			.bit_shift = false,
 			.msb_right = false
 		},
 		.gpio_cfg = {
@@ -98,7 +117,13 @@ static void i2s_example_init_std_simplex(void)
 	};
 	ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &tx_std_cfg));
 
-	rtc_clk_apll_coeff_set(0, 0, 0, 9);  // 1.9 us
+	rtc_clk_apll_coeff_set(0, 0, 0, 9);  // 1.6 us, 40 MHz
+
+	I2S1.clkm_conf.clkm_div_num = 1;
+	I2S1.clkm_conf.clkm_div_b = 0;
+	I2S1.clkm_conf.clkm_div_a = 1;
+	I2S1.clkm_conf.clk_en = 1;
+	I2S1.clkm_conf.clka_en = 0;
 }
 
 void app_main(void)
