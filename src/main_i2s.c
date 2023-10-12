@@ -20,6 +20,10 @@
 #define I2S I2S_NUM_1
 #define EXAMPLE_BUFF_SIZE               1024 * 2 * 4
 
+#define A_N 15
+#define GA_N 13
+#define SHDN_N 12
+
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 
 static void i2s_example_write_task(void *args)
@@ -47,11 +51,10 @@ static void i2s_example_write_task(void *args)
 			/* Assign w_buf */
 			for (int i = 0; i < EXAMPLE_BUFF_SIZE / 2; i += 4) {
 				// data gets output in this order
-				w_buf[i] = 0x1234;  		// /CS0
-				w_buf[i + 1] = cnt;			// /CS1
-				w_buf[i + 2] = 0x5678;  	// /CS0
-				w_buf[i + 3] = cnt >> 16;  	// /CS1
-
+				w_buf[i] = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | (cnt & 0x0FFF);  // /CS0
+				w_buf[i + 1] = 0;			// /CS1
+				w_buf[i + 2] = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | (0x0FFF - (cnt & 0x0FFF));  // /CS0
+				w_buf[i + 3] = 0;  	// /CS1
 				cnt++;
 			}
 
@@ -78,8 +81,8 @@ static void i2s_example_init_std_simplex(void)
 	i2s_std_config_t tx_std_cfg = {
 		.clk_cfg  = {
 			.sample_rate_hz = 200000,  // not relevant
-			// .clk_src = SOC_MOD_CLK_PLL_F160M,
-			.clk_src = SOC_MOD_CLK_APLL,
+			.clk_src = SOC_MOD_CLK_PLL_F160M,
+			// .clk_src = SOC_MOD_CLK_APLL,
 			.mclk_multiple = I2S_MCLK_MULTIPLE_128
 		},
 		.slot_cfg = {
@@ -101,24 +104,28 @@ static void i2s_example_init_std_simplex(void)
 			.invert_flags = {
 				.mclk_inv = false,
 				.bclk_inv = false,
-				.ws_inv   = true,
+				.ws_inv   = false,
 			},
 		},
 	};
 	ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &tx_std_cfg));
 
-	rtc_clk_apll_coeff_set(0, 0, 0, 9);  // 1.6 us, 40 MHz
-	I2S1.clkm_conf.clkm_div_num = 256;
-	// I2S1.clkm_conf.clkm_div_b = 0;
-	// I2S1.clkm_conf.clkm_div_a = 1;
+	// rtc_clk_apll_coeff_set(0, 0, 0, 9);  // Fastest possible APLL clock
+	// I2S1.clkm_conf.clka_en = 1;  // enable APLL clock
+	// I2S1.sample_rate_conf.tx_bits_mod = 16;  // bit length of transmitter channel
+
+	// This produce a 40 MHz bit-clock
 	I2S1.clkm_conf.clk_en = 1;
-	I2S1.clkm_conf.clka_en = 0;
+	I2S1.clkm_conf.clkm_div_num = 2;  // integral divider, min is 2
+	I2S1.clkm_conf.clkm_div_a = 1;  // fractional divider numerator
+	I2S1.clkm_conf.clkm_div_b = 0;  // fractional divider denominator
+	I2S1.sample_rate_conf.tx_bck_div_num = 2;  // bit-clock divider, min is 2
 
 	// Output an additional inverted WS on GPIO2
 	// This is used as /CS1
 	gpio_hal_iomux_func_sel(IO_MUX_GPIO2_REG, PIN_FUNC_GPIO);
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-	esp_rom_gpio_connect_out_signal(GPIO_NUM_2, I2S1O_WS_OUT_IDX, false, 0);
+	esp_rom_gpio_connect_out_signal(GPIO_NUM_2, I2S1O_WS_OUT_IDX, true, 0);
 }
 
 void app_main(void)
