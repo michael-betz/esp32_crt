@@ -50,11 +50,18 @@ static void i2s_example_write_task(void *args)
 
 			/* Assign w_buf */
 			for (int i = 0; i < EXAMPLE_BUFF_SIZE / 2; i += 4) {
-				// data gets output in this order
-				w_buf[i] = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | (cnt & 0x0FFF);  // /CS0
-				w_buf[i + 1] = 0;			// /CS1
-				w_buf[i + 2] = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | (0x0FFF - (cnt & 0x0FFF));  // /CS0
-				w_buf[i + 3] = 0;  	// /CS1
+				// sample values of the 4 channels
+				uint16_t val_a = cnt & 0x0FFF;
+				uint16_t val_b = 0;
+				uint16_t val_c = 0x0FFF - val_a;
+				uint16_t val_d = 0;
+
+				// output the sample-data for 4 channels over the next 64 clocks
+				w_buf[i] = 		(0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_a;  // /CS0
+				w_buf[i + 1] = 	(0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_b;  // /CS1
+				w_buf[i + 2] = 	(1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_c;  // /CS0
+				w_buf[i + 3] =  (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_d;  // /CS1
+
 				cnt++;
 			}
 
@@ -112,7 +119,6 @@ static void i2s_example_init_std_simplex(void)
 
 	// rtc_clk_apll_coeff_set(0, 0, 0, 9);  // Fastest possible APLL clock
 	// I2S1.clkm_conf.clka_en = 1;  // enable APLL clock
-	// I2S1.sample_rate_conf.tx_bits_mod = 16;  // bit length of transmitter channel
 
 	// This produce a 40 MHz bit-clock
 	I2S1.clkm_conf.clk_en = 1;
@@ -120,6 +126,7 @@ static void i2s_example_init_std_simplex(void)
 	I2S1.clkm_conf.clkm_div_a = 1;  // fractional divider numerator
 	I2S1.clkm_conf.clkm_div_b = 0;  // fractional divider denominator
 	I2S1.sample_rate_conf.tx_bck_div_num = 2;  // bit-clock divider, min is 2
+	// I2S1.sample_rate_conf.tx_bits_mod = 16;  // bit length of transmitter channel
 
 	// Output an additional inverted WS on GPIO2
 	// This is used as /CS1
