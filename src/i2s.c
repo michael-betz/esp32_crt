@@ -4,11 +4,8 @@
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
 #include "driver/gpio.h"
-#include "esp_check.h"
-#include "sdkconfig.h"
 #include "soc/i2s_struct.h"
-#include "soc/rtc.h"
-
+// #include "soc/rtc.h"
 #include "soc/io_mux_reg.h"
 #include "hal/gpio_hal.h"
 
@@ -26,10 +23,10 @@
 #define GA_N 13
 #define SHDN_N 12
 
-#define I2S_BUF_SIZE 1024 * 2 * 4
+#define CHUNK_SIZE 512 * 4
+uint8_t chunk_buf[CHUNK_SIZE];  // buffer of one chunk of data
 
-uint16_t *w_buf;  // buffer of one chunk of data
-static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
+static i2s_chan_handle_t tx_chan;
 
 
 void i2s_init(void)
@@ -37,8 +34,9 @@ void i2s_init(void)
 	i2s_chan_config_t tx_chan_cfg = {
 		.id = I2S_NUM_1,
 		.role = I2S_ROLE_MASTER,
-		.dma_desc_num = 6,
-		.dma_frame_num = 240,
+		// Allocate 32 kB of DMA memory
+		.dma_desc_num = 16,  // Number of DMA buffers
+		.dma_frame_num = 512,  // Size of one DMA buffer in 4 byte frames
 		.auto_clear = true,
 	};
 	ESP_ERROR_CHECK(i2s_new_channel(&tx_chan_cfg, &tx_chan, NULL));
@@ -55,13 +53,13 @@ void i2s_init(void)
 			.slot_bit_width = I2S_SLOT_BIT_WIDTH_AUTO,
 			.slot_mode = I2S_SLOT_MODE_STEREO,
 			.slot_mask = I2S_STD_SLOT_BOTH,
-			.ws_width = 32,
+			.ws_width = 16,
 			.ws_pol = false,
 			.bit_shift = false,
 			.msb_right = true
 		},
 		.gpio_cfg = {
-			.mclk = I2S_GPIO_UNUSED,    // some codecs may require mclk signal, this example doesn't need it
+			.mclk = I2S_GPIO_UNUSED,
 			.bclk = PIN_SCK,
 			.ws   = PIN_CS_N_A,  // This is used as /CS0
 			.dout = PIN_SDO,
@@ -92,9 +90,6 @@ void i2s_init(void)
 	gpio_set_direction(PIN_CS_N_B, GPIO_MODE_OUTPUT);
 	esp_rom_gpio_connect_out_signal(PIN_CS_N_B, I2S1O_WS_OUT_IDX, true, 0);
 
-	w_buf = (uint16_t *)calloc(1, I2S_BUF_SIZE);
-	assert(w_buf);  // Check if w_buf allocation success
-
 	/* (Optional) Preload the data before enabling the TX channel, so that the valid data can be transmitted immediately */
 	// while (w_bytes == EXAMPLE_BUFF_SIZE) {
 	// 	/* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
@@ -104,34 +99,31 @@ void i2s_init(void)
 	ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
 }
 
-int i2s_write_chunk()
+void i2s_write_chunk()
 {
 	static unsigned cnt = 0;
 
-	size_t w_bytes = I2S_BUF_SIZE;
+	uint16_t *w_buf = (uint16_t *)chunk_buf;
+	for (unsigned i = 0; i < CHUNK_SIZE / 2; i += 4) {
+		// sample values of the 4 channels
+		uint16_t val_a = cnt & 0x0FFF;
+		uint16_t val_b = 0;
+		uint16_t val_c = 0x0FFF - val_a;
+		uint16_t val_d = 0;
 
-	if (i2s_channel_write(tx_chan, w_buf, I2S_BUF_SIZE, &w_bytes, 1000) == ESP_OK) {
-		printf("*");
-		fflush(stdout);
+		// output the sample-data for 4 channels over the next 64 clocks
+		w_buf[i] = 	   (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_a;  // /CS0
+		w_buf[i + 1] = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_b;  // /CS1
+		w_buf[i + 2] = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_c;  // /CS0
+		w_buf[i + 3] = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_d;  // /CS1
 
-		/* Assign w_buf */
-		for (int i = 0; i < I2S_BUF_SIZE / 2; i += 4) {
-			// sample values of the 4 channels
-			uint16_t val_a = cnt & 0x0FFF;
-			uint16_t val_b = 0;
-			uint16_t val_c = 0x0FFF - val_a;
-			uint16_t val_d = 0;
+		cnt++;
+	}
 
-			// output the sample-data for 4 channels over the next 64 clocks
-			w_buf[i] = 		(0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_a;  // /CS0
-			w_buf[i + 1] = 	(0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_b;  // /CS1
-			w_buf[i + 2] = 	(1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_c;  // /CS0
-			w_buf[i + 3] =  (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_d;  // /CS1
+	// Should block until CHUNK_SIZE bytes were written to DMA mem.
+	esp_err_t ret = i2s_channel_write(tx_chan, chunk_buf, CHUNK_SIZE, NULL, portMAX_DELAY);
 
-			cnt++;
-		}
-	} else {
-		printf("Write Task: i2s write failed\n");
-		return -1;
+	if (ret != ESP_OK) {
+		printf("Write Task: i2s write failed with %d\n", ret);
 	}
 }
