@@ -10,6 +10,7 @@
 #include "hal/gpio_hal.h"
 
 #include "i2s.h"
+#include "draw.h"
 #include "print.h"
 
 // GPIO number definitions
@@ -19,10 +20,6 @@
 #define PIN_CS_N_B 2
 #define PIN_CS_N_B_NAME IO_MUX_GPIO2_REG
 
-// number of bits in the fractional part of a fixed point number
-#define FP 4
-#define FP_ROUND (1 << (FP - 1))
-
 // MCP4922 bit definitions
 #define A_N 15
 #define GA_N 13
@@ -31,16 +28,6 @@
 #define CHUNK_SIZE 512 * 4
 
 static i2s_chan_handle_t tx_chan;
-
-static const draw_list_t dl_test[] = {
-	{ 0 << FP, 50 << FP, 5},
-	{50 << FP, 50 << FP, 5},
-	{50 << FP,  0 << FP, 5},
-	{ 0 << FP,  0 << FP, 5},
-	{50 << FP, 50 << FP, 5},
-	{ 0 << FP,  0 << FP, 5},
-};
-static const unsigned n_dl_test = sizeof(dl_test) / sizeof(dl_test[0]);
 
 void i2s_init(void)
 {
@@ -139,83 +126,4 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 		n_written = 0;
 		w_buf = (uint16_t *)chunk_buf;
 	}
-}
-
-static int16_t x_cur = 0;
-static int16_t y_cur = 0;
-
-// https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
-static unsigned usqrt4(unsigned val) {
-    unsigned a, b;
-
-    if (val < 2) return val; /* avoid div/0 */
-
-    a = 1255;       /* starting point is relatively unimportant */
-
-    b = val / a; a = (a+b) /2;
-    b = val / a; a = (a+b) /2;
-    b = val / a; a = (a+b) /2;
-    b = val / a; a = (a+b) /2;
-
-    return a;
-}
-
-void push_line(int16_t x, int16_t y, uint16_t bright)
-{
-	// local copies
-	int x_ = x_cur;
-	int y_ = y_cur;
-
-	printf("line from %d, %d to %d, %d,", x_ >> FP, y_ >> FP, x >> FP, y >> FP);
-	int distx = x - x_;
-	int disty = y - y_;
-
-	unsigned dist;
-	if (bright == 0)
-		dist = 0;  // jump there directly
-	else if (distx == 0)
-		dist = abs(disty);
-	else if (disty == 0)
-		dist = abs(distx);
-	else
-		dist = usqrt4(distx * distx + disty * disty);
-
-	print_str(" dist: ");
-	print_dec_fix(dist, FP, 2);
-
-	int n = (dist * bright) >> FP;
-	n = (n + FP_ROUND) >> FP;  // discard fractional part
-	if (n > 1) {
-		int dx = distx / n;
-		int dy = disty / n;
-		print_str(" dx: ");
-		print_dec_fix(dx, FP, 2);
-		print_str(" dy: ");
-		print_dec_fix(dy, FP, 2);
-		print_str("\n");
-
-		for (unsigned i = 0; i < n - 1; i++) {
-			x_ += dx;
-			y_ += dy;
-			push_sample(x_, y_, 0, 0);
-		}
-	} else {
-		print_str("\n");
-	}
-
-	// don't accumulate rounding errors
-	push_sample(x, y, 0, 0);
-	x_cur = x;
-	y_cur = y;
-	return;
-}
-
-void i2s_write_chunk()
-{
-	static const draw_list_t *p = dl_test;
-	for (unsigned i = 0; i < n_dl_test; i++) {
-		push_line(p->x, p->y, p->brightness);
-		p++;
-	}
-	vTaskDelay(portMAX_DELAY);
 }

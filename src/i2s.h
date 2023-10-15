@@ -1,13 +1,10 @@
 #ifndef I2S_H
 #define I2S_H
 
-typedef struct {
-    int16_t x;
-    int16_t y;
-    int16_t brightness;
-} draw_list_t;
-
+// init and start the DMA output
 void i2s_init(void);
-void i2s_write_chunk(void);
+
+// Add a single sample to the DMA buffer
+void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d);
 
 #endif
