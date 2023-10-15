@@ -87,13 +87,12 @@ static void init_sdl()
 
 int main(int argc, char* args[])
 {
-    if (argc == 2) {
-        printf("reading %s\n", args[1]);
-        read_csv(args[1]);
-    } else {
+    if (argc != 2) {
         printf("try %s draw_list.csv\n", args[0]);
         return -1;
     }
+    printf("reading %s\n", args[1]);
+    read_csv(args[1]);
 
     init_sdl();
 
