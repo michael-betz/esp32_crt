@@ -105,15 +105,15 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 	static uint16_t *w_buf = (uint16_t *)chunk_buf;
 	static unsigned n_written = 0;
 
-	print_dec_fix(val_a, FP, 2);
-	print_str(", ");
-	print_dec_fix(val_b, FP, 2);
-	print_str("\n");
+	// print_dec_fix(val_a, FP, 2);
+	// print_str(", ");
+	// print_dec_fix(val_b, FP, 2);
+	// print_str("\n");
 
 	// output the sample-data for 4 channels over the next 64 clocks
 	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | ((val_a + FP_ROUND) >> FP);  // DACA
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | ((val_b + FP_ROUND) >> FP);  // DACB
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | ((val_c + FP_ROUND) >> FP);  // DACA
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | ((val_c + FP_ROUND) >> FP);  // DACB
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | ((val_b + FP_ROUND) >> FP);  // DACA
 	*w_buf++ = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | ((val_d + FP_ROUND) >> FP);  // DACB
 	n_written += 4 * 2;
 

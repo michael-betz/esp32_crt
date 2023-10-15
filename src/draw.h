@@ -12,6 +12,7 @@ typedef struct {
 } draw_list_t;
 
 // push all the samples of a draw-list to the DMA buffer once
-void push_list(draw_list_t *p, unsigned n_items);
+// returns number of samples written
+unsigned push_list(draw_list_t *p, unsigned n_items);
 
 #endif

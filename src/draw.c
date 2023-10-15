@@ -27,13 +27,14 @@ static unsigned usqrt4(unsigned val) {
 }
 
 
-static void push_line(int16_t x, int16_t y, uint16_t bright)
+static unsigned push_line(int16_t x, int16_t y, uint16_t bright)
 {
+	unsigned n_samples = 0;
 	// local copies
 	int x_ = x_cur;
 	int y_ = y_cur;
 
-	printf("line from (%d, %d) to (%d, %d),", x_ >> FP, y_ >> FP, x >> FP, y >> FP);
+	// printf("line from (%d, %d) to (%d, %d),", x_ >> FP, y_ >> FP, x >> FP, y >> FP);
 	int distx = x - x_;
 	int disty = y - y_;
 
@@ -47,41 +48,44 @@ static void push_line(int16_t x, int16_t y, uint16_t bright)
 	else
 		dist = usqrt4(distx * distx + disty * disty);
 
-	print_str(" dist: ");
-	print_dec_fix(dist, FP, 2);
+	// print_str(" dist: ");
+	// print_dec_fix(dist, FP, 2);
 
 	int n = (dist * bright) >> FP;
 	n = (n + FP_ROUND) >> FP;  // discard fractional part
 	if (n > 1) {
 		int dx = distx / n;
 		int dy = disty / n;
-		print_str(" dx: ");
-		print_dec_fix(dx, FP, 2);
-		print_str(" dy: ");
-		print_dec_fix(dy, FP, 2);
-		print_str("\n");
+		// print_str(" dx: ");
+		// print_dec_fix(dx, FP, 2);
+		// print_str(" dy: ");
+		// print_dec_fix(dy, FP, 2);
+		// print_str("\n");
 
 		for (unsigned i = 0; i < n - 1; i++) {
 			x_ += dx;
 			y_ += dy;
 			push_sample(x_, y_, 0, 0);
+			n_samples++;
 		}
 	} else {
-		print_str("\n");
+		// print_str("\n");
 	}
 
 	// don't accumulate rounding errors
 	push_sample(x, y, 0, 0);
+	n_samples++;
 	x_cur = x;
 	y_cur = y;
-	return;
+	return n_samples;
 }
 
-
-void push_list(draw_list_t *p, unsigned n_items)
+unsigned push_list(draw_list_t *p, unsigned n_items)
 {
+	unsigned n_samples = 0;
 	while (n_items--) {
-		push_line(p->x, p->y, p->brightness);
+		n_samples += push_line(p->x, p->y, p->brightness);
 		p++;
 	}
+	return n_samples;
 }
