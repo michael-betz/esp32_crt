@@ -10,6 +10,10 @@
 // outputs 2 bytes with CS low, then 2 bytes with CS high
 // invert one of the CS lines so that this can drive 2x MCP4822T DACs
 
+void _putchar(char c){
+	putchar(c);
+}
+
 
 static void i2s_stream_task(void *args)
 {

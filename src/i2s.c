@@ -10,6 +10,7 @@
 #include "hal/gpio_hal.h"
 
 #include "i2s.h"
+#include "print.h"
 
 // GPIO number definitions
 #define PIN_SCK 14
@@ -18,16 +19,28 @@
 #define PIN_CS_N_B 2
 #define PIN_CS_N_B_NAME IO_MUX_GPIO2_REG
 
+// number of bits in the fractional part of a fixed point number
+#define FP 4
+#define FP_ROUND (1 << (FP - 1))
+
 // MCP4922 bit definitions
 #define A_N 15
 #define GA_N 13
 #define SHDN_N 12
 
 #define CHUNK_SIZE 512 * 4
-uint8_t chunk_buf[CHUNK_SIZE];  // buffer of one chunk of data
 
 static i2s_chan_handle_t tx_chan;
 
+static const draw_list_t dl_test[] = {
+	{ 0 << FP, 50 << FP, 5},
+	{50 << FP, 50 << FP, 5},
+	{50 << FP,  0 << FP, 5},
+	{ 0 << FP,  0 << FP, 5},
+	{50 << FP, 50 << FP, 5},
+	{ 0 << FP,  0 << FP, 5},
+};
+static const unsigned n_dl_test = sizeof(dl_test) / sizeof(dl_test[0]);
 
 void i2s_init(void)
 {
@@ -99,31 +112,110 @@ void i2s_init(void)
 	ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
 }
 
+void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
+{
+	static uint8_t chunk_buf[CHUNK_SIZE];  // buffer of one chunk of data
+	static uint16_t *w_buf = (uint16_t *)chunk_buf;
+	static unsigned n_written = 0;
+
+	print_dec_fix(val_a, FP, 2);
+	print_str(", ");
+	print_dec_fix(val_b, FP, 2);
+	print_str("\n");
+
+	// output the sample-data for 4 channels over the next 64 clocks
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | ((val_a + FP_ROUND) >> FP);  // DACA
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | ((val_b + FP_ROUND) >> FP);  // DACB
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | ((val_c + FP_ROUND) >> FP);  // DACA
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | ((val_d + FP_ROUND) >> FP);  // DACB
+	n_written += 4 * 2;
+
+	if (n_written >= CHUNK_SIZE) {
+		// Should block until CHUNK_SIZE bytes were written to DMA mem.
+		esp_err_t ret = i2s_channel_write(tx_chan, chunk_buf, CHUNK_SIZE, NULL, portMAX_DELAY);
+		if (ret != ESP_OK) {
+			printf("Write Task: i2s write failed with %d\n", ret);
+		}
+		n_written = 0;
+		w_buf = (uint16_t *)chunk_buf;
+	}
+}
+
+static int16_t x_cur = 0;
+static int16_t y_cur = 0;
+
+// https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
+static unsigned usqrt4(unsigned val) {
+    unsigned a, b;
+
+    if (val < 2) return val; /* avoid div/0 */
+
+    a = 1255;       /* starting point is relatively unimportant */
+
+    b = val / a; a = (a+b) /2;
+    b = val / a; a = (a+b) /2;
+    b = val / a; a = (a+b) /2;
+    b = val / a; a = (a+b) /2;
+
+    return a;
+}
+
+void push_line(int16_t x, int16_t y, uint16_t bright)
+{
+	// local copies
+	int x_ = x_cur;
+	int y_ = y_cur;
+
+	printf("line from %d, %d to %d, %d,", x_ >> FP, y_ >> FP, x >> FP, y >> FP);
+	int distx = x - x_;
+	int disty = y - y_;
+
+	unsigned dist;
+	if (bright == 0)
+		dist = 0;  // jump there directly
+	else if (distx == 0)
+		dist = abs(disty);
+	else if (disty == 0)
+		dist = abs(distx);
+	else
+		dist = usqrt4(distx * distx + disty * disty);
+
+	print_str(" dist: ");
+	print_dec_fix(dist, FP, 2);
+
+	int n = (dist * bright) >> FP;
+	n = (n + FP_ROUND) >> FP;  // discard fractional part
+	if (n > 1) {
+		int dx = distx / n;
+		int dy = disty / n;
+		print_str(" dx: ");
+		print_dec_fix(dx, FP, 2);
+		print_str(" dy: ");
+		print_dec_fix(dy, FP, 2);
+		print_str("\n");
+
+		for (unsigned i = 0; i < n - 1; i++) {
+			x_ += dx;
+			y_ += dy;
+			push_sample(x_, y_, 0, 0);
+		}
+	} else {
+		print_str("\n");
+	}
+
+	// don't accumulate rounding errors
+	push_sample(x, y, 0, 0);
+	x_cur = x;
+	y_cur = y;
+	return;
+}
+
 void i2s_write_chunk()
 {
-	static unsigned cnt = 0;
-
-	uint16_t *w_buf = (uint16_t *)chunk_buf;
-	for (unsigned i = 0; i < CHUNK_SIZE / 2; i += 4) {
-		// sample values of the 4 channels
-		uint16_t val_a = cnt & 0x0FFF;
-		uint16_t val_b = 0;
-		uint16_t val_c = 0x0FFF - val_a;
-		uint16_t val_d = 0;
-
-		// output the sample-data for 4 channels over the next 64 clocks
-		w_buf[i] = 	   (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_a;  // /CS0
-		w_buf[i + 1] = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_b;  // /CS1
-		w_buf[i + 2] = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_c;  // /CS0
-		w_buf[i + 3] = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_d;  // /CS1
-
-		cnt++;
+	static const draw_list_t *p = dl_test;
+	for (unsigned i = 0; i < n_dl_test; i++) {
+		push_line(p->x, p->y, p->brightness);
+		p++;
 	}
-
-	// Should block until CHUNK_SIZE bytes were written to DMA mem.
-	esp_err_t ret = i2s_channel_write(tx_chan, chunk_buf, CHUNK_SIZE, NULL, portMAX_DELAY);
-
-	if (ret != ESP_OK) {
-		printf("Write Task: i2s write failed with %d\n", ret);
-	}
+	vTaskDelay(portMAX_DELAY);
 }
