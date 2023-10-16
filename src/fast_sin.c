@@ -19,7 +19,7 @@ void init_lut()
 int get_sin(int alpha)
 {
 	alpha &= MAX_ANGLE - 1;
-	int sign = alpha > HALF_MAX_ANGLE ? -1 : 1;
+	const int sign = alpha > HALF_MAX_ANGLE ? -1 : 1;
 	alpha &= HALF_MAX_ANGLE - 1;
 	if (alpha < QUARTER_MAX_ANGLE)
 		return quarter_sin_lut[alpha] * sign;
