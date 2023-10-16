@@ -9,140 +9,185 @@
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
-#define ZOOM 1
+#define ZOOM 0.5
 
 #define MAX_DL_SIZE 4096
 static draw_list_t dl[MAX_DL_SIZE];
 static unsigned n_dl = 0;
+
+// Count how many samples were outputted
+static unsigned n_samples = 0;
 
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
 void read_csv(char *fName)
 {
-    FILE* f = fopen(fName, "r");
-    int a, b, c, d;
-    draw_list_t *p = dl;
-    char line[1024];
-    char *tmp = NULL;
+	FILE* f = fopen(fName, "r");
+	int a, b, c, d;
+	draw_list_t *p = dl;
+	char line[1024];
+	char *tmp = NULL;
 
-    n_dl = 0;
-    while (fgets(line, 1024, f)) {
-        if (line[0] == '#' || strlen(line) < 8)
-            continue;
+	n_dl = 0;
+	while (fgets(line, 1024, f)) {
+		if (line[0] == '#' || strlen(line) < 8)
+			continue;
 
-        tmp = strtok(line, ",");
-        if (tmp == NULL) continue;
-        a = atoi(tmp);
+		tmp = strtok(line, ",");
+		if (tmp == NULL) continue;
+		a = atoi(tmp);
 
-        tmp = strtok(NULL, ",");
-        if (tmp == NULL) continue;
-        b = atoi(tmp);
+		tmp = strtok(NULL, ",");
+		if (tmp == NULL) continue;
+		b = atoi(tmp);
 
-        tmp = strtok(NULL, ",");
-        if (tmp == NULL) continue;
-        c = atoi(tmp);
+		tmp = strtok(NULL, ",");
+		if (tmp == NULL) continue;
+		c = atoi(tmp);
 
-        tmp = strtok(NULL, ",");
-        if (tmp == NULL) continue;
-        d = atoi(tmp);
+		tmp = strtok(NULL, ",");
+		if (tmp == NULL) continue;
+		d = atoi(tmp);
 
-        // printf("%d %d %d %d\n", a, b, c, d);
-        p->type = a;
-        p->density = b;
-        p->x = c << FP;
-        p->y = d << FP;
-        p++;
-        n_dl++;
+		// printf("%d %d %d %d\n", a, b, c, d);
+		p->type = a;
+		p->density = b;
+		p->x = c << FP;
+		p->y = d << FP;
+		p++;
+		n_dl++;
 
-        if (n_dl >= MAX_DL_SIZE)
-            break;
-    }
-    printf("read %d entries\n", n_dl);
-    fclose(f);
+		if (n_dl >= MAX_DL_SIZE)
+			break;
+	}
+	printf("read %d entries\n", n_dl);
+	fclose(f);
+}
+
+void demo_circles(unsigned frame)
+{
+	push_goto(-800 << FP, -800 << FP);
+	push_circle(
+		100 << FP,
+		100 << FP,
+		frame * (MAX_ANGLE >> 8),  // 0
+		MAX_ANGLE / 4,  // MAX_ANGLE
+		255
+	);
+	push_goto(-800 << FP, 800 << FP);
+	push_circle(
+		100 << FP,
+		100 << FP,
+		frame * (MAX_ANGLE >> 8),  // 0
+		2 * MAX_ANGLE / 4,  // MAX_ANGLE
+		255
+	);
+	push_goto(800 << FP, -800 << FP);
+	push_circle(
+		100 << FP,
+		100 << FP,
+		frame * (MAX_ANGLE >> 8),  // 0
+		3 * MAX_ANGLE / 4,  // MAX_ANGLE
+		255
+	);
+	push_goto(800 << FP, 800 << FP);
+	push_circle(
+		100 << FP,
+		100 << FP,
+		0,  // 0
+		(sin(frame / 50.0) + 1) * MAX_ANGLE / 2,  // MAX_ANGLE
+		255
+	);
 }
 
 // Draw into framebuffer
 void push_sample(int16_t val_a, int16_t val_b, int16_t val_c, int16_t val_d)
 {
-    int x = (val_a + 0x4000) >> FP;
-    int y = (-val_b + 0x4000) >> FP;
+	int x = (val_a + 0x4000) >> FP;
+	int y = (-val_b + 0x4000) >> FP;
 
-    SDL_Rect rect = {x / 2, y / 2, 3, 3};
-    SDL_RenderFillRect(rr, &rect);
+	SDL_Rect rect = {x, y, 6, 6};
+	SDL_RenderFillRect(rr, &rect);
+	n_samples++;
 }
 
 static void init_sdl()
 {
-    srand(time(NULL));
+	srand(time(NULL));
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, "could not initialize sdl2: %s\n", SDL_GetError());
-        return;
-    }
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		fprintf(stderr, "could not initialize sdl2: %s\n", SDL_GetError());
+		return;
+	}
 
-    if (SDL_CreateWindowAndRenderer(
-        DISPLAY_WIDTH, DISPLAY_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &rr
-    )) {
-        fprintf(stderr, "could not create window: %s\n", SDL_GetError());
-        return;
-    }
+	if (SDL_CreateWindowAndRenderer(
+		DISPLAY_WIDTH, DISPLAY_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &rr
+	)) {
+		fprintf(stderr, "could not create window: %s\n", SDL_GetError());
+		return;
+	}
 
-    SDL_RenderSetScale(rr, ZOOM, ZOOM);
-    SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
+	SDL_RenderSetScale(rr, ZOOM, ZOOM);
+	SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
 }
 
 int main(int argc, char* args[])
 {
-    if (argc != 2) {
-        printf("try %s draw_list.csv\n", args[0]);
-        return -1;
-    }
-    printf("reading %s\n", args[1]);
-    read_csv(args[1]);
+	if (argc != 2) {
+		printf("try %s draw_list.csv\n", args[0]);
+		return -1;
+	}
+	printf("reading %s\n", args[1]);
+	read_csv(args[1]);
 
-    init_lut();
-    init_sdl();
+	init_lut();
+	init_sdl();
 
-    while (1) {
-        SDL_Event e;
-        bool isExit = false;
-        while (SDL_PollEvent(&e)) {
-            switch (e.type) {
-                case SDL_QUIT:
-                    isExit = true;
-                    break;
-                // case SDL_KEYDOWN:
-                //     switch(e.key.keysym.sym) {
-                //         case SDLK_LEFT:
-                //             break;
-                //         case SDLK_RIGHT:
-                //             break;
-                //         case SDLK_DOWN:
-                //             break;
-                //         case SDLK_UP:
-                //             break;
-                //     }
-                //     break;
-            }
-        }
-        if (isExit)
-            break;
+	unsigned frame = 0;
+	while (1) {
+		SDL_Event e;
+		bool isExit = false;
+		while (SDL_PollEvent(&e)) {
+			switch (e.type) {
+				case SDL_QUIT:
+					isExit = true;
+					break;
+				// case SDL_KEYDOWN:
+				//     switch(e.key.keysym.sym) {
+				//         case SDLK_LEFT:
+				//             break;
+				//         case SDLK_RIGHT:
+				//             break;
+				//         case SDLK_DOWN:
+				//             break;
+				//         case SDLK_UP:
+				//             break;
+				//     }
+				//     break;
+			}
+		}
+		if (isExit)
+			break;
 
-        SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
-        SDL_RenderClear(rr);
+		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
+		SDL_RenderClear(rr);
 
-        SDL_SetRenderDrawColor(rr, 0xFF, 0xFF, 0xFF, 0x60);
-        unsigned n_samples = push_list(dl, n_dl);
-        printf("%d\n", n_samples);
+		SDL_SetRenderDrawColor(rr, 0xFF, 0xFF, 0xFF, 0x60);
+		push_list(dl, n_dl);
+		demo_circles(frame);
 
-        SDL_RenderPresent(rr);
-        SDL_Delay(500);
-    }
+		printf("%d\n", n_samples);
+		n_samples = 0;
 
-    SDL_DestroyRenderer(rr);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    return 0;
+		SDL_RenderPresent(rr);
+		SDL_Delay(50);
+		frame++;
+	}
+
+	SDL_DestroyRenderer(rr);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
+	return 0;
 }
 

@@ -28,24 +28,33 @@ static unsigned usqrt4(unsigned val) {
     return a;
 }
 
-
-static unsigned push_circle(int16_t r_x, int16_t r_y, uint8_t density)
-{
+unsigned push_circle(
+	uint16_t r_x,
+	uint16_t r_y,
+	uint16_t alpha_start,  // 0
+	uint16_t alpha_length,  // MAX_ANGLE
+	uint8_t density
+) {
 	if (r_x == 0)
 		r_x = r_y;
 	if (r_y == 0)
 		r_y = r_x;
+	if (alpha_length > MAX_ANGLE)
+		alpha_length = MAX_ANGLE;
 	int r_max = r_x > r_y ? r_x : r_y;
 	unsigned n = (2 * r_max * density * (unsigned)(M_PI * 64) / 64) >> (FP + 11);
+	n = n * alpha_length / MAX_ANGLE;
+	if (n <= 0)
+		return 0;
 	// printf("r: %d, density: %d, n: %d\n", r >> FP, density, n);
 
-	int d_alpha = (MAX_ANGLE << 8) / n;
+	int d_alpha = (alpha_length << 8) / n;
 
 	for (unsigned i = 0; i < n; i++) {
-		int arg = (i * d_alpha) >> 8;
+		int arg = alpha_start + ((i * d_alpha) >> 8);
 		push_sample(
-			x_cur + (((get_sin(arg) >> 16) * r_x) >> (FP + 11)),
-			y_cur + (((get_cos(arg) >> 16) * r_y) >> (FP + 11)),
+			x_cur + (((get_cos(arg) >> 16) * r_x) >> (FP + 11)),
+			y_cur + (((get_sin(arg) >> 16) * r_y) >> (FP + 11)),
 			0,
 			0
 		);
@@ -53,8 +62,15 @@ static unsigned push_circle(int16_t r_x, int16_t r_y, uint8_t density)
 	return n;
 }
 
+unsigned push_goto(int16_t x, int16_t y)
+{
+	push_sample(x, y, 0, 0);
+	x_cur = x;
+	y_cur = y;
+	return 1;
+}
 
-static unsigned push_line(int16_t x, int16_t y, uint8_t density)
+unsigned push_line(int16_t x, int16_t y, uint8_t density)
 {
 	unsigned n_samples = 0;
 
@@ -105,11 +121,14 @@ unsigned push_list(draw_list_t *p, unsigned n_items)
 	unsigned n_samples = 0;
 	while (n_items--) {
 		switch (p->type) {
+		case 0:
+			n_samples += push_goto(p->x, p->y);
+			break;
 		case 1:
 			n_samples += push_line(p->x, p->y, p->density);
 			break;
 		case 2:
-			n_samples += push_circle(p->x, p->y, p->density);
+			n_samples += push_circle(p->x, p->y, 0, MAX_ANGLE, p->density);
 			break;
 		default:
 			printf("unknown type %d\n", p->type);
