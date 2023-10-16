@@ -45,7 +45,7 @@ static unsigned push_circle(int16_t r, uint8_t density)
 			0
 		);
 	}
-	return 0;
+	return n;
 }
 
 

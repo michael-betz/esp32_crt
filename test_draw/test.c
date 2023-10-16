@@ -132,8 +132,9 @@ int main(int argc, char* args[])
         SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
         SDL_RenderClear(rr);
 
-        SDL_SetRenderDrawColor(rr, 0x00, 0xFF, 0x00, 0x60);
-        push_list(dl, n_dl);
+        SDL_SetRenderDrawColor(rr, 0xFF, 0xFF, 0xFF, 0x60);
+        unsigned n_samples = push_list(dl, n_dl);
+        printf("%d\n", n_samples);
 
         SDL_RenderPresent(rr);
         SDL_Delay(500);
