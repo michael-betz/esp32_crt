@@ -3,12 +3,13 @@
 #include <SDL2/SDL.h>
 #include <time.h>
 #include <math.h>
+#include <limits.h>
 #include "draw.h"
+#include "fast_sin.h"
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
-
-#define SAMPLES_PER_FRAME 625000 / 100
+#define ZOOM 1
 
 #define MAX_DL_SIZE 4096
 static draw_list_t dl[MAX_DL_SIZE];
@@ -20,17 +21,14 @@ SDL_Window* window = NULL;
 void read_csv(char *fName)
 {
     FILE* f = fopen(fName, "r");
-    int a, b, c;
+    int a, b, c, d;
     draw_list_t *p = dl;
     char line[1024];
     char *tmp = NULL;
 
-    unsigned i;
-    for (i = 0; i < MAX_DL_SIZE; i++) {
-        if (!fgets(line, 1024, f))
-            break;
-
-        if (line[0] == '#')
+    n_dl = 0;
+    while (fgets(line, 1024, f)) {
+        if (line[0] == '#' || strlen(line) < 8)
             continue;
 
         tmp = strtok(line, ",");
@@ -45,14 +43,22 @@ void read_csv(char *fName)
         if (tmp == NULL) continue;
         c = atoi(tmp);
 
-        // printf("%d %d %d\n", a, b, c);
-        p->x = a << FP;
-        p->y = b << FP;
-        p->brightness = c;
+        tmp = strtok(NULL, ",");
+        if (tmp == NULL) continue;
+        d = atoi(tmp);
+
+        // printf("%d %d %d %d\n", a, b, c, d);
+        p->type = a;
+        p->density = b;
+        p->x = c << FP;
+        p->y = d << FP;
         p++;
+        n_dl++;
+
+        if (n_dl >= MAX_DL_SIZE)
+            break;
     }
-    n_dl = i;
-    printf("read %d entries\n", i);
+    printf("read %d entries\n", n_dl);
     fclose(f);
 }
 
@@ -82,6 +88,7 @@ static void init_sdl()
         return;
     }
 
+    SDL_RenderSetScale(rr, ZOOM, ZOOM);
     SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
 }
 
@@ -94,6 +101,7 @@ int main(int argc, char* args[])
     printf("reading %s\n", args[1]);
     read_csv(args[1]);
 
+    init_lut();
     init_sdl();
 
     while (1) {

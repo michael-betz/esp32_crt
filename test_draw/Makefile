@@ -1,11 +1,11 @@
 vpath %.c ../src
 
-LDLIBS = -lSDL2
+LDLIBS = -lm -lSDL2
 
 CFLAGS += -Wall
 CFLAGS += -I../src
 
-OBJS = draw.o
+OBJS = draw.o fast_sin.o
 
 all: test
 

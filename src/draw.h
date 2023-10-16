@@ -6,9 +6,10 @@
 #define FP_ROUND (1 << (FP - 1))
 
 typedef struct {
+    uint8_t type;
+    uint8_t density;
     int16_t x;
     int16_t y;
-    int16_t brightness;
 } draw_list_t;
 
 // push all the samples of a draw-list to the DMA buffer once
