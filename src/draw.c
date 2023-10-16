@@ -50,12 +50,15 @@ unsigned push_circle(
 
 	int d_alpha = (alpha_length << 8) / n;
 
-	for (unsigned i = 0; i < n; i++) {
+	// if (alpha_length >= MAX_ANGLE)
+	// 	alpha_start = random();
+
+	for (unsigned i = 0; i <= n; i++) {
 		int arg = alpha_start + ((i * d_alpha) >> 8);
 		push_sample(
 			x_cur + (((get_cos(arg) >> 16) * r_x) >> (FP + 11)),
 			y_cur + (((get_sin(arg) >> 16) * r_y) >> (FP + 11)),
-			0,
+			i == 0 ? 0 : 0xFFF,
 			0
 		);
 	}
@@ -101,14 +104,14 @@ unsigned push_line(int16_t x, int16_t y, uint8_t density)
 			push_sample(
 				x_ + ((i * dx) >> 8),
 				y_ + ((i * dy) >> 8),
-				0,
+				0xFFF,
 				0
 			);
 			n_samples++;
 		}
 	}
 
-	push_sample(x, y, 0, 0);
+	push_sample(x, y, dist > 0 ? 0xFFF : 0, 0);
 	n_samples++;
 
 	x_cur = x;

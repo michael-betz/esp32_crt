@@ -101,14 +101,42 @@ void demo_circles(unsigned frame)
 	);
 }
 
-// Draw into framebuffer
+// Visualize a sample, emulate the phosphor with additive blending
 void push_sample(int16_t val_a, int16_t val_b, int16_t val_c, int16_t val_d)
 {
-	int x = (val_a + 0x4000) >> FP;
-	int y = (-val_b + 0x4000) >> FP;
+	static int x_ = 0;
+	static int y_ = 0;
 
-	SDL_Rect rect = {x, y, 6, 6};
+	int x = (val_a + 0x4000 + FP_ROUND) >> FP;  // discard fractional part
+	int y = (-val_b + 0x4000 + FP_ROUND) >> FP;
+
+	x = x * ZOOM;
+	y = y * ZOOM;
+
+	float len = sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_));
+	int intens = val_c / len / 2;
+	if (intens < 0x40)
+		intens = 0x40;
+	if (intens > 0xFF)
+		intens = 0xFF;
+
+	// Draw lines connecting the samples. Red for blanked moves
+	if (val_c == 0) {
+		SDL_SetRenderDrawColor(rr, intens, 0x00, 0x00, 0xFF);
+	} else {
+		SDL_SetRenderDrawColor(rr, 0x00, intens, 0x00, 0xFF);
+	}
+	SDL_RenderDrawLine(rr, x_, y_, x, y);
+
+	// Draw dots where the samples actually are to show the density
+	if (val_c == 0)
+		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
+	else
+		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
+	SDL_Rect rect = {x - 2, y - 2, 5, 5};
 	SDL_RenderFillRect(rr, &rect);
+	x_ = x;
+	y_ = y;
 	n_samples++;
 }
 
@@ -128,7 +156,7 @@ static void init_sdl()
 		return;
 	}
 
-	SDL_RenderSetScale(rr, ZOOM, ZOOM);
+	// SDL_RenderSetScale(rr, ZOOM, ZOOM);
 	SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
 }
 
@@ -173,7 +201,6 @@ int main(int argc, char* args[])
 		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(rr);
 
-		SDL_SetRenderDrawColor(rr, 0xFF, 0xFF, 0xFF, 0x60);
 		push_list(dl, n_dl);
 		demo_circles(frame);
 
