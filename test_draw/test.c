@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "draw.h"
 #include "fast_sin.h"
+#include "print.h"
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
@@ -20,6 +21,11 @@ static unsigned n_samples = 0;
 
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
+
+void _putchar(char c)
+{
+	push_char(c, 8, 100);
+}
 
 void read_csv(char *fName)
 {
@@ -129,10 +135,11 @@ void push_sample(int16_t val_a, int16_t val_b, int16_t val_c, int16_t val_d)
 	SDL_RenderDrawLine(rr, x_, y_, x, y);
 
 	// Draw dots where the samples actually are to show the density
-	if (val_c == 0)
+	if (val_c == 0) {
 		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
-	else
+	} else {
 		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
+	}
 	SDL_Rect rect = {x - 2, y - 2, 5, 5};
 	SDL_RenderFillRect(rr, &rect);
 	x_ = x;
@@ -163,11 +170,11 @@ static void init_sdl()
 int main(int argc, char* args[])
 {
 	if (argc != 2) {
-		printf("try %s draw_list.csv\n", args[0]);
-		return -1;
+		printf("also try %s draw_list.csv\n", args[0]);
+	} else {
+		printf("reading %s\n", args[1]);
+		read_csv(args[1]);
 	}
-	printf("reading %s\n", args[1]);
-	read_csv(args[1]);
 
 	init_lut();
 	init_sdl();
@@ -204,12 +211,18 @@ int main(int argc, char* args[])
 		push_list(dl, n_dl);
 		demo_circles(frame);
 
+		push_goto((-900 << FP), (400 << FP));
+		// push_char(0x20 + (frame >> 4), 100);
+		// push_char('%', 100);
+		print_str("Hello World 123\nThis is a test!\nof the TEXT\nand it goes!");
+
 		printf("%d\n", n_samples);
 		n_samples = 0;
 
 		SDL_RenderPresent(rr);
 		SDL_Delay(50);
 		frame++;
+		// return 0;
 	}
 
 	SDL_DestroyRenderer(rr);

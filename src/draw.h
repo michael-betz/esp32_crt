@@ -28,4 +28,6 @@ unsigned push_circle(
     uint8_t density
 );
 
+unsigned push_char(char c, unsigned scale, unsigned density);
+
 #endif

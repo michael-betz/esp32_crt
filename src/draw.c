@@ -6,6 +6,7 @@
 #include "draw.h"
 #include "fast_sin.h"
 #include "print.h"  // for printing fixed-point numbers
+#include "b_font.h"
 
 // current cursor position
 static int16_t x_cur = 0;
@@ -70,7 +71,7 @@ unsigned push_goto(int16_t x, int16_t y)
 	push_sample(x, y, 0, 0);
 	x_cur = x;
 	y_cur = y;
-	return 1;
+	return 0;
 }
 
 unsigned push_line(int16_t x, int16_t y, uint8_t density)
@@ -117,6 +118,76 @@ unsigned push_line(int16_t x, int16_t y, uint8_t density)
 	x_cur = x;
 	y_cur = y;
 	return n_samples;
+}
+
+unsigned push_char(char c, unsigned scale, unsigned density)
+{
+	unsigned samples = 0, x_c = x_cur, y_c = y_cur;
+	// printf("push_char(%c, %d)\n", c, density);
+	if (c == '\n') {
+		y_cur = y_c - (26 << scale);
+		x_cur = -900 << FP;
+		return 0;
+	} else if (c < 0x20) {
+		return 0;
+	}
+	c -= 0x20;
+	const uint8_t *codes = Font[(unsigned)c];
+	while (1) {
+		unsigned type = *codes++;
+		// printf("(%x) ", type);
+		if (type & 0x80) {
+			unsigned width = type & 0x7F;
+			// printf("done, width: %d\n", width);
+			x_cur = x_c + ((width + 2) << scale);
+			y_cur = y_c;
+			return samples;
+		}
+		uint8_t a_x, a_y, b_x, b_y, fo, lo;
+		switch (type) {
+			case lin:
+				// lin,XS,YS,XE,YE,FO,LO{,width|0x80}
+				a_x = *codes++;  // X start of line
+				a_y = *codes++;  // Y start of line
+				b_x = *codes++;  // X end of line
+				b_y = *codes++;  // Y end of line
+				codes += 2;
+				// printf("%d %d %d %d\n", a_x, a_y, b_x, b_y);
+				push_goto(x_c + (a_x << scale), y_c + (a_y << scale));
+				push_line(x_c + (b_x << scale), y_c + (b_y << scale), density);
+				break;
+			case cir:
+				// cir,XC,YC,XS,YS,FO,LO{,width|0x80}
+				a_x = *codes++;  // X Offset from LL corner to center of circle
+				a_y = *codes++;  // Y Offset from LL corner to center of circle
+				b_x = *codes++;  // Width of circle in diameter units
+				b_y = *codes++;  // Height of circle in diameter units
+				fo = *codes++;  // Start angle 0..7 is 0 deg .. 315 deg 0 = E, 90 = N, 180 = W, 270 = S
+				lo = *codes++;  // End angle 1..14 is 45 deg .. 630 deg
+				// printf("%d %d %d %d %d %d\n", a_x, a_y, b_x, b_y, fo, lo);
+				// push_goto(x_c + (a_x << scale), y_c + (a_y << scale));
+				x_cur = x_c + (a_x << scale);
+				y_cur = y_c + (a_y << scale);
+				unsigned a_start = fo * MAX_ANGLE / 8;
+				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
+				push_circle(
+					(b_x << scale) / 2,
+					(b_y << scale) / 2,
+					a_start,
+					a_stop - a_start,
+					density
+				);
+				// for (unsigned i = 0; i < 7; i++) {
+				// 	printf("%d ", *codes++);
+				// }
+				// printf("\n");
+				break;
+			default:
+				printf("unexpected code %d", *codes);
+				return samples;
+		}
+	}
+	return samples;
 }
 
 unsigned push_list(draw_list_t *p, unsigned n_items)
