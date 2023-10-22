@@ -66,15 +66,15 @@ unsigned push_circle(
 	return n;
 }
 
-unsigned push_goto(int16_t x, int16_t y)
+unsigned push_goto(int16_t x_a, int16_t y_a)
 {
-	push_sample(x, y, 0, 0);
-	x_cur = x;
-	y_cur = y;
+	// push_sample(x_a, y_a, 0, 0);
+	x_cur = x_a;
+	y_cur = y_a;
 	return 0;
 }
 
-unsigned push_line(int16_t x, int16_t y, uint8_t density)
+unsigned push_line(int16_t x_b, int16_t y_b, uint8_t density)
 {
 	unsigned n_samples = 0;
 
@@ -82,8 +82,8 @@ unsigned push_line(int16_t x, int16_t y, uint8_t density)
 	int x_ = x_cur;
 	int y_ = y_cur;
 
-	int distx = x - x_;
-	int disty = y - y_;
+	int distx = x_b - x_;
+	int disty = y_b - y_;
 
 	unsigned dist;
 	if (density == 0)
@@ -97,11 +97,11 @@ unsigned push_line(int16_t x, int16_t y, uint8_t density)
 
 	int n = (dist * density) >> (FP + 11);
 	// n = (n + FP_ROUND) >> FP;  // discard fractional part
-	if (n > 1) {
+	if (n > 0) {
 		int dx = (distx << 8) / n;
 		int dy = (disty << 8) / n;
 
-		for (unsigned i = 1; i < n; i++) {
+		for (unsigned i = 0; i < n; i++) {
 			push_sample(
 				x_ + ((i * dx) >> 8),
 				y_ + ((i * dy) >> 8),
@@ -112,12 +112,59 @@ unsigned push_line(int16_t x, int16_t y, uint8_t density)
 		}
 	}
 
-	push_sample(x, y, dist > 0 ? 0xFFF : 0, 0);
+	push_sample(x_b, y_b, dist > 0 ? 0xFFF : 0, 0);
 	n_samples++;
 
-	x_cur = x;
-	y_cur = y;
+	x_cur = x_b;
+	y_cur = y_b;
 	return n_samples;
+}
+
+
+static unsigned get_char_width(char c)
+{
+	if (c < 0x20)
+		return 0;
+	c -= 0x20;
+	const uint8_t *codes = Font[(unsigned)c];
+	while (1) {
+		unsigned type = *codes++;
+		if (type & 0x80)
+			return (type & 0x7F);
+		codes += 6;
+	}
+}
+
+static unsigned get_str_width(char *c, unsigned scale)
+{
+	unsigned w = 0;
+	while (*c) {
+		if (*c == '\n')
+			break;
+		w += (get_char_width(*c) + 3) << scale;
+		c++;
+	}
+	return w;
+}
+
+void push_str(char *c, unsigned scale, unsigned density)
+{
+	unsigned x_start = x_cur;
+	int w = -1;
+	while (*c) {
+		if (*c == '\n') {
+			y_cur -= (26 << scale);
+			w = -1;
+			c++;
+			continue;
+		}
+		if (w == -1) {
+			w = get_str_width(c, scale);
+			x_cur = x_start - w / 2;
+		}
+		push_char(*c, scale, density);
+		c++;
+	}
 }
 
 unsigned push_char(char c, unsigned scale, unsigned density)
@@ -139,7 +186,7 @@ unsigned push_char(char c, unsigned scale, unsigned density)
 		if (type & 0x80) {
 			unsigned width = type & 0x7F;
 			// printf("done, width: %d\n", width);
-			x_cur = x_c + ((width + 2) << scale);
+			x_cur = x_c + ((width + 3) << scale);
 			y_cur = y_c;
 			return samples;
 		}

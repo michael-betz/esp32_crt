@@ -24,7 +24,7 @@ SDL_Window* window = NULL;
 
 void _putchar(char c)
 {
-	push_char(c, 8, 100);
+	push_char(c, 7, 100);
 }
 
 void read_csv(char *fName)
@@ -211,10 +211,13 @@ int main(int argc, char* args[])
 		push_list(dl, n_dl);
 		demo_circles(frame);
 
-		push_goto((-900 << FP), (400 << FP));
+		push_goto((0 << FP), (400 << FP));
 		// push_char(0x20 + (frame >> 4), 100);
 		// push_char('%', 100);
-		print_str("Hello World 123\nThis is a test!\nof the TEXT\nand it goes!");
+		push_str("Hello World 123\ntest\nit's centered\n;)", 7, 100);
+
+		// for (char c=0x20; c<0x40; c++)
+		// 	printf("%c: %d\n", c, get_char_width(c));
 
 		printf("%d\n", n_samples);
 		n_samples = 0;

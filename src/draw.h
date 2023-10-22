@@ -16,9 +16,9 @@ typedef struct {
 // returns number of samples written
 unsigned push_list(draw_list_t *p, unsigned n_items);
 
-unsigned push_goto(int16_t x, int16_t y);
+unsigned push_goto(int16_t x_a, int16_t y_a);
 
-unsigned push_line(int16_t x, int16_t y, uint8_t density);
+unsigned push_line(int16_t x_b, int16_t y_b, uint8_t density);
 
 unsigned push_circle(
     uint16_t r_x,
@@ -29,5 +29,7 @@ unsigned push_circle(
 );
 
 unsigned push_char(char c, unsigned scale, unsigned density);
+void push_str(char *c, unsigned scale, unsigned density);
+
 
 #endif
