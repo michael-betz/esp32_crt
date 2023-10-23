@@ -17,7 +17,7 @@ static draw_list_t dl[MAX_DL_SIZE];
 static unsigned n_dl = 0;
 
 // Count how many samples were outputted
-static unsigned n_samples = 0;
+unsigned n_samples = 0;
 
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
@@ -108,13 +108,15 @@ void demo_circles(unsigned frame)
 }
 
 // Visualize a sample, emulate the phosphor with additive blending
-void push_sample(int16_t val_a, int16_t val_b, int16_t val_c, int16_t val_d)
+void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 {
 	static int x_ = 0;
 	static int y_ = 0;
 
-	int x = (val_a + 0x4000 + FP_ROUND) >> FP;  // discard fractional part
-	int y = (-val_b + 0x4000 + FP_ROUND) >> FP;
+	int x = val_a;  // discard fractional part
+	int y = val_b;
+
+	printf("%d %d\n", x, y);
 
 	x = x * ZOOM;
 	y = y * ZOOM;
@@ -214,7 +216,12 @@ int main(int argc, char* args[])
 		push_goto((0 << FP), (400 << FP));
 		// push_char(0x20 + (frame >> 4), 100);
 		// push_char('%', 100);
-		push_str("Hello World 123\ntest\nit's centered\n;)", 7, 100);
+		// push_str(
+		// 	"Hello World 123\n\ntest\nit's drawing!\n;)",
+		// 	(frame >> 6) % 3,
+		// 	(sin(frame / 10.0) + 1.1) * 200,
+		// 	100
+		// );
 
 		// for (char c=0x20; c<0x40; c++)
 		// 	printf("%c: %d\n", c, get_char_width(c));

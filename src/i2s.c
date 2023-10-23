@@ -27,6 +27,7 @@
 
 #define CHUNK_SIZE 512 * 4
 
+unsigned n_samples = 0;
 static i2s_chan_handle_t tx_chan;
 
 void i2s_init(void)
@@ -111,10 +112,10 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 	// print_str("\n");
 
 	// output the sample-data for 4 channels over the next 64 clocks
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | ((val_a + FP_ROUND) >> FP);  // DACA
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | ((val_c + FP_ROUND) >> FP);  // DACB
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | ((val_b + FP_ROUND) >> FP);  // DACA
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | ((val_d + FP_ROUND) >> FP);  // DACB
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_a;  // DACA
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_c;  // DACB
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_b;  // DACA
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_d;  // DACB
 	n_written += 4 * 2;
 
 	if (n_written >= CHUNK_SIZE) {
@@ -126,4 +127,5 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 		n_written = 0;
 		w_buf = (uint16_t *)chunk_buf;
 	}
+	n_samples++;
 }

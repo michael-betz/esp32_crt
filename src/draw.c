@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -9,8 +10,8 @@
 #include "b_font.h"
 
 // current cursor position
-static int16_t x_cur = 0;
-static int16_t y_cur = 0;
+static int x_cur = 0;
+static int y_cur = 0;
 
 
 // https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
@@ -29,12 +30,34 @@ static unsigned usqrt4(unsigned val) {
     return a;
 }
 
-unsigned push_circle(
-	uint16_t r_x,
-	uint16_t r_y,
-	uint16_t alpha_start,  // 0
-	uint16_t alpha_length,  // MAX_ANGLE
-	uint8_t density
+static bool output_sample(int a, int b, int c, int d)
+{
+	bool is_clipped = false;
+	if (a >= FP_MAX) {
+		a = FP_MAX - 1;
+		is_clipped = 1;
+	} else if (a < -FP_MAX) {
+		a = -FP_MAX;
+		is_clipped = 1;
+	}
+	if (b >= FP_MAX) {
+		b = FP_MAX - 1;
+		is_clipped = 1;
+	} else if (b < -FP_MAX) {
+		b = -FP_MAX;
+		is_clipped = 1;
+	}
+	// if (!is_clipped)
+	push_sample(a + 0x800, b + 0x800, c, d);
+	return is_clipped;
+}
+
+void push_circle(
+	unsigned r_x,
+	unsigned r_y,
+	unsigned alpha_start,  // 0
+	unsigned alpha_length,  // MAX_ANGLE
+	unsigned density
 ) {
 	if (r_x == 0)
 		r_x = r_y;
@@ -46,7 +69,7 @@ unsigned push_circle(
 	unsigned n = (2 * r_max * density * (unsigned)(M_PI * 64) / 64) >> (FP + 11);
 	n = n * alpha_length / MAX_ANGLE;
 	if (n <= 0)
-		return 0;
+		return;
 	// printf("r: %d, density: %d, n: %d\n", r >> FP, density, n);
 
 	int d_alpha = (alpha_length << 8) / n;
@@ -56,36 +79,30 @@ unsigned push_circle(
 
 	for (unsigned i = 0; i <= n; i++) {
 		int arg = alpha_start + ((i * d_alpha) >> 8);
-		push_sample(
+		bool is_clipped = output_sample(
 			x_cur + (((get_cos(arg) >> 16) * r_x) >> (FP + 11)),
 			y_cur + (((get_sin(arg) >> 16) * r_y) >> (FP + 11)),
 			i == 0 ? 0 : 0xFFF,
 			0
 		);
+		// if (is_clipped)
+		// 	break;
 	}
-	return n;
 }
 
-unsigned push_goto(int16_t x_a, int16_t y_a)
+void push_goto(int x_a, int y_a)
 {
 	// push_sample(x_a, y_a, 0, 0);
 	x_cur = x_a;
 	y_cur = y_a;
-	return 0;
 }
 
-unsigned push_line(int16_t x_b, int16_t y_b, uint8_t density)
+void push_line(int x_b, int y_b, unsigned density)
 {
-	unsigned n_samples = 0;
-
-	// local copies
-	int x_ = x_cur;
-	int y_ = y_cur;
-
-	int distx = x_b - x_;
-	int disty = y_b - y_;
-
+	int distx = x_b - x_cur;
+	int disty = y_b - y_cur;
 	unsigned dist;
+
 	if (density == 0)
 		dist = 0;  // jump there directly
 	else if (distx == 0)
@@ -102,22 +119,20 @@ unsigned push_line(int16_t x_b, int16_t y_b, uint8_t density)
 		int dy = (disty << 8) / n;
 
 		for (unsigned i = 0; i < n; i++) {
-			push_sample(
-				x_ + ((i * dx) >> 8),
-				y_ + ((i * dy) >> 8),
+			bool is_clipped = output_sample(
+				x_cur + ((i * dx) >> 8),
+				y_cur + ((i * dy) >> 8),
 				0xFFF,
 				0
 			);
-			n_samples++;
+			// if (is_clipped)
+			// 	break;
 		}
 	}
-
 	push_sample(x_b, y_b, dist > 0 ? 0xFFF : 0, 0);
-	n_samples++;
 
 	x_cur = x_b;
 	y_cur = y_b;
-	return n_samples;
 }
 
 
@@ -141,43 +156,43 @@ static unsigned get_str_width(char *c, unsigned scale)
 	while (*c) {
 		if (*c == '\n')
 			break;
-		w += (get_char_width(*c) + 3) << scale;
+		w += (get_char_width(*c) + 3) * scale;
 		c++;
 	}
 	return w;
 }
 
-void push_str(char *c, unsigned scale, unsigned density)
+void push_str(char *c, unsigned align, unsigned scale, unsigned density)
 {
 	unsigned x_start = x_cur;
 	int w = -1;
 	while (*c) {
 		if (*c == '\n') {
-			y_cur -= (26 << scale);
+			y_cur -= 26 * scale;
 			w = -1;
 			c++;
 			continue;
 		}
 		if (w == -1) {
 			w = get_str_width(c, scale);
-			x_cur = x_start - w / 2;
+			if (align == A_RIGHT)
+				x_cur = x_start - w;
+			else if (align == A_CENTER)
+				x_cur = x_start - w / 2;
+			else
+				x_cur = x_start;
 		}
 		push_char(*c, scale, density);
 		c++;
 	}
 }
 
-unsigned push_char(char c, unsigned scale, unsigned density)
+void push_char(char c, unsigned scale, unsigned density)
 {
-	unsigned samples = 0, x_c = x_cur, y_c = y_cur;
+	unsigned x_c = x_cur, y_c = y_cur;
 	// printf("push_char(%c, %d)\n", c, density);
-	if (c == '\n') {
-		y_cur = y_c - (26 << scale);
-		x_cur = -900 << FP;
-		return 0;
-	} else if (c < 0x20) {
-		return 0;
-	}
+	if (c < 0x20)
+		return;
 	c -= 0x20;
 	const uint8_t *codes = Font[(unsigned)c];
 	while (1) {
@@ -186,9 +201,9 @@ unsigned push_char(char c, unsigned scale, unsigned density)
 		if (type & 0x80) {
 			unsigned width = type & 0x7F;
 			// printf("done, width: %d\n", width);
-			x_cur = x_c + ((width + 3) << scale);
+			x_cur = x_c + ((width + 3) * scale);
 			y_cur = y_c;
-			return samples;
+			return;
 		}
 		uint8_t a_x, a_y, b_x, b_y, fo, lo;
 		switch (type) {
@@ -200,8 +215,8 @@ unsigned push_char(char c, unsigned scale, unsigned density)
 				b_y = *codes++;  // Y end of line
 				codes += 2;
 				// printf("%d %d %d %d\n", a_x, a_y, b_x, b_y);
-				push_goto(x_c + (a_x << scale), y_c + (a_y << scale));
-				push_line(x_c + (b_x << scale), y_c + (b_y << scale), density);
+				push_goto(x_c + (a_x * scale), y_c + (a_y * scale));
+				push_line(x_c + (b_x * scale), y_c + (b_y * scale), density);
 				break;
 			case cir:
 				// cir,XC,YC,XS,YS,FO,LO{,width|0x80}
@@ -212,14 +227,14 @@ unsigned push_char(char c, unsigned scale, unsigned density)
 				fo = *codes++;  // Start angle 0..7 is 0 deg .. 315 deg 0 = E, 90 = N, 180 = W, 270 = S
 				lo = *codes++;  // End angle 1..14 is 45 deg .. 630 deg
 				// printf("%d %d %d %d %d %d\n", a_x, a_y, b_x, b_y, fo, lo);
-				// push_goto(x_c + (a_x << scale), y_c + (a_y << scale));
-				x_cur = x_c + (a_x << scale);
-				y_cur = y_c + (a_y << scale);
+				// push_goto(x_c + (a_x * scale), y_c + (a_y * scale));
+				x_cur = x_c + (a_x * scale);
+				y_cur = y_c + (a_y * scale);
 				unsigned a_start = fo * MAX_ANGLE / 8;
 				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
 				push_circle(
-					(b_x << scale) / 2,
-					(b_y << scale) / 2,
+					(b_x * scale) / 2,
+					(b_y * scale) / 2,
 					a_start,
 					a_stop - a_start,
 					density
@@ -231,25 +246,25 @@ unsigned push_char(char c, unsigned scale, unsigned density)
 				break;
 			default:
 				printf("unexpected code %d", *codes);
-				return samples;
+				return;
 		}
 	}
-	return samples;
+	return;
 }
 
 unsigned push_list(draw_list_t *p, unsigned n_items)
 {
-	unsigned n_samples = 0;
+	n_samples = 0;
 	while (n_items--) {
 		switch (p->type) {
 		case 0:
-			n_samples += push_goto(p->x, p->y);
+			push_goto(p->x, p->y);
 			break;
 		case 1:
-			n_samples += push_line(p->x, p->y, p->density);
+			push_line(p->x, p->y, p->density);
 			break;
 		case 2:
-			n_samples += push_circle(p->x, p->y, 0, MAX_ANGLE, p->density);
+			push_circle(p->x, p->y, 0, MAX_ANGLE, p->density);
 			break;
 		default:
 			printf("unknown type %d\n", p->type);
