@@ -38,6 +38,8 @@ void push_circle(
 );
 
 void push_char(char c, unsigned scale, unsigned density);
+
+// scale is font-size. 100 is for ants, 300 is readable, 1000 is pretty huge
 void push_str(char *c, unsigned align, unsigned scale, unsigned density);
 
 

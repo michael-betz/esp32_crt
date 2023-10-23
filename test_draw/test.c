@@ -10,7 +10,11 @@
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
-#define ZOOM 0.5
+#define D_SCALE 0.5
+
+#define DAC_MAX 0x1000
+#define D_OFFSET_X ((DISPLAY_WIDTH - (DAC_MAX * D_SCALE)) / 2)
+#define D_OFFSET_Y ((DISPLAY_HEIGHT - (DAC_MAX * D_SCALE)) / 2)
 
 #define MAX_DL_SIZE 4096
 static draw_list_t dl[MAX_DL_SIZE];
@@ -27,7 +31,7 @@ void _putchar(char c)
 	push_char(c, 7, 100);
 }
 
-void read_csv(char *fName)
+static void read_csv(char *fName)
 {
 	FILE* f = fopen(fName, "r");
 	int a, b, c, d;
@@ -71,7 +75,7 @@ void read_csv(char *fName)
 	fclose(f);
 }
 
-void demo_circles(unsigned frame)
+static void demo_circles(unsigned frame)
 {
 	push_goto(-800 << FP, -800 << FP);
 	push_circle(
@@ -79,7 +83,7 @@ void demo_circles(unsigned frame)
 		100 << FP,
 		frame * (MAX_ANGLE >> 8),  // 0
 		MAX_ANGLE / 4,  // MAX_ANGLE
-		255
+		100
 	);
 	push_goto(-800 << FP, 800 << FP);
 	push_circle(
@@ -87,7 +91,7 @@ void demo_circles(unsigned frame)
 		100 << FP,
 		frame * (MAX_ANGLE >> 8),  // 0
 		2 * MAX_ANGLE / 4,  // MAX_ANGLE
-		255
+		100
 	);
 	push_goto(800 << FP, -800 << FP);
 	push_circle(
@@ -95,7 +99,7 @@ void demo_circles(unsigned frame)
 		100 << FP,
 		frame * (MAX_ANGLE >> 8),  // 0
 		3 * MAX_ANGLE / 4,  // MAX_ANGLE
-		255
+		100
 	);
 	push_goto(800 << FP, 800 << FP);
 	push_circle(
@@ -103,7 +107,18 @@ void demo_circles(unsigned frame)
 		100 << FP,
 		0,  // 0
 		(sin(frame / 50.0) + 1) * MAX_ANGLE / 2,  // MAX_ANGLE
-		255
+		100
+	);
+}
+
+static void demo_text(unsigned frame)
+{
+	push_goto(0, 300);
+	push_str(
+		"Hello World 123\nWahUuiUuiu!\nit's drawing!\n;)",
+		A_CENTER,
+		(sin(frame / 50.0) + 1.01) * 1000,
+		150
 	);
 }
 
@@ -113,14 +128,14 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 	static int x_ = 0;
 	static int y_ = 0;
 
-	int x = val_a;  // discard fractional part
-	int y = val_b;
+	// center and scale the DAC range to the window-size
+	int x = val_a * D_SCALE + D_OFFSET_X;
+	int y = val_b * D_SCALE + D_OFFSET_Y;
 
-	printf("%d %d\n", x, y);
+	// Vertical mirror
+	y = DISPLAY_HEIGHT - y;
 
-	x = x * ZOOM;
-	y = y * ZOOM;
-
+	// The longer the distance between 2 points, the lower the intensity
 	float len = sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_));
 	int intens = val_c / len / 2;
 	if (intens < 0x40)
@@ -182,6 +197,7 @@ int main(int argc, char* args[])
 	init_sdl();
 
 	unsigned frame = 0;
+	unsigned demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
@@ -190,18 +206,20 @@ int main(int argc, char* args[])
 				case SDL_QUIT:
 					isExit = true;
 					break;
-				// case SDL_KEYDOWN:
-				//     switch(e.key.keysym.sym) {
-				//         case SDLK_LEFT:
-				//             break;
-				//         case SDLK_RIGHT:
-				//             break;
-				//         case SDLK_DOWN:
-				//             break;
-				//         case SDLK_UP:
-				//             break;
-				//     }
-				//     break;
+				case SDL_KEYDOWN:
+					switch(e.key.keysym.sym) {
+						case SDLK_LEFT:
+							demo--;
+							break;
+						case SDLK_RIGHT:
+							demo++;
+							break;
+						case SDLK_DOWN:
+							break;
+						case SDLK_UP:
+							break;
+					}
+					break;
 			}
 		}
 		if (isExit)
@@ -211,20 +229,15 @@ int main(int argc, char* args[])
 		SDL_RenderClear(rr);
 
 		push_list(dl, n_dl);
-		demo_circles(frame);
 
-		push_goto((0 << FP), (400 << FP));
-		// push_char(0x20 + (frame >> 4), 100);
-		// push_char('%', 100);
-		// push_str(
-		// 	"Hello World 123\n\ntest\nit's drawing!\n;)",
-		// 	(frame >> 6) % 3,
-		// 	(sin(frame / 10.0) + 1.1) * 200,
-		// 	100
-		// );
-
-		// for (char c=0x20; c<0x40; c++)
-		// 	printf("%c: %d\n", c, get_char_width(c));
+		switch (demo % 3) {
+		case 1:
+			demo_circles(frame);
+			break;
+		case 2:
+			demo_text(frame);
+			break;
+		}
 
 		printf("%d\n", n_samples);
 		n_samples = 0;

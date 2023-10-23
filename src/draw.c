@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <limits.h>
 #include "i2s.h"
 #include "draw.h"
 #include "fast_sin.h"
@@ -47,7 +48,6 @@ static bool output_sample(int a, int b, int c, int d)
 		b = -FP_MAX;
 		is_clipped = 1;
 	}
-	// if (!is_clipped)
 	push_sample(a + 0x800, b + 0x800, c, d);
 	return is_clipped;
 }
@@ -68,31 +68,28 @@ void push_circle(
 	int r_max = r_x > r_y ? r_x : r_y;
 	unsigned n = (2 * r_max * density * (unsigned)(M_PI * 64) / 64) >> (FP + 11);
 	n = n * alpha_length / MAX_ANGLE;
-	if (n <= 0)
-		return;
-	// printf("r: %d, density: %d, n: %d\n", r >> FP, density, n);
+	if (n < 3)
+		n = 3;
+	// printf("x: %d, y: %d, r: %d, density: %d, n: %d, INT_MAX: %x\n", x_cur, y_cur, r_x, density, n, INT_MAX);
 
-	int d_alpha = (alpha_length << 8) / n;
-
-	// if (alpha_length >= MAX_ANGLE)
-	// 	alpha_start = random();
+	int d_alpha = (alpha_length << 8) / n;  // angular step-size
 
 	for (unsigned i = 0; i <= n; i++) {
 		int arg = alpha_start + ((i * d_alpha) >> 8);
 		bool is_clipped = output_sample(
-			x_cur + (((get_cos(arg) >> 16) * r_x) >> (FP + 11)),
-			y_cur + (((get_sin(arg) >> 16) * r_y) >> (FP + 11)),
+			x_cur + (((get_cos(arg) >> 16) * (int)r_x) >> 15),
+			y_cur + (((get_sin(arg) >> 16) * (int)r_y) >> 15),
 			i == 0 ? 0 : 0xFFF,
 			0
 		);
-		// if (is_clipped)
-		// 	break;
+		if (is_clipped)
+			break;
 	}
 }
 
 void push_goto(int x_a, int y_a)
 {
-	// push_sample(x_a, y_a, 0, 0);
+	// output_sample(x_a, y_a, 0, 0);
 	x_cur = x_a;
 	y_cur = y_a;
 }
@@ -103,9 +100,7 @@ void push_line(int x_b, int y_b, unsigned density)
 	int disty = y_b - y_cur;
 	unsigned dist;
 
-	if (density == 0)
-		dist = 0;  // jump there directly
-	else if (distx == 0)
+	if (distx == 0)
 		dist = abs(disty);
 	else if (disty == 0)
 		dist = abs(distx);
@@ -113,23 +108,22 @@ void push_line(int x_b, int y_b, unsigned density)
 		dist = usqrt4(distx * distx + disty * disty);
 
 	int n = (dist * density) >> (FP + 11);
-	// n = (n + FP_ROUND) >> FP;  // discard fractional part
-	if (n > 0) {
-		int dx = (distx << 8) / n;
-		int dy = (disty << 8) / n;
+	if (n < 1)
+		n = 1;
 
-		for (unsigned i = 0; i < n; i++) {
-			bool is_clipped = output_sample(
-				x_cur + ((i * dx) >> 8),
-				y_cur + ((i * dy) >> 8),
-				0xFFF,
-				0
-			);
-			// if (is_clipped)
-			// 	break;
-		}
+	int dx = (distx << 8) / n;
+	int dy = (disty << 8) / n;
+
+	for (int i = 0; i <= n; i++) {
+		bool is_clipped = output_sample(
+			x_cur + ((i * dx) >> 8),
+			y_cur + ((i * dy) >> 8),
+			0xFFF,
+			0
+		);
+		if (is_clipped)
+			break;
 	}
-	push_sample(x_b, y_b, dist > 0 ? 0xFFF : 0, 0);
 
 	x_cur = x_b;
 	y_cur = y_b;
@@ -156,7 +150,7 @@ static unsigned get_str_width(char *c, unsigned scale)
 	while (*c) {
 		if (*c == '\n')
 			break;
-		w += (get_char_width(*c) + 3) * scale;
+		w += (get_char_width(*c) + 3) * scale / 64;
 		c++;
 	}
 	return w;
@@ -168,7 +162,7 @@ void push_str(char *c, unsigned align, unsigned scale, unsigned density)
 	int w = -1;
 	while (*c) {
 		if (*c == '\n') {
-			y_cur -= 26 * scale;
+			y_cur -= 26 * scale / 64;
 			w = -1;
 			c++;
 			continue;
@@ -201,7 +195,7 @@ void push_char(char c, unsigned scale, unsigned density)
 		if (type & 0x80) {
 			unsigned width = type & 0x7F;
 			// printf("done, width: %d\n", width);
-			x_cur = x_c + ((width + 3) * scale);
+			x_cur = x_c + ((width + 3) * scale / 64);
 			y_cur = y_c;
 			return;
 		}
@@ -215,8 +209,8 @@ void push_char(char c, unsigned scale, unsigned density)
 				b_y = *codes++;  // Y end of line
 				codes += 2;
 				// printf("%d %d %d %d\n", a_x, a_y, b_x, b_y);
-				push_goto(x_c + (a_x * scale), y_c + (a_y * scale));
-				push_line(x_c + (b_x * scale), y_c + (b_y * scale), density);
+				push_goto(x_c + (a_x * scale / 64), y_c + (a_y * scale / 64));
+				push_line(x_c + (b_x * scale / 64), y_c + (b_y * scale / 64), density);
 				break;
 			case cir:
 				// cir,XC,YC,XS,YS,FO,LO{,width|0x80}
@@ -228,13 +222,13 @@ void push_char(char c, unsigned scale, unsigned density)
 				lo = *codes++;  // End angle 1..14 is 45 deg .. 630 deg
 				// printf("%d %d %d %d %d %d\n", a_x, a_y, b_x, b_y, fo, lo);
 				// push_goto(x_c + (a_x * scale), y_c + (a_y * scale));
-				x_cur = x_c + (a_x * scale);
-				y_cur = y_c + (a_y * scale);
+				x_cur = x_c + (a_x * scale / 64);
+				y_cur = y_c + (a_y * scale / 64);
 				unsigned a_start = fo * MAX_ANGLE / 8;
 				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
 				push_circle(
-					(b_x * scale) / 2,
-					(b_y * scale) / 2,
+					(b_x * scale) / 2 / 64,
+					(b_y * scale) / 2 / 64,
 					a_start,
 					a_stop - a_start,
 					density
