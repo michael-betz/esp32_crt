@@ -53,6 +53,8 @@ static bool output_sample(int a, int b, int c, int d)
 }
 
 void push_circle(
+	int x_a,
+	int y_a,
 	unsigned r_x,
 	unsigned r_y,
 	unsigned alpha_start,  // 0
@@ -70,18 +72,19 @@ void push_circle(
 	n = n * alpha_length / MAX_ANGLE;
 	if (n < 3)
 		n = 3;
-	// printf("x: %d, y: %d, r: %d, density: %d, n: %d, INT_MAX: %x\n", x_cur, y_cur, r_x, density, n, INT_MAX);
+	// printf("x: %d, y: %d, r: %d, density: %d, n: %d, INT_MAX: %x\n", x_a, y_a, r_x, density, n, INT_MAX);
 
 	int d_alpha = (alpha_length << 8) / n;  // angular step-size
 
+	int x, y, arg;
 	for (unsigned i = 0; i <= n; i++) {
-		int arg = alpha_start + ((i * d_alpha) >> 8);
-		bool is_clipped = output_sample(
-			x_cur + (((get_cos(arg) >> 16) * (int)r_x) >> 15),
-			y_cur + (((get_sin(arg) >> 16) * (int)r_y) >> 15),
-			i == 0 ? 0 : 0xFFF,
-			0
-		);
+		arg = alpha_start + ((i * d_alpha) >> 8);
+		x = x_a + (((get_cos(arg) >> 16) * (int)r_x) >> 15);
+		y = y_a + (((get_sin(arg) >> 16) * (int)r_y) >> 15);
+		// Skip seek to first point if we are already there
+		if (i == 0 && x == x_cur && y == y_cur)
+			continue;
+		bool is_clipped = output_sample(x, y, i == 0 ? 0 : 0xFFF, 0);
 		if (is_clipped)
 			break;
 	}
@@ -89,16 +92,26 @@ void push_circle(
 
 void push_goto(int x_a, int y_a)
 {
-	// output_sample(x_a, y_a, 0, 0);
+	if (x_a == x_cur && y_a == y_cur)
+		return;
+
+	output_sample(x_a, y_a, 0, 0);
 	x_cur = x_a;
 	y_cur = y_a;
 }
 
 void push_line(int x_b, int y_b, unsigned density)
 {
+	unsigned dist;
+
+	if (density == 0) {
+		push_goto(x_b, y_b);
+		return;
+	}
+
+	// Calculate the distance in x, y and hypotenuse
 	int distx = x_b - x_cur;
 	int disty = y_b - y_cur;
-	unsigned dist;
 
 	if (distx == 0)
 		dist = abs(disty);
@@ -107,14 +120,21 @@ void push_line(int x_b, int y_b, unsigned density)
 	else
 		dist = usqrt4(distx * distx + disty * disty);
 
+	// Check how many points to produce
 	int n = (dist * density) >> (FP + 11);
-	if (n < 1)
-		n = 1;
+
+	// Don't interpolate points, just output the final point
+	if (n <= 1) {
+		output_sample(x_b, y_b, 0xFFF, 0);
+		x_cur = x_b;
+		y_cur = y_b;
+		return;
+	}
 
 	int dx = (distx << 8) / n;
 	int dy = (disty << 8) / n;
 
-	for (int i = 0; i <= n; i++) {
+	for (int i = 1; i <= n; i++) {
 		bool is_clipped = output_sample(
 			x_cur + ((i * dx) >> 8),
 			y_cur + ((i * dy) >> 8),
@@ -222,11 +242,11 @@ void push_char(char c, unsigned scale, unsigned density)
 				lo = *codes++;  // End angle 1..14 is 45 deg .. 630 deg
 				// printf("%d %d %d %d %d %d\n", a_x, a_y, b_x, b_y, fo, lo);
 				// push_goto(x_c + (a_x * scale), y_c + (a_y * scale));
-				x_cur = x_c + (a_x * scale / 64);
-				y_cur = y_c + (a_y * scale / 64);
 				unsigned a_start = fo * MAX_ANGLE / 8;
 				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
 				push_circle(
+					x_c + (a_x * scale / 64),
+					y_c + (a_y * scale / 64),
 					(b_x * scale) / 2 / 64,
 					(b_y * scale) / 2 / 64,
 					a_start,
@@ -258,7 +278,7 @@ unsigned push_list(draw_list_t *p, unsigned n_items)
 			push_line(p->x, p->y, p->density);
 			break;
 		case 2:
-			push_circle(p->x, p->y, 0, MAX_ANGLE, p->density);
+			push_circle(x_cur, y_cur, p->x, p->y, 0, MAX_ANGLE, p->density);
 			break;
 		default:
 			printf("unknown type %d\n", p->type);

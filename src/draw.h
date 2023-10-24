@@ -25,11 +25,18 @@ extern unsigned n_samples;
 // returns number of samples written
 unsigned push_list(draw_list_t *p, unsigned n_items);
 
+// Updates the cursor to (x_a, y_a)
 void push_goto(int x_a, int y_a);
 
+// Draws a line from the current cursor to (x_b, y_b). updates the cursor
 void push_line(int x_b, int y_b, unsigned density);
 
+// Draws an ellipse, centered at (x_a, y_a) with radi (r_x, r_y)
+// where alpha_length is the arc_length (360 deg is MAX_ANGLE)
+// and alph_start is the start angle
 void push_circle(
+    int x_a,
+    int y_a,
     unsigned r_x,
     unsigned r_y,
     unsigned alpha_start,  // 0

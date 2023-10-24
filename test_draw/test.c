@@ -77,34 +77,31 @@ static void read_csv(char *fName)
 
 static void demo_circles(unsigned frame)
 {
-	push_goto(-800 << FP, -800 << FP);
 	push_circle(
-		100 << FP,
-		100 << FP,
+		-800, -800,
+		100, 100,
 		frame * (MAX_ANGLE >> 8),  // 0
 		MAX_ANGLE / 4,  // MAX_ANGLE
 		100
 	);
-	push_goto(-800 << FP, 800 << FP);
 	push_circle(
-		100 << FP,
-		100 << FP,
+		-800, 800,
+		100, 100,
 		frame * (MAX_ANGLE >> 8),  // 0
 		2 * MAX_ANGLE / 4,  // MAX_ANGLE
 		100
 	);
 	push_goto(800 << FP, -800 << FP);
 	push_circle(
-		100 << FP,
-		100 << FP,
+		800, -800,
+		100, 100,
 		frame * (MAX_ANGLE >> 8),  // 0
 		3 * MAX_ANGLE / 4,  // MAX_ANGLE
 		100
 	);
-	push_goto(800 << FP, 800 << FP);
 	push_circle(
-		100 << FP,
-		100 << FP,
+		800, 800,
+		100, 100,
 		0,  // 0
 		(sin(frame / 50.0) + 1) * MAX_ANGLE / 2,  // MAX_ANGLE
 		100
@@ -237,6 +234,11 @@ int main(int argc, char* args[])
 		case 2:
 			demo_text(frame);
 			break;
+		}
+
+		if (frame < 200) {
+			push_goto(0, -800);
+			push_str("<--  -->", A_CENTER, 200, 200 - frame);
 		}
 
 		printf("%d\n", n_samples);
