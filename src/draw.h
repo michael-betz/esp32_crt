@@ -9,19 +9,56 @@
 #define A_CENTER 1
 #define A_RIGHT 2
 
+// Different blocks in the draw-list
+#define T_NONE 0
+#define T_LINE 1
+#define T_POLY 2
+#define T_CIRCLE 3
+#define T_STRING 4
+#define T_END 0xFE
+
+typedef struct {
+    uint8_t type;
+    uint8_t density;
+    int16_t x_b;
+    int16_t y_b;
+} line_t;  // 6 bytes
+
+typedef struct {
+    uint8_t type;
+    uint8_t density;
+    uint16_t len;  // Number of int16_t coordinate __pairs__ in pts
+    int16_t pts[];
+} poly_t;  // 4 bytes + 4 * len
+
 typedef struct {
     uint8_t type;
     uint8_t density;
     int16_t x;
     int16_t y;
-} draw_list_t;
+    int16_t r_x;
+    int16_t r_y;
+    uint8_t a_start;  // 255 == MAX_ANGLE
+    uint8_t a_length;
+} circle_t;  // 12 bytes
+
+typedef struct {
+    uint8_t type;
+    uint8_t density;
+    uint8_t align;
+    uint16_t scale;
+    int16_t x;
+    int16_t y;
+    uint16_t len;
+    char c[];
+} string_t;  // 12 bytes + len
 
 // need to be implemented by DAC code
 extern unsigned n_samples;
 
 // push all the samples of a draw-list to the DMA buffer once
 // returns number of samples written
-void push_list(draw_list_t *p, unsigned n_items);
+void push_list(uint8_t *p, unsigned n_items);
 
 // Updates the cursor to (x_a, y_a)
 void push_goto(int x_a, int y_a);

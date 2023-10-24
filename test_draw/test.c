@@ -17,8 +17,8 @@
 #define D_OFFSET_Y ((DISPLAY_HEIGHT - (DAC_MAX * D_SCALE)) / 2)
 
 #define MAX_DL_SIZE 4096
-static draw_list_t dl[MAX_DL_SIZE];
-static unsigned n_dl = 0;
+static uint8_t dl[MAX_DL_SIZE];
+static unsigned n_dl = 0;  // bytes in dl
 
 // Count how many samples were outputted
 unsigned n_samples = 0;
@@ -31,9 +31,11 @@ static void read_csv(char *fName)
 {
 	FILE* f = fopen(fName, "r");
 	int a, b, c, d;
-	draw_list_t *p = dl;
+	int x_ = 0, y_ = 0;
+	uint8_t *p = dl;
 	char line[1024];
 	char *tmp = NULL;
+	unsigned n = 0;
 
 	n_dl = 0;
 	while (fgets(line, 1024, f)) {
@@ -57,17 +59,40 @@ static void read_csv(char *fName)
 		d = atoi(tmp);
 
 		// printf("%d %d %d %d\n", a, b, c, d);
-		p->type = a;
-		p->density = b;
-		p->x = c;
-		p->y = d;
-		p++;
-		n_dl++;
+		if (a == 1) {
+			line_t *tmp = (line_t *)p;
+			tmp->type = T_LINE;
+			tmp->density = b;
+			tmp->x_b = c;
+			tmp->y_b = d;
+			x_ = c;
+			y_ = d;
+			n = sizeof(line_t);
+		} else if (a == 2) {
+			circle_t *tmp = (circle_t *)p;
+			tmp->type = T_CIRCLE;
+			tmp->x = x_;
+			tmp->y = y_;
+			tmp->density = b;
+			tmp->r_x = c;
+			tmp->r_y = d;
+			tmp->a_start = 0;
+			tmp->a_length = 0xFF;
+			n = sizeof(circle_t);
+		} else if (a == T_END) {
+			*p = T_END;
+			n = 1;
+		} else {
+			continue;
+		}
+
+		p += n;
+		n_dl += n;
 
 		if (n_dl >= MAX_DL_SIZE)
 			break;
 	}
-	printf("read %d entries\n", n_dl);
+	printf("draw_list of %d bytes\n", n_dl);
 	fclose(f);
 }
 
@@ -107,10 +132,10 @@ static void demo_text(unsigned frame)
 {
 	push_str(
 		0, 300,
-		"Hello World 123\nBetz engineering\n2013",
+		"esp_crt\nHello World 123\n<{..}>",
 		A_CENTER,
 		(sin(frame / 50.0) + 1.01) * 1000,
-		30
+		100
 	);
 }
 
@@ -180,6 +205,8 @@ int main(int argc, char* args[])
 {
 	if (argc != 2) {
 		printf("also try %s draw_list.csv\n", args[0]);
+		*dl = T_END;
+		n_dl = 1;
 	} else {
 		printf("reading %s\n", args[1]);
 		read_csv(args[1]);

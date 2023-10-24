@@ -6,6 +6,6 @@
 #define lin 1
 #define cir 2
 
-extern const uint8_t * const Font[];
+extern const int8_t * const Font[];
 
 #endif

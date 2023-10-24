@@ -162,9 +162,9 @@ static unsigned get_char_width(char c)
 	if (c < 0x20)
 		return 0;
 	c -= 0x20;
-	const uint8_t *codes = Font[(unsigned)c];
+	const int8_t *codes = Font[(unsigned)c];
 	while (1) {
-		unsigned type = *codes++;
+		int8_t type = *codes++;
 		if (type & 0x80)
 			return (type & 0x7F);
 		codes += 6;
@@ -215,7 +215,7 @@ int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
 	if (c < 0x20)
 		return 0;
 	c -= 0x20;
-	const uint8_t *codes = Font[(unsigned)c];
+	const int8_t *codes = Font[(unsigned)c];
 	while (1) {
 		unsigned type = *codes++;
 		if (type & 0x80) {
@@ -223,7 +223,7 @@ int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
 			// printf("done, width: %d\n", width);
 			return width;
 		}
-		uint8_t a_x, a_y, b_x, b_y, fo, lo;
+		int8_t a_x, a_y, b_x, b_y, fo, lo;
 		switch (type) {
 			case lin:
 				// lin,XS,YS,XE,YE,FO,LO{,width|0x80}
@@ -234,12 +234,12 @@ int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
 				codes += 2;
 				// printf("lin(%d, %d, %d, %d)\n", a_x, a_y, b_x, b_y);
 				push_goto(
-					x_c + (a_x * scale / 64),
-					y_c + (a_y * scale / 64)
+					x_c + (a_x * (int)scale / 64),
+					y_c + (a_y * (int)scale / 64)
 				);
 				push_line(
-					x_c + (b_x * scale / 64),
-					y_c + (b_y * scale / 64),
+					x_c + (b_x * (int)scale / 64),
+					y_c + (b_y * (int)scale / 64),
 					density
 				);
 				break;
@@ -255,10 +255,10 @@ int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
 				unsigned a_start = fo * MAX_ANGLE / 8;
 				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
 				push_circle(
-					x_c + (a_x * scale / 64),
-					y_c + (a_y * scale / 64),
-					(b_x * scale) / 2 / 64,
-					(b_y * scale) / 2 / 64,
+					x_c + (a_x * (int)scale / 64),
+					y_c + (a_y * (int)scale / 64),
+					(b_x * (int)scale) / 2 / 64,
+					(b_y * (int)scale) / 2 / 64,
 					a_start,
 					a_stop - a_start,
 					density
@@ -272,25 +272,54 @@ int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
 	return 0;
 }
 
-void push_list(draw_list_t *p, unsigned n_items)
+void push_list(uint8_t *p, unsigned n_bytes_max)
 {
-	int tmp_x = 0, tmp_y = 0;
-	while (n_items--) {
-		switch (p->type) {
-		case 0:
-			push_goto(p->x, p->y);
-			tmp_x = p->x;
-			tmp_y = p->y;
-			break;
-		case 1:
-			push_line(p->x, p->y, p->density);
-			break;
-		case 2:
-			push_circle(tmp_x, tmp_y, p->x, p->y, 0, MAX_ANGLE, p->density);
-			break;
-		default:
-			printf("unknown type %d\n", p->type);
+	unsigned n = 0, n_total = 0;  // bytes read / iteration, / total
+	while (n_total < n_bytes_max) {
+		uint8_t type = *p;
+
+		if (type == T_LINE) {
+			line_t *tmp = (line_t *)p;
+			push_line(tmp->x_b, tmp->y_b, tmp->density);
+			n = sizeof(line_t);
+		} else if (type == T_POLY) {
+			poly_t *tmp = (poly_t *)p;
+			unsigned j = tmp->len * 2;
+			for (unsigned i = 0; i < j; i += 2)
+				push_line(tmp->pts[i], tmp->pts[i + 1], tmp->density);
+			n = sizeof(poly_t) + j * sizeof(int16_t);
+		} else if (type == T_CIRCLE) {
+			circle_t *tmp = (circle_t *)p;
+			push_circle(
+				tmp->x,
+				tmp->y,
+				tmp->r_x,
+				tmp->r_y,
+				(tmp->a_start << 4) | (tmp->a_start >> 4),
+				(tmp->a_length << 4) | (tmp->a_length >> 4),
+				tmp->density
+			);
+			n = sizeof(circle_t);
+		} else if (type == T_STRING) {
+			string_t *tmp = (string_t *)p;
+			tmp->c[tmp->len] = 0;
+			push_str(
+				tmp->x,
+				tmp->y,
+				tmp->c,
+				tmp->align,
+				tmp->scale,
+				tmp->density
+			);
+			n = sizeof(string_t) + tmp->len * sizeof(char);
+		} else if (type == T_END){
+			return;
+		} else {
+			printf("unknown type %02x\n", type);
+			return;
 		}
-		p++;
+		p += n;
+		n_total += n;
 	}
+	printf("No end marker!\n");
 }
