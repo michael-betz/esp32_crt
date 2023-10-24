@@ -59,8 +59,8 @@ static void read_csv(char *fName)
 		// printf("%d %d %d %d\n", a, b, c, d);
 		p->type = a;
 		p->density = b;
-		p->x = c << FP;
-		p->y = d << FP;
+		p->x = c;
+		p->y = d;
 		p++;
 		n_dl++;
 
@@ -107,10 +107,10 @@ static void demo_text(unsigned frame)
 {
 	push_str(
 		0, 300,
-		"Hello World 123\nWahUuiUuiu!\nit's drawing!\n;)",
+		"Hello World 123\nBetz engineering\n2013",
 		A_CENTER,
 		(sin(frame / 50.0) + 1.01) * 1000,
-		100
+		30
 	);
 }
 

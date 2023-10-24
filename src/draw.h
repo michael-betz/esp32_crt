@@ -1,12 +1,10 @@
 #ifndef DRAW_H
 #define DRAW_H
 
-// number of bits in the fractional part of a fixed point number
-#define FP 0
-#define FP_ROUND 0  // (1 << (FP - 1))
-#define FP_MAX 0x800
+// Coordinate values are clipped tp +- C_MAX
+#define C_MAX 0x800
 
-// Changes text alignment and anchor point
+// Text alignment and horizontal anchor point
 #define A_LEFT 0
 #define A_CENTER 1
 #define A_RIGHT 2

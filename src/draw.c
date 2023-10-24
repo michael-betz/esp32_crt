@@ -30,18 +30,18 @@ static bool output_sample(int a, int b, int c, int d)
 {
 	// printf("(%4d, %4d), %3x\n", a, b, c);
 	bool is_clipped = false;
-	if (a >= FP_MAX) {
-		a = FP_MAX - 1;
+	if (a >= C_MAX) {
+		a = C_MAX - 1;
 		is_clipped = 1;
-	} else if (a < -FP_MAX) {
-		a = -FP_MAX;
+	} else if (a < -C_MAX) {
+		a = -C_MAX;
 		is_clipped = 1;
 	}
-	if (b >= FP_MAX) {
-		b = FP_MAX - 1;
+	if (b >= C_MAX) {
+		b = C_MAX - 1;
 		is_clipped = 1;
-	} else if (b < -FP_MAX) {
-		b = -FP_MAX;
+	} else if (b < -C_MAX) {
+		b = -C_MAX;
 		is_clipped = 1;
 	}
 	push_sample(a + 0x800, b + 0x800, c, d);
@@ -68,7 +68,7 @@ void push_circle(
 	if (alpha_length > MAX_ANGLE)
 		alpha_length = MAX_ANGLE;
 	int r_max = r_x > r_y ? r_x : r_y;
-	unsigned n = (2 * r_max * density * (unsigned)(M_PI * 64) / 64) >> (FP + 11);
+	unsigned n = (2 * r_max * density * (unsigned)(M_PI * 64) / 64) >> 11;
 	n = n * alpha_length / MAX_ANGLE;
 	if (n < 3)
 		n = 3;
@@ -126,7 +126,7 @@ void push_line(int x_b, int y_b, unsigned density)
 		dist = usqrt4(distx * distx + disty * disty);
 
 	// Check how many points to produce
-	int n = (dist * density) >> (FP + 11);
+	int n = (dist * density) >> 11;
 
 	// printf("push_line(%d, %d), n: %d\n", x_b, y_b, n);
 
