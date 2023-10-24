@@ -23,7 +23,7 @@ extern unsigned n_samples;
 
 // push all the samples of a draw-list to the DMA buffer once
 // returns number of samples written
-unsigned push_list(draw_list_t *p, unsigned n_items);
+void push_list(draw_list_t *p, unsigned n_items);
 
 // Updates the cursor to (x_a, y_a)
 void push_goto(int x_a, int y_a);
@@ -44,10 +44,10 @@ void push_circle(
     unsigned density
 );
 
-void push_char(char c, unsigned scale, unsigned density);
+int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density);
 
 // scale is font-size. 100 is for ants, 300 is readable, 1000 is pretty huge
-void push_str(char *c, unsigned align, unsigned scale, unsigned density);
+void push_str(int x_a, int y_a, char *c, unsigned align, unsigned scale, unsigned density);
 
 
 #endif

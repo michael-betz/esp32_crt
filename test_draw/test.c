@@ -26,10 +26,6 @@ unsigned n_samples = 0;
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
-void _putchar(char c)
-{
-	push_char(c, 7, 100);
-}
 
 static void read_csv(char *fName)
 {
@@ -91,7 +87,6 @@ static void demo_circles(unsigned frame)
 		2 * MAX_ANGLE / 4,  // MAX_ANGLE
 		100
 	);
-	push_goto(800 << FP, -800 << FP);
 	push_circle(
 		800, -800,
 		100, 100,
@@ -110,12 +105,12 @@ static void demo_circles(unsigned frame)
 
 static void demo_text(unsigned frame)
 {
-	push_goto(0, 300);
 	push_str(
+		0, 300,
 		"Hello World 123\nWahUuiUuiu!\nit's drawing!\n;)",
 		A_CENTER,
 		(sin(frame / 50.0) + 1.01) * 1000,
-		150
+		100
 	);
 }
 
@@ -237,8 +232,7 @@ int main(int argc, char* args[])
 		}
 
 		if (frame < 200) {
-			push_goto(0, -800);
-			push_str("<--  -->", A_CENTER, 200, 200 - frame);
+			push_str(0, -800, "<--  -->", A_CENTER, 200, 200 - frame);
 		}
 
 		printf("%d\n", n_samples);
