@@ -14,7 +14,7 @@
 #define T_LINE 1
 #define T_POLY 2
 #define T_CIRCLE 3
-#define T_STRING 4
+#define T_STRING 4  // OR-ed with text alignment
 #define T_END 0xFE
 
 typedef struct {
@@ -45,7 +45,6 @@ typedef struct {
 typedef struct {
     uint8_t type;
     uint8_t density;
-    uint8_t align;
     uint16_t scale;
     int16_t x;
     int16_t y;

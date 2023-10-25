@@ -307,7 +307,7 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 				tmp->x,
 				tmp->y,
 				tmp->c,
-				tmp->align,
+				type & 0x03,
 				tmp->scale,
 				tmp->density
 			);
