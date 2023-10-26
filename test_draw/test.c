@@ -27,73 +27,24 @@ SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
 
-static void read_csv(char *fName)
+static void read_dl(char *fName)
 {
-	FILE* f = fopen(fName, "r");
-	int a, b, c, d;
-	int x_ = 0, y_ = 0;
-	uint8_t *p = dl;
-	char line[1024];
-	char *tmp = NULL;
-	unsigned n = 0;
-
-	n_dl = 0;
-	while (fgets(line, 1024, f)) {
-		if (line[0] == '#' || strlen(line) < 8)
-			continue;
-
-		tmp = strtok(line, ",");
-		if (tmp == NULL) continue;
-		a = atoi(tmp);
-
-		tmp = strtok(NULL, ",");
-		if (tmp == NULL) continue;
-		b = atoi(tmp);
-
-		tmp = strtok(NULL, ",");
-		if (tmp == NULL) continue;
-		c = atoi(tmp);
-
-		tmp = strtok(NULL, ",");
-		if (tmp == NULL) continue;
-		d = atoi(tmp);
-
-		// printf("%d %d %d %d\n", a, b, c, d);
-		if (a == 1) {
-			line_t *tmp = (line_t *)p;
-			tmp->type = T_LINE;
-			tmp->density = b;
-			tmp->x_b = c;
-			tmp->y_b = d;
-			x_ = c;
-			y_ = d;
-			n = sizeof(line_t);
-		} else if (a == 2) {
-			circle_t *tmp = (circle_t *)p;
-			tmp->type = T_CIRCLE;
-			tmp->x = x_;
-			tmp->y = y_;
-			tmp->density = b;
-			tmp->r_x = c;
-			tmp->r_y = d;
-			tmp->a_start = 0;
-			tmp->a_length = 0xFF;
-			n = sizeof(circle_t);
-		} else if (a == T_END) {
-			*p = T_END;
-			n = 1;
-		} else {
-			continue;
-		}
-
-		p += n;
-		n_dl += n;
-
-		if (n_dl >= MAX_DL_SIZE)
-			break;
+	FILE *f = NULL;
+	if (strcmp(fName, "-") == 0) {
+		f = stdin;
+	} else {
+		f = fopen(fName, "r");
+		if (f == NULL)
+			perror("Couldn't open input file");
 	}
-	printf("draw_list of %d bytes\n", n_dl);
+
+	int n = fread(dl, 1, MAX_DL_SIZE, f);
 	fclose(f);
+
+	if (n <= 0)
+		perror("Couldn't read from input file");
+	n_dl = n;
+	printf("draw_list of %d bytes\n", n_dl);
 }
 
 static void demo_circles(unsigned frame)
@@ -204,12 +155,12 @@ static void init_sdl()
 int main(int argc, char* args[])
 {
 	if (argc != 2) {
-		printf("also try %s draw_list.csv\n", args[0]);
+		printf("also try %s draw_list.bin\n", args[0]);
 		*dl = T_END;
 		n_dl = 1;
 	} else {
 		printf("reading %s\n", args[1]);
-		read_csv(args[1]);
+		read_dl(args[1]);
 	}
 
 	init_lut();

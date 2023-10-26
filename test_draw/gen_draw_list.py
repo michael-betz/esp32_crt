@@ -1,4 +1,7 @@
+#!/usr/bin/python3
+
 from struct import pack
+import json
 import sys
 
 T_NONE = 0
@@ -15,27 +18,26 @@ A_LEFT = 0
 A_CENTER = 1
 A_RIGHT = 2
 
-f = None
+fo = None
 
 
-def line(density, x_b, y_b):
-    f.write(pack("BBhh", T_LINE, density, x_b, y_b))
+def line(density=100, x=0, y=0):
+    fo.write(pack("BBhh", T_LINE, density, x, y))
 
 
-# pts = [(-1, 0), (1, 0)]
-def poly(density, pts):
-    f.write(pack("BBH", T_POLY, density, len(pts)))
+def poly(density=100, pts=((0, 0), (100, 100))):
+    fo.write(pack("BBH", T_POLY, density, len(pts)))
     for pt in pts:
-        f.write(pack("hh", pt[0], pt[1]))
+        fo.write(pack("hh", pt[0], pt[1]))
 
 
-def circle(density, x, y, r_x, r_y, a_start=0, a_length=0xFF):
-    f.write(pack(
+def circle(density=100, x=0, y=0, r_x=100, r_y=100, a_start=0, a_length=0xFF):
+    fo.write(pack(
         "BBhhhhBB", T_CIRCLE, density, x, y, r_x, r_y, a_start, a_length
     ))
 
 
-def string(density, scale, x, y, s, align="left"):
+def string(density=100, scale=100, x=0, y=0, s='Hello', align="left"):
     if align == "center":
         t = T_STRING_CENTER
     elif align == "right":
@@ -43,20 +45,31 @@ def string(density, scale, x, y, s, align="left"):
     else:
         t = T_STRING_LEFT
     s_ = s.encode('ascii')
-    f.write(pack("BBHhhH", t, density, scale, x, y, len(s_)))
-    f.write(s_)
+    fo.write(pack("BBHhhH", t, density, scale, x, y, len(s_)))
+    fo.write(s_)
 
 
 def end():
-    f.write(pack("B", T_END))
+    fo.write(pack("B", T_END))
 
 
 def main():
-    global f
-    f = sys.stdout.buffer
+    global fo
 
-    string(0x12, 0x34, 0x56, 0x78, "Hello!")
-    end()
+    if len(sys.argv) != 2:
+        print('Writes a binary draw-list to stdout. Usage:')
+        print(sys.argv[0], 'input_json')
+        print('\nDisplay draw list:')
+        print(sys.argv[0], 'draw_list.json | ./test -')
+        return
+
+    fo = sys.stdout.buffer
+    with open(sys.argv[1], 'r') as fi:
+        dats = json.load(fi)
+
+    for dat in dats:
+        t = dat.pop('t')
+        globals()[t](**dat)
 
 
 if __name__ == '__main__':
