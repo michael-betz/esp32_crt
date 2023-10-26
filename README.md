@@ -29,5 +29,5 @@ sudo apt-get install build-essential libsdl2-dev
 cd test_draw
 make
 
-./test draw_list.csv
+./json_to_bin.py draw_list.json | ./test -
 ```

@@ -83,9 +83,10 @@ static void demo_text(unsigned frame)
 {
 	push_str(
 		0, 300,
-		"esp_crt\nHello World 123\n<{..}>",
+		"esp_crt\nHello World 123",
+		1024,
 		A_CENTER,
-		(sin(frame / 50.0) + 1.01) * 1000,
+		(sin(frame / 50.0) + 1.01) * 1500,
 		100
 	);
 }
@@ -209,9 +210,9 @@ int main(int argc, char* args[])
 			break;
 		}
 
-		if (frame < 200) {
-			push_str(0, -800, "<--  -->", A_CENTER, 200, 200 - frame);
-		}
+		// if (frame < 200) {
+		// 	push_str(0, -800, "<--  -->", A_CENTER, 200, 200 - frame);
+		// }
 
 		printf("%d\n", n_samples);
 		n_samples = 0;

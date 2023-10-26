@@ -13,3 +13,6 @@ test: $(OBJS)
 
 clean:
 	rm -rf test $(OBJS)
+
+run: test
+	./json_to_bin.py draw_list.json | ./test -

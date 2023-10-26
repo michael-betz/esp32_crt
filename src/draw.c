@@ -183,15 +183,16 @@ static unsigned get_str_width(char *c, unsigned scale)
 	return w;
 }
 
-void push_str(int x_a, int y_a, char *c, unsigned align, unsigned scale, unsigned density)
+void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density)
 {
 	int w_str = -1;
 	int x_c = 0;
-	while (*c) {
+	while (*c && n > 0) {
 		if (*c == '\n') {
 			y_a -= 26 * scale / 64;
 			w_str = -1;
 			c++;
+			n--;
 			continue;
 		}
 		if (w_str == -1) {
@@ -205,6 +206,7 @@ void push_str(int x_a, int y_a, char *c, unsigned align, unsigned scale, unsigne
 		}
 		int w_char = push_char(x_c, y_a, *c, scale, density);
 		x_c += (w_char + 3) * scale / 64;
+		n--;
 		c++;
 	}
 }
@@ -300,13 +302,13 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 				tmp->density
 			);
 			n = sizeof(circle_t);
-		} else if (type == T_STRING) {
+		} else if ((type & 0xFC) == T_STRING) {
 			string_t *tmp = (string_t *)p;
-			tmp->c[tmp->len] = 0;
 			push_str(
 				tmp->x,
 				tmp->y,
 				tmp->c,
+				tmp->len,
 				type & 0x03,
 				tmp->scale,
 				tmp->density
