@@ -274,6 +274,8 @@ int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
 	return 0;
 }
 
+// void push_glyph(uint8_t *p, unsigned n_bytes_max, int x_o, int y_o, unsigned scale)
+
 void push_list(uint8_t *p, unsigned n_bytes_max)
 {
 	unsigned n = 0, n_total = 0;  // bytes read / iteration, / total
@@ -287,8 +289,22 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 		} else if (type == T_POLY) {
 			poly_t *tmp = (poly_t *)p;
 			unsigned j = tmp->len * 2;
-			for (unsigned i = 0; i < j; i += 2)
-				push_line(tmp->pts[i], tmp->pts[i + 1], tmp->density);
+			bool pen_up = false;
+			for (unsigned i = 0; i < j; i += 2) {
+				int x = tmp->pts[i];
+				int y = tmp->pts[i + 1];
+				// Most neg. coord means push a goto next
+				if (x == -32768 && y == -32768) {
+					pen_up = true;
+					continue;
+				}
+				if (pen_up) {
+					push_goto(x, y);
+					pen_up = false;
+					continue;
+				}
+				push_line(x, y, tmp->density);
+			}
 			n = sizeof(poly_t) + j * sizeof(int16_t);
 		} else if (type == T_CIRCLE) {
 			circle_t *tmp = (circle_t *)p;

@@ -1,7 +1,9 @@
 [
 	// a frame around the screen
-	{"t": "line", "density": 0, "x": -1000, "y": -1000},
-	{"t": "poly", "density": 3, "pts": [
+	{"t": "poly", "density": 5, "pts": [
+		// means goto next point with the pen up
+		[-32768,-32768],
+		[-1000,-1000],
 		[-1000, 1000],
 		[ 1000, 1000],
 		[ 1000,-1000],
