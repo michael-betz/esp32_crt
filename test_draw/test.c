@@ -6,7 +6,8 @@
 #include <limits.h>
 #include "draw.h"
 #include "fast_sin.h"
-#include "print.h"
+// #include "print.h"
+#include "hershey_data.h"
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
