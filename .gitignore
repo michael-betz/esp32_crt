@@ -1,2 +1,3 @@
 .pio
 .ipynb_checkpoints
+*.o
