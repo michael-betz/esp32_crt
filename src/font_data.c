@@ -394,7 +394,7 @@ static const uint16_t h_gothgbt_inds[96] = {
 };
 
 font_t f_gothgbt = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_gothgbt_glyphs,
     .inds = h_gothgbt_inds
 };
@@ -803,7 +803,7 @@ static const uint16_t h_gothgrt_inds[96] = {
 };
 
 font_t f_gothgrt = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_gothgrt_glyphs,
     .inds = h_gothgrt_inds
 };
@@ -1132,7 +1132,7 @@ static const uint16_t h_gothitt_inds[96] = {
 };
 
 font_t f_gothitt = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_gothitt_glyphs,
     .inds = h_gothitt_inds
 };
@@ -1356,7 +1356,7 @@ static const uint16_t h_italicc_inds[96] = {
 };
 
 font_t f_italicc = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_italicc_glyphs,
     .inds = h_italicc_inds
 };
@@ -1550,7 +1550,7 @@ static const uint16_t h_italiccs_inds[96] = {
 };
 
 font_t f_italiccs = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_italiccs_glyphs,
     .inds = h_italiccs_inds
 };
@@ -1897,7 +1897,7 @@ static const uint16_t h_italict_inds[96] = {
 };
 
 font_t f_italict = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_italict_glyphs,
     .inds = h_italict_inds
 };
@@ -2109,7 +2109,7 @@ static const uint16_t h_romanc_inds[96] = {
 };
 
 font_t f_romanc = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_romanc_glyphs,
     .inds = h_romanc_inds
 };
@@ -2296,7 +2296,7 @@ static const uint16_t h_romancs_inds[96] = {
 };
 
 font_t f_romancs = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_romancs_glyphs,
     .inds = h_romancs_inds
 };
@@ -2530,7 +2530,7 @@ static const uint16_t h_romand_inds[96] = {
 };
 
 font_t f_romand = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_romand_glyphs,
     .inds = h_romand_inds
 };
@@ -2630,7 +2630,7 @@ static const uint16_t h_romanp_inds[96] = {
 };
 
 font_t f_romanp = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_romanp_glyphs,
     .inds = h_romanp_inds
 };
@@ -2753,7 +2753,7 @@ static const uint16_t h_romans_inds[96] = {
 };
 
 font_t f_romans = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_romans_glyphs,
     .inds = h_romans_inds
 };
@@ -3111,7 +3111,7 @@ static const uint16_t h_romant_inds[96] = {
 };
 
 font_t f_romant = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_romant_glyphs,
     .inds = h_romant_inds
 };
@@ -3364,7 +3364,7 @@ static const uint16_t h_scriptc_inds[96] = {
 };
 
 font_t f_scriptc = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_scriptc_glyphs,
     .inds = h_scriptc_inds
 };
@@ -3573,7 +3573,7 @@ static const uint16_t h_scripts_inds[96] = {
 };
 
 font_t f_scripts = {
-    .font_type = FONT_TYPE_SIMPLE,
+    .font_type = FONT_TYPE_LIN,
     .glyphs = h_scripts_glyphs,
     .inds = h_scripts_inds
 };

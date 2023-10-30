@@ -1,7 +1,7 @@
 #ifndef FONT_DRAW_H
 #define FONT_DRAW_H
 
-#define FONT_TYPE_SIMPLE 0
+#define FONT_TYPE_LIN 0
 #define FONT_TYPE_ARC 1
 
 typedef struct {
