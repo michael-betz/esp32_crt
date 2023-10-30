@@ -6,9 +6,9 @@
 #include <limits.h>
 #include "i2s.h"
 #include "draw.h"
+#include "font_draw.h"
 #include "fast_sin.h"
 #include "print.h"  // for printing fixed-point numbers
-#include "b_font.h"
 
 // https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
 static unsigned usqrt4(unsigned val) {
@@ -154,124 +154,6 @@ void push_line(int x_b, int y_b, unsigned density)
 
 	x_last = x_b;
 	y_last = y_b;
-}
-
-
-static unsigned get_char_width(char c)
-{
-	if (c < 0x20)
-		return 0;
-	c -= 0x20;
-	const int8_t *codes = Font[(unsigned)c];
-	while (1) {
-		int8_t type = *codes++;
-		if (type & 0x80)
-			return (type & 0x7F);
-		codes += 6;
-	}
-}
-
-static unsigned get_str_width(char *c, unsigned scale)
-{
-	unsigned w = 0;
-	while (*c) {
-		if (*c == '\n')
-			break;
-		w += (get_char_width(*c) + 3) * scale / 64;
-		c++;
-	}
-	return w;
-}
-
-void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density)
-{
-	int w_str = -1;
-	int x_c = 0;
-	while (*c && n > 0) {
-		if (*c == '\n') {
-			y_a -= 26 * scale / 64;
-			w_str = -1;
-			c++;
-			n--;
-			continue;
-		}
-		if (w_str == -1) {
-			w_str = get_str_width(c, scale);
-			if (align == A_RIGHT)
-				x_c = x_a - w_str;
-			else if (align == A_CENTER)
-				x_c = x_a - w_str / 2;
-			else
-				x_c = x_a;
-		}
-		int w_char = push_char(x_c, y_a, *c, scale, density);
-		x_c += (w_char + 3) * scale / 64;
-		n--;
-		c++;
-	}
-}
-
-int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
-{
-	// printf("push_char(%c, %d, %d)\n", c, scale, density);
-	if (c < 0x20)
-		return 0;
-	c -= 0x20;
-	const int8_t *codes = Font[(unsigned)c];
-	while (1) {
-		unsigned type = *codes++;
-		if (type & 0x80) {
-			unsigned width = type & 0x7F;
-			// printf("done, width: %d\n", width);
-			return width;
-		}
-		int8_t a_x, a_y, b_x, b_y, fo, lo;
-		switch (type) {
-			case lin:
-				// lin,XS,YS,XE,YE,FO,LO{,width|0x80}
-				a_x = *codes++;  // X start of line
-				a_y = *codes++;  // Y start of line
-				b_x = *codes++;  // X end of line
-				b_y = *codes++;  // Y end of line
-				codes += 2;
-				// printf("lin(%d, %d, %d, %d)\n", a_x, a_y, b_x, b_y);
-				push_goto(
-					x_c + (a_x * (int)scale / 64),
-					y_c + (a_y * (int)scale / 64)
-				);
-				push_line(
-					x_c + (b_x * (int)scale / 64),
-					y_c + (b_y * (int)scale / 64),
-					density
-				);
-				break;
-			case cir:
-				// cir,XC,YC,XS,YS,FO,LO{,width|0x80}
-				a_x = *codes++;  // X Offset from LL corner to center of circle
-				a_y = *codes++;  // Y Offset from LL corner to center of circle
-				b_x = *codes++;  // Width of circle in diameter units
-				b_y = *codes++;  // Height of circle in diameter units
-				fo = *codes++;  // Start angle 0..7 is 0 deg .. 315 deg 0 = E, 90 = N, 180 = W, 270 = S
-				lo = *codes++;  // End angle 1..14 is 45 deg .. 630 deg
-				// printf("cir(%d, %d, %d, %d, %d, %d)\n", a_x, a_y, b_x, b_y, fo, lo);
-				unsigned a_start = fo * MAX_ANGLE / 8;
-				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
-				push_circle(
-					x_c + (a_x * (int)scale / 64),
-					y_c + (a_y * (int)scale / 64),
-					(b_x * (int)scale) / 2 / 64,
-					(b_y * (int)scale) / 2 / 64,
-					a_start,
-					a_stop - a_start,
-					density
-				);
-				break;
-			default:
-				printf("unexpected code %d", *codes);
-				return 0;
-		}
-	}
-	return 0;
 }
 
 // void push_glyph(uint8_t *p, unsigned n_bytes_max, int x_o, int y_o, unsigned scale)

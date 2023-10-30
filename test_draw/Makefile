@@ -5,7 +5,7 @@ LDLIBS = -lm -lSDL2
 CFLAGS += -Wall
 CFLAGS += -I../src
 
-OBJS = draw.o fast_sin.o b_font.o print.o hershey_data.o
+OBJS = draw.o fast_sin.o print.o font_data.o font_draw.o
 
 all: test
 
