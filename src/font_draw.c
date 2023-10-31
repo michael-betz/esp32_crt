@@ -7,7 +7,11 @@
 #include "fast_sin.h"
 
 // static font_t *current_font = &f_arc;
-static font_t *current_font = &f_romancs;
+static font_t *current_font = &f_romans;
+// static font_t *current_font = &f_romand;
+
+// glyph cursor
+static int x_c = 0, y_c = 0;
 
 static unsigned get_char_width(char c)
 {
@@ -15,10 +19,21 @@ static unsigned get_char_width(char c)
 		return 0;
 	c -= 0x20;
 
-	// get stop index (last byte is always char width)
-	unsigned b = current_font->inds[(unsigned)c];
+	unsigned a = 0, b = 0;
+	if (c > 0)
+		a = current_font->inds[(unsigned)c - 1];
+	b = current_font->inds[(unsigned)c];
 
-	return current_font->glyphs[b - 1];
+	switch (current_font->font_type) {
+	case FONT_TYPE_LIN:
+		// first 2 bytes are the left and right limits of the glyph bounding box
+		return current_font->glyphs[a + 1] - current_font->glyphs[a];
+
+	case FONT_TYPE_ARC:
+		// Last byte is width
+		return current_font->glyphs[b - 1] + 3;
+	}
+	return 0;
 }
 
 static unsigned get_str_width(char *c, unsigned scale)
@@ -27,17 +42,27 @@ static unsigned get_str_width(char *c, unsigned scale)
 	while (*c) {
 		if (*c == '\n')
 			break;
-		w += (get_char_width(*c) + 3) * scale / 64;
+		w += (get_char_width(*c)) * scale / 64;
 		c++;
 	}
 	return w;
 }
 
-static int _push_char_lin(const int8_t *p, unsigned len, int x_c, int y_c, unsigned scale, unsigned density)
+static void _push_char_lin(const int8_t *p, unsigned len, unsigned scale, unsigned density)
 {
 	bool is_pen_up = true;
 
-	while (len > 2) {
+	if (len < 2)
+		return;
+
+	// first 2 bytes are the left and right limits of the glyph bounding box
+	int l = *p++ * (int)scale / 64;
+	int r = *p++ * (int)scale / 64;
+	len -= 2;
+
+	x_c -= l;
+
+	while (len >= 2) {
 		// Read chunks of 2 bytes
 		int x = *p++;  // X start of line
 		int y = *p++;  // Y start of line
@@ -62,14 +87,11 @@ static int _push_char_lin(const int8_t *p, unsigned len, int x_c, int y_c, unsig
 			density
 		);
 	}
-	if (len >= 1) {
-		// last byte is the width, return it
-		return *p;
-	}
-	return 0;
+
+	x_c += r;
 }
 
-static int _push_char_arc(const int8_t *p, unsigned len, int x_c, int y_c, unsigned scale, unsigned density)
+static void _push_char_arc(const int8_t *p, unsigned len, unsigned scale, unsigned density)
 {
 	while (len > 5) {
 		// Read chunks of 5 bytes
@@ -107,43 +129,43 @@ static int _push_char_arc(const int8_t *p, unsigned len, int x_c, int y_c, unsig
 		}
 	}
 	if (len >= 1) {
-		// last byte is the width, return it
-		return *p;
+		// last byte is the width, advance the cursor
+		x_c += (*p + 3) * (int)scale / 64;
 	}
-	return 0;
 }
 
-int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density)
+static void push_char(char c, unsigned scale, unsigned density)
 {
-	// printf("push_char(%c, %d, %d)\n", c, scale, density);
+	// printf("push_char(%c, %d, %d) (%d, %d)\n", c, scale, density, x_c, y_c);
 	if (c < 0x20)
-		return 0;
+		return;
 	c -= 0x20;
 
 	// get start and stop indices
 	unsigned a = 0, b = 0;
-    if (c > 0)
+	if (c > 0)
 		a = current_font->inds[c - 1];
 	b = current_font->inds[(unsigned)c];
 
 	const int8_t *p = &current_font->glyphs[a];
 	switch (current_font->font_type) {
 	case FONT_TYPE_LIN:
-		return _push_char_lin(p, b - a, x_c, y_c, scale, density);
+		_push_char_lin(p, b - a, scale, density);
+		break;
 
 	case FONT_TYPE_ARC:
-		return _push_char_arc(p, b - a, x_c, y_c, scale, density);
+		_push_char_arc(p, b - a, scale, density);
+		break;
 	}
-	return 0;
 }
 
 void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density)
 {
+	y_c = y_a;
 	int w_str = -1;
-	int x_c = 0;
 	while (*c && n > 0) {
 		if (*c == '\n') {
-			y_a -= 26 * scale / 64;
+			y_c -= 26 * scale / 64;
 			w_str = -1;
 			c++;
 			n--;
@@ -158,8 +180,7 @@ void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned sc
 			else
 				x_c = x_a;
 		}
-		int w_char = push_char(x_c, y_a, *c, scale, density);
-		x_c += (w_char + 3) * scale / 64;
+		push_char(*c, scale, density);
 		n--;
 		c++;
 	}

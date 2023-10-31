@@ -10,8 +10,6 @@ typedef struct {
     const uint16_t *inds;
 } font_t;
 
-int push_char(int x_c, int y_c, char c, unsigned scale, unsigned density);
-
 // scale is font-size. 100 is for ants, 300 is readable, 1000 is pretty huge
 void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density);
 
