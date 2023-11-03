@@ -81,12 +81,13 @@ static void demo_circles(unsigned frame)
 
 static void demo_text(unsigned frame)
 {
+	set_font((frame >> 8) % 15);
 	push_str(
 		0, 300,
-		"esp_crt\nHello World 123",
+		"esp_crt\nHello World\n12345678",
 		1024,
 		A_CENTER,
-		(sin(frame / 50.0) + 1.01) * 1500,
+		(sin(frame / 50.0) + 1.01) * 1000,
 		100
 	);
 }

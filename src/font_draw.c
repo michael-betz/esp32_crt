@@ -6,14 +6,18 @@
 #include "font_data.h"
 #include "fast_sin.h"
 
-// static font_t *current_font = &f_arc;
-static font_t *current_font = &f_romans;
-// static font_t *current_font = &f_romand;
+static font_t *current_font = &f_arc;
 
 // glyph cursor
 static int x_c = 0, y_c = 0;
 
-static unsigned get_char_width(char c)
+void set_font(unsigned index)
+{
+	if (index < N_FONTS)
+		current_font = f_all[index];
+}
+
+static int get_char_width(char c)
 {
 	if (c < 0x20)
 		return 0;
@@ -36,9 +40,9 @@ static unsigned get_char_width(char c)
 	return 0;
 }
 
-static unsigned get_str_width(char *c, unsigned scale)
+static int get_str_width(char *c, unsigned scale)
 {
-	unsigned w = 0;
+	int w = 0;
 	while (*c) {
 		if (*c == '\n')
 			break;

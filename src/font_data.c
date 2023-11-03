@@ -3705,3 +3705,21 @@ font_t f_arc = {
     .glyphs = arc_glyphs,
     .inds = arc_inds
 };
+
+font_t* f_all[] = {
+  &f_gothgbt,
+  &f_gothgrt,
+  &f_gothitt,
+  &f_italicc,
+  &f_italiccs,
+  &f_italict,
+  &f_romanc,
+  &f_romancs,
+  &f_romand,
+  &f_romanp,
+  &f_romans,
+  &f_romant,
+  &f_scriptc,
+  &f_scripts,
+  &f_arc
+};

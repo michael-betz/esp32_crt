@@ -10,17 +10,17 @@
 		[-1000,-1000]
 	]},
 
-	// // inner cross
-	// {"t": "line", "density": 0,  "x": -100, "y": -100},
-	// {"t": "line", "density": 255,"x":  100, "y":  100},
-	// {"t": "line", "density": 0,  "x": -100, "y":  100},
-	// {"t": "line", "density": 255,"x":  100, "y": -100},
+	// inner cross
+	{"t": "line", "density": 0,  "x": -100, "y": -100},
+	{"t": "line", "density": 255,"x":  100, "y":  100},
+	{"t": "line", "density": 0,  "x": -100, "y":  100},
+	{"t": "line", "density": 255,"x":  100, "y": -100},
 
-	// // inner +
-	// {"t": "line", "density": 0,  "x": -300, "y": 0},
-	// {"t": "line", "density": 50, "x":  300, "y": 0},
-	// {"t": "line", "density": 0,  "x":    0, "y": 300},
-	// {"t": "line", "density": 50, "x":    0, "y":-300},
+	// inner +
+	{"t": "line", "density": 0,  "x": -300, "y": 0},
+	{"t": "line", "density": 50, "x":  300, "y": 0},
+	{"t": "line", "density": 0,  "x":    0, "y": 300},
+	{"t": "line", "density": 50, "x":    0, "y":-300},
 
 	// concentric circles
 	// {"t": "circle", "r_x": 100},
@@ -38,10 +38,10 @@
 		"t": "string",
 		// "x": -800,
 		"y": -800,
-		"scale": 500,
+		"scale": 300,
 		"density": 70,
 		// "align": "left",
-		"s": "H Wrld"
+		"s": "<OoIoO>"
 	},
 
 	// end marker
