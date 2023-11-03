@@ -3721,5 +3721,5 @@ font_t* f_all[] = {
   &f_romant,
   &f_scriptc,
   &f_scripts,
-  &f_arc
+  &f_arc,
 };
