@@ -202,6 +202,7 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 			n = sizeof(circle_t);
 		} else if ((type & 0xFC) == T_STRING) {
 			string_t *tmp = (string_t *)p;
+			set_font(tmp->font);
 			push_str(
 				tmp->x,
 				tmp->y,

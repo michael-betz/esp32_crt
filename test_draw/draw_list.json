@@ -36,12 +36,11 @@
 	// <-- -->
 	{
 		"t": "string",
-		// "x": -800,
-		"y": -800,
+		"y": -775,
 		"scale": 300,
-		"density": 70,
-		// "align": "left",
-		"s": "<OoIoO>"
+		"density": 50,
+		"font": 13,
+		"s": "<- ->\nHello World"
 	},
 
 	// end marker

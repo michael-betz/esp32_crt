@@ -48,7 +48,8 @@ typedef struct {
     uint16_t scale;
     int16_t x;
     int16_t y;
-    uint16_t len;
+    uint8_t font;
+    uint8_t len;
     char c[];
 } string_t;  // 12 bytes + len
 

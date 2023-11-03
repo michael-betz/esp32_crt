@@ -43,7 +43,7 @@ def circle(density=50, x=0, y=0, r_x=100, r_y=0, a_start=0, a_length=0xFF):
     ))
 
 
-def string(density=50, scale=100, x=0, y=0, s='Hello', align="center"):
+def string(density=50, scale=100, x=0, y=0, font=0, s='Hello', align="center"):
     t = T_STRING
     if align == "center":
         t |= A_CENTER
@@ -52,7 +52,7 @@ def string(density=50, scale=100, x=0, y=0, s='Hello', align="center"):
     else:
         t |= A_LEFT
     s_ = s.encode('ascii')
-    fo.write(pack("BBHhhH", t, density, scale, x, y, len(s_)))
+    fo.write(pack("BBHhhBB", t, density, scale, x, y, font, len(s_)))
     fo.write(s_)
 
 

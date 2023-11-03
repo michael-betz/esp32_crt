@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "draw.h"
 #include "font_draw.h"
+#include "font_data.h"
 #include "fast_sin.h"
 
 #define DISPLAY_WIDTH 1024
@@ -79,9 +80,24 @@ static void demo_circles(unsigned frame)
 	);
 }
 
-static void demo_text(unsigned frame)
+static void demo_text(unsigned frame, unsigned font)
 {
-	set_font((frame >> 8) % 15);
+	char tmp[32];
+	if (font >= N_FONTS)
+		return;
+	snprintf(tmp, sizeof(tmp), "font: %d", font);
+
+	set_font(9);
+	push_str(
+		-970, 950,
+		tmp,
+		sizeof(tmp),
+		A_LEFT,
+		300,
+		100
+	);
+
+	set_font(font);
 	push_str(
 		0, 300,
 		"esp_crt\nHello World\n12345678",
@@ -169,7 +185,7 @@ int main(int argc, char* args[])
 	init_sdl();
 
 	unsigned frame = 0;
-	unsigned demo = 0;
+	int demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
@@ -202,18 +218,22 @@ int main(int argc, char* args[])
 
 		push_list(dl, n_dl);
 
-		switch (demo % 3) {
+		if (demo < 0)
+			demo = N_FONTS + 1;
+
+		if (demo > N_FONTS + 1)
+			demo = 0;
+
+		switch (demo) {
+		case 0:
+			break;
 		case 1:
 			demo_circles(frame);
 			break;
-		case 2:
-			demo_text(frame);
+		default:
+			demo_text(frame, demo - 2);
 			break;
 		}
-
-		// if (frame < 200) {
-		// 	push_str(0, -800, "<--  -->", A_CENTER, 200, 200 - frame);
-		// }
 
 		printf("%d\n", n_samples);
 		n_samples = 0;
