@@ -21,7 +21,7 @@ the `test_draw/` directory contains a CRT simulator. It uses SDL2 for outputting
 to the screen and runs the same drawing code as the ESP32. This is useful
 for developing new features and troubleshooting.
 
-![test-pattern on the CRT simulator](pics/ksnip_20231017-010520.png)
+![test-pattern on the CRT simulator](pics/ksnip_20231103-115351.png)
 
 ### building and running on Debian / Ubuntu
 ```bash
