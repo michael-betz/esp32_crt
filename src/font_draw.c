@@ -54,7 +54,7 @@ static int get_str_width(char *c, unsigned scale)
 
 static void _push_char_lin(const int8_t *p, unsigned len, unsigned scale, unsigned density)
 {
-	bool is_pen_up = true;
+	bool is_pen_up = true, is_clipped = false;
 
 	if (len < 2)
 		return;
@@ -72,24 +72,27 @@ static void _push_char_lin(const int8_t *p, unsigned len, unsigned scale, unsign
 		int y = *p++;  // Y start of line
 		len -= 2;
 
-		if (is_pen_up) {
-			push_goto(
-				x_c + (x * (int)scale / 64),
-				y_c - (y * (int)scale / 64)
-			);
-			is_pen_up = false;
-			continue;
-		}
 		if (x == -50 && y == 0) {
 			// pen up command, next command is a goto
 			is_pen_up = true;
 			continue;
 		}
-		push_line(
+		if (is_pen_up) {
+			is_clipped = push_goto(
+				x_c + (x * (int)scale / 64),
+				y_c - (y * (int)scale / 64)
+			);
+			if (!is_clipped)
+				is_pen_up = false;
+			continue;
+		}
+		is_clipped = push_line(
 			x_c + (x * (int)scale / 64),
 			y_c - (y * (int)scale / 64),
 			density
 		);
+		if (is_clipped)
+			is_pen_up = true;
 	}
 
 	x_c += r;

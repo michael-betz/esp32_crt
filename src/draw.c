@@ -29,30 +29,19 @@ static unsigned usqrt4(unsigned val) {
 static bool output_sample(int a, int b, int c, int d)
 {
 	// printf("(%4d, %4d), %3x\n", a, b, c);
-	bool is_clipped = false;
-	if (a >= C_MAX) {
-		a = C_MAX - 1;
-		is_clipped = 1;
-	} else if (a < -C_MAX) {
-		a = -C_MAX;
-		is_clipped = 1;
-	}
-	if (b >= C_MAX) {
-		b = C_MAX - 1;
-		is_clipped = 1;
-	} else if (b < -C_MAX) {
-		b = -C_MAX;
-		is_clipped = 1;
-	}
+	if (a >= C_MAX || a < -C_MAX || b >= C_MAX || b < -C_MAX)
+		return true;
+
+	// Only output sample if it is not clipped
 	push_sample(a + 0x800, b + 0x800, c, d);
-	return is_clipped;
+	return false;
 }
 
 // last outputted sample, used for drawing polygons, don't touch!
 static int x_last = 0;
 static int y_last = 0;
 
-void push_circle(
+bool push_circle(
 	int x_a,
 	int y_a,
 	unsigned r_x,
@@ -77,6 +66,7 @@ void push_circle(
 	int d_alpha = (alpha_length << 8) / n;  // angular step-size
 
 	int x, y, arg;
+	bool is_clipped = false;
 	for (unsigned i = 0; i <= n; i++) {
 		arg = alpha_start + ((i * d_alpha) >> 8);
 		x = x_a + (((get_cos(arg) >> 16) * (int)r_x) >> 15);
@@ -84,35 +74,34 @@ void push_circle(
 		// Skip seek to first point if we are already there
 		if (i == 0 && x == x_last && y == y_last)
 			continue;
-		bool is_clipped = output_sample(x, y, i == 0 ? 0 : 0xFFF, 0);
+		is_clipped = output_sample(x, y, i == 0 ? 0 : 0xFFF, 0);
 		if (is_clipped)
 			break;
 	}
 	x_last = x;
 	y_last = y;
+	return is_clipped;
 }
 
-void push_goto(int x_a, int y_a)
+bool push_goto(int x_a, int y_a)
 {
 	if (x_a == x_last && y_a == y_last) {
 		// printf("goto(%d, %d)*\n", x_a, y_a);
-		return;
+		return false;
 	}
 	// printf("goto(%d, %d)\n", x_a, y_a);
 
-	output_sample(x_a, y_a, 0, 0);
 	x_last = x_a;
 	y_last = y_a;
+	return output_sample(x_a, y_a, 0, 0);
 }
 
-void push_line(int x_b, int y_b, unsigned density)
+bool push_line(int x_b, int y_b, unsigned density)
 {
 	unsigned dist;
 
-	if (density == 0) {
-		push_goto(x_b, y_b);
-		return;
-	}
+	if (density == 0)
+		return push_goto(x_b, y_b);
 
 	// Calculate the distance in x, y and hypotenuse
 	int distx = x_b - x_last;
@@ -132,17 +121,17 @@ void push_line(int x_b, int y_b, unsigned density)
 
 	// Don't interpolate points, just output the final point
 	if (n <= 1) {
-		output_sample(x_b, y_b, 0xFFF, 0);
 		x_last = x_b;
 		y_last = y_b;
-		return;
+		return output_sample(x_b, y_b, 0xFFF, 0);
 	}
 
 	int dx = (distx << 8) / n;
 	int dy = (disty << 8) / n;
+	bool is_clipped = false;
 
 	for (int i = 1; i <= n; i++) {
-		bool is_clipped = output_sample(
+		is_clipped = output_sample(
 			x_last + ((i * dx) >> 8),
 			y_last + ((i * dy) >> 8),
 			0xFFF,
@@ -151,9 +140,9 @@ void push_line(int x_b, int y_b, unsigned density)
 		if (is_clipped)
 			break;
 	}
-
 	x_last = x_b;
 	y_last = y_b;
+	return is_clipped;
 }
 
 // void push_glyph(uint8_t *p, unsigned n_bytes_max, int x_o, int y_o, unsigned scale)

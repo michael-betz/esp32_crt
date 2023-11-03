@@ -1,6 +1,9 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 // Coordinate values are clipped tp +- C_MAX
 #define C_MAX 0x800
 
@@ -57,19 +60,20 @@ typedef struct {
 extern unsigned n_samples;
 
 // push all the samples of a draw-list to the DMA buffer once
-// returns number of samples written
 void push_list(uint8_t *p, unsigned n_items);
 
-// Updates the cursor to (x_a, y_a)
-void push_goto(int x_a, int y_a);
+// Updates the cursor to (x_a, y_a). Returns true if coordinates were clipped
+bool push_goto(int x_a, int y_a);
 
 // Draws a line from the current cursor to (x_b, y_b). updates the cursor
-void push_line(int x_b, int y_b, unsigned density);
+// Returns true if a sample was clipped
+bool push_line(int x_b, int y_b, unsigned density);
 
 // Draws an ellipse, centered at (x_a, y_a) with radi (r_x, r_y)
 // where alpha_length is the arc_length (360 deg is MAX_ANGLE)
 // and alph_start is the start angle
-void push_circle(
+// Returns true if a sample was clipped
+bool push_circle(
     int x_a,
     int y_a,
     unsigned r_x,
