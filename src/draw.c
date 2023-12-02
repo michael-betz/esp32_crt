@@ -26,7 +26,7 @@ static unsigned usqrt4(unsigned val) {
     return a;
 }
 
-static bool output_sample(int a, int b, int c, int d)
+bool output_sample(int a, int b, int c, int d)
 {
 	// printf("(%4d, %4d), %3x\n", a, b, c);
 	if (a >= C_MAX || a < -C_MAX || b >= C_MAX || b < -C_MAX)
