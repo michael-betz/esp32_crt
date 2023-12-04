@@ -6,10 +6,13 @@
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_spiffs.h"
 
 #include "i2s.h"
 #include "draw.h"
+#include "dds.h"
 #include "wifi.h"
+#include "json_settings.h"
 
 #define SAMPLES_PER_FRAME 625000 / 100
 
@@ -26,21 +29,38 @@ static uint8_t dl_test[] = {
 
 static void i2s_stream_task(void *args)
 {
+	i2s_init();
 	while (1) {
 		push_list(dl_test, sizeof(dl_test));
+		draw_dds(10000);
 	}
 	vTaskDelete(NULL);
 }
 
 void app_main(void)
 {
-	printf("Hello, this is an SPI - test, I2S version!\n");
+	printf("Hello, this is esp32_crt, I2S version!\n");
+
+	// Mount spiffs for *.html and defaults.json
+	esp_vfs_spiffs_conf_t conf = {
+		.base_path = "/spiffs",
+		.partition_label = NULL,
+		.max_files = 4,
+		.format_if_mount_failed = true
+	};
+	esp_vfs_spiffs_register(&conf);
+
+	// Load settings.json from SPIFFS, try to create file if it doesn't exist
+	set_settings_file("/spiffs/settings.json", "/spiffs/default_settings.json");
 
 	initWifi();
 	tryConnect();
 
-	i2s_init();
-	xTaskCreate(i2s_stream_task, "i2s_stream_task", 4096, NULL, 5, NULL);
+	// This makes it quite easy for the application to place high priority tasks
+	// on Core 1. Using priority 19 or higher guarantees that an application task
+	// can run on Core 1 without being preempted by any built-in task.
+	// https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/performance/speed.html#choosing-task-priorities-of-the-application
+	xTaskCreatePinnedToCore(i2s_stream_task, "i2s_stream_task", 4096, NULL, 22, NULL, 1);
 }
 
 void _putchar(char c){

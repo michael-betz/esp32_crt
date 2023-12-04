@@ -131,7 +131,8 @@ static void got_ip(void* arg, esp_event_base_t event_base, int32_t event_id, voi
 {
 	udp_debug_init();
 
-	log_i("This is espcrt");
+	ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+	log_i("Got ip " IPSTR, IP2STR(&event->ip_info.ip));
 
 	// trigger time sync
 	sntp_setoperatingmode(SNTP_OPMODE_POLL);

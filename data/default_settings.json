@@ -1,5 +1,5 @@
 {
-    "hostname": "espcrt",
+    "hostname": "esp_crt",
     "timezone": "PST8PDT,M3.2.0,M11.1.0",
     "ota_url": "https://ota_host:8000/firmware.bin",
     "log_disable": false,

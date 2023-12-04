@@ -22,11 +22,11 @@ void setup_dds(unsigned fcx, unsigned fcy, unsigned fmx, unsigned fmy, unsigned 
 	lut_type = wfm;
 }
 
-void draw_dds(unsigned n_frames)
+void draw_dds(unsigned n_samples)
 {
-	int32_t tmps[N_DDS], x_val, y_val;
+	int32_t tmps[N_DDS], x_val = 0, y_val = 0;
 
-	for (unsigned s_i = 0; s_i < n_frames; s_i++) {
+	for (unsigned s_i = 0; s_i < n_samples; s_i++) {
 		unsigned lut_t = lut_type;
 		for (unsigned dds_i = 0; dds_i < N_DDS; dds_i++) {
 			phases[dds_i] += delta_fs[dds_i];
@@ -51,11 +51,11 @@ void draw_dds(unsigned n_frames)
 			lut_t >>= 4;
 		}
 
-		// Amplitude modulation
-		// x_val = (tmps[0] >> 16) * (tmps[2] >> 16);
-		// y_val = (tmps[1] >> 16) * (tmps[3] >> 16);
-		x_val = ((int64_t)tmps[0] * (int64_t)tmps[2]) >> 32;
-		y_val = ((int64_t)tmps[1] * (int64_t)tmps[3]) >> 32;
+		// // Amplitude modulation
+		x_val = (tmps[0] >> 16) * (tmps[2] >> 16);
+		y_val = (tmps[1] >> 16) * (tmps[3] >> 16);
+		// x_val = ((int64_t)tmps[0] * (int64_t)tmps[2]) >> 32;
+		// y_val = ((int64_t)tmps[1] * (int64_t)tmps[3]) >> 32;
 
 
 		// normalize for full amplitude

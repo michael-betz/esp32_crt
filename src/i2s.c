@@ -25,19 +25,27 @@
 #define GA_N 13
 #define SHDN_N 12
 
-#define CHUNK_SIZE 512 * 4
+#define CHUNK_SIZE 4096 * 4
 
 unsigned n_samples = 0;
+unsigned n_underflows = 0;
+
 static i2s_chan_handle_t tx_chan;
+
+static IRAM_ATTR bool cb_i2s_tx_undeflow(i2s_chan_handle_t handle, i2s_event_data_t *event, void *user_ctx)
+{
+	n_underflows++;
+    return false;
+}
 
 void i2s_init(void)
 {
 	i2s_chan_config_t tx_chan_cfg = {
 		.id = I2S_NUM_1,
 		.role = I2S_ROLE_MASTER,
-		// Allocate 32 kB of DMA memory
-		.dma_desc_num = 16,  // Number of DMA buffers
-		.dma_frame_num = 512,  // Size of one DMA buffer in 4 byte frames
+		// Allocate N kB of DMA memory
+		.dma_desc_num = 32,  // Number of DMA buffers
+		.dma_frame_num = 1023,  // Size of one DMA buffer in 4 byte frames
 		.auto_clear = true,
 	};
 	ESP_ERROR_CHECK(i2s_new_channel(&tx_chan_cfg, &tx_chan, NULL));
@@ -74,6 +82,14 @@ void i2s_init(void)
 	};
 	ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &tx_std_cfg));
 
+	i2s_event_callbacks_t cbs = {
+		.on_recv = NULL,
+		.on_recv_q_ovf = NULL,
+		.on_sent = NULL,
+		.on_send_q_ovf = cb_i2s_tx_undeflow,
+	};
+	ESP_ERROR_CHECK(i2s_channel_register_event_callback(tx_chan, &cbs, NULL));
+
 	// rtc_clk_apll_coeff_set(0, 0, 0, 9);  // Fastest possible APLL clock
 	// I2S1.clkm_conf.clka_en = 1;  // enable APLL clock
 
@@ -105,6 +121,7 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 	static uint8_t chunk_buf[CHUNK_SIZE];  // buffer of one chunk of data
 	static uint16_t *w_buf = (uint16_t *)chunk_buf;
 	static unsigned n_written = 0;
+	static unsigned n_underflows_ = 0;
 
 	// print_dec_fix(val_a, FP, 2);
 	// print_str(", ");
@@ -126,6 +143,11 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 		}
 		n_written = 0;
 		w_buf = (uint16_t *)chunk_buf;
+
+		if (n_underflows_ != n_underflows) {
+			printf("n_underflows: %d\n", n_underflows);
+			n_underflows_ = n_underflows;
+		}
 	}
 	n_samples++;
 }
