@@ -38,10 +38,11 @@ void draw_dds(unsigned n_frames)
 				tmps[dds_i] = get_cos(phases[dds_i] >> 20);
 				break;
 			case 2:
-				tmps[dds_i] = phases[dds_i] - INT_MIN;
+				// note phases is UINT, INT_MAX refers to INT
+				tmps[dds_i] = phases[dds_i] - INT_MAX;
 				break;
 			case 3:
-				tmps[dds_i] = (phases[dds_i] > (INT_MAX / 2)) ? INT_MAX : INT_MIN;
+				tmps[dds_i] = (phases[dds_i] > INT_MAX) ? INT_MAX : INT_MIN;
 				break;
 			case 4:
 				tmps[dds_i] = INT_MAX;

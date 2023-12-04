@@ -1,0 +1,11 @@
+{
+    "hostname": "espcrt",
+    "timezone": "PST8PDT,M3.2.0,M11.1.0",
+    "ota_url": "https://ota_host:8000/firmware.bin",
+    "log_disable": false,
+    "log_ip": "192.168.1.11",
+    "log_port": 1234,
+    "wifis": {
+        "INSERT_SSID": "INSERT_PASSWORD"
+    }
+}

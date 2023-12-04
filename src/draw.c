@@ -65,7 +65,7 @@ bool push_circle(
 
 	int d_alpha = (alpha_length << 8) / n;  // angular step-size
 
-	int x, y, arg;
+	int x = 0, y = 0, arg;
 	bool is_clipped = false;
 	for (unsigned i = 0; i <= n; i++) {
 		arg = alpha_start + ((i * d_alpha) >> 8);

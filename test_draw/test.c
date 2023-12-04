@@ -133,8 +133,8 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 	// The longer the distance between 2 points, the lower the intensity
 	float len = sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_));
 	int intens = val_c / len / 2;
-	if (intens < 0x40)
-		intens = 0x40;
+	if (intens < 0x30)
+		intens = 0x30;
 	if (intens > 0xFF)
 		intens = 0xFF;
 
@@ -195,7 +195,7 @@ int main(int argc, char* args[])
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
 	unsigned frame = 0;
-	int demo = 2;
+	int demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
