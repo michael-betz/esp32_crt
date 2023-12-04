@@ -7,12 +7,17 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_spiffs.h"
+#include "esp_log.h"
 
 #include "i2s.h"
 #include "draw.h"
 #include "dds.h"
 #include "wifi.h"
+#include "static_ws.h"
 #include "json_settings.h"
+#include "print.h"
+
+static const char *T = "MAIN";
 
 #define SAMPLES_PER_FRAME 625000 / 100
 
@@ -65,4 +70,10 @@ void app_main(void)
 
 void _putchar(char c){
 	putchar(c);
+}
+
+void ws_callback(uint8_t *payload, unsigned len)
+{
+	log_i("ws_callback(%d)", len);
+	hexDump(payload, len);
 }

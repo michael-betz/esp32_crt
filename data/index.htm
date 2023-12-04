@@ -1,106 +1,64 @@
 <!DOCTYPE html>
 <html>
 <meta charset="utf-8" />
-
 <head>
-  <title>.json Settings</title>
+  <title>esp32_crt</title>
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
-
 <body>
-<h2>
-  <span id=host_name></span> settings.json
-</h2>
-<div class="shell-wrap">
-  <textarea id="myTextArea" class="shell-body" onkeyup="bnA.disabled=true; tStat.innerText='';"></textarea>
-  <br>
-  <button id="bnV" class="inline" onclick="prettyPrint();">Verify</button>
-  <button id="bnA" class="inline" onclick="writeFile();">Apply</button>
-  <button id="bnR" class="inline" onclick="readFile('/reboot'); textArea.value = ''">Reboot</button>
-  <span id="tStat"></span>
+<div style="text-align: center;">
+  <h1>📺 esp32_crt 📺</h1>
+  <i>A small vector-based screen.</i>
+  <b>WS: <span id=connected_status>❌</span></b>
+  <div>
+    <button onclick="tab('f_tab');">FREQ / DUTY</button>
+    <button onclick="window.location.href=settings.htm;">Settings</button>
+  </div>
 </div>
 </body>
-
-<script src="140medley.min.js" type="text/javascript"></script>
 <script language="javascript" type="text/javascript">
-  var xhr = j();
-  var settingsFileName = "settings.json";
-  var textArea, bnA, tStat;
-
-  function readFile(fName, v=false) {
-    console.log("GETing: " + fName);
-    xhr.open("GET", fName);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState == 4 && xhr.status >= 200 && xhr.status < 300) {
-        textArea.value = xhr.responseText;
-        if (v)
-          prettyPrint();
-      }
-    }
-    xhr.send();
-  }
-
-  function writeFile() {
-    bnA.disabled = true;
-    fName = settingsFileName;
-    console.log("POSTing: " + fName);
-    xhr.open("POST", fName);
-    tStat.innerHTML = "<font color=#444444>applying ...</font>";
-    xhr.onreadystatechange=function() {
-      if (xhr.readyState == 4 && xhr.status >= 200 && xhr.status < 300) {
-        tStat.innerHTML = "<font color=#88FF88> done (" + xhr.statusText + ") </font>";
-      }
-    }
-    xhr.send(textArea.value);
-  }
+  var websocket;
 
   function init() {
-    textArea = document.getElementById("myTextArea");
-    bnA = document.getElementById("bnA");
-    tStat = document.getElementById("tStat");
-    bnA.disabled = true;
+    websocket = new WebSocket("ws://192.168.188.171/ws");
 
-    // enable TAB input in textArea
-    textArea.onkeydown = function(e) {
-      if (e.keyCode == 9 || e.which == 9) {
-          e.preventDefault();
-          var s = this.selectionStart;
-          this.value = this.value.substring(0, this.selectionStart) + "    " + this.value.substring(this.selectionEnd);
-          this.selectionEnd = s + 4;
+    websocket.onopen = function(evt) {
+      connected_status.innerHTML = "⌚";
+    };
+
+    websocket.onclose = function(evt) {
+      connected_status.innerHTML = "❌";
+    };
+
+    websocket.onmessage = function(evt) {
+      console.log("dat: " + evt.data);
+      dat = JSON.parse(evt.data);
+      if ("hello" in dat) {
+        MAX_DUTY_PERCENT = dat['MAX_DUTY_PERCENT'];
+        sliders["DUTY"][0].max = MAX_DUTY_PERCENT / 100 * 10000;
+        MAX_T_ON = dat['MAX_T_ON'];
+        BITS_PER_SEC = dat["BITS_PER_SEC"];
+        tab('t_tab');
+
+        document.getElementById("song_list").innerHTML = '';  // clear list
+        websocket.send("l");  // get names of all midi files
+
+        setInterval(function() {
+          websocket.send("i");
+        }, 1000);
+      } else if ("RSSI" in dat) {
+        connected_status.innerHTML = "✅ (" + dat["RSSI"] + "dBm)";
+      } else if ("f" in dat) {
+        var li = document.createElement("li");
+        li.innerText = dat['f'];
+        document.getElementById("song_list").appendChild(li);
       }
-    }
+    };
 
-    readFile(settingsFileName, true);
+    websocket.onerror = function(evt) {
+      connected_status.innerHTML = "🔥 " + evt;
+    };
   }
 
-  function prettyPrint() {
-      s = textArea.value;
-      try {
-        var obj = JSON.parse(s);
-        textArea.value = JSON.stringify(obj, undefined, 4);
-        bnA.disabled = false;
-        tStat.innerHTML = "<font color=#44FF44>verified</font>";
-      } catch(e) {
-        bnA.disabled = true;
-        var arr = e.message.match(/\d+/g);
-        var row = parseInt(arr[0]);
-        var col = parseInt(arr[1]);
-        console.log('.json error at row / col: ', row, col);
-
-        arr = textArea.value.split('\n');
-        var startChar = 0;
-        for (var i=0; i < row - 1; i++)
-          startChar += arr[i].length + 1;
-        startChar += col;
-
-        textArea.focus();
-        textArea.selectionStart = startChar;
-        textArea.selectionEnd = startChar;
-        tStat.innerHTML = "<font color=#FF4444>" + e.message + "</font>";
-      }
-  }
-
-  window.onload = function() {
-    window.setTimeout(init, 50);
-  }
+  window.addEventListener("load", init, false);
 </script>

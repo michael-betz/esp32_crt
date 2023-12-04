@@ -256,10 +256,21 @@ static esp_err_t download_get_handler(httpd_req_t *req)
 	return ESP_OK;
 }
 
+httpd_req_t *g_req = NULL;
+
+void __attribute__((weak)) ws_callback(uint8_t *payload, unsigned len)
+{
+	ESP_LOGI(T, "ws_callback(%d)", len);
+}
 
 // This handles websocket traffic, needs ESP-IDF > 4.2.x
 static esp_err_t ws_handler(httpd_req_t *req)
 {
+	if (req->method == HTTP_GET) {
+		ESP_LOGI(T, "WS handshake");
+        return ESP_OK;
+    }
+
 	uint8_t buf[128] = { 0 };
 	httpd_ws_frame_t ws_pkt;
 	memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
@@ -270,18 +281,24 @@ static esp_err_t ws_handler(httpd_req_t *req)
 		ESP_LOGE(T, "httpd_ws_recv_frame failed with %d", ret);
 		return ret;
 	}
-	ESP_LOGI(T, "Got packet with message: %s", ws_pkt.payload);
-	ESP_LOGI(T, "Packet type: %d", ws_pkt.type);
-	// if (ws_pkt.type == HTTPD_WS_TYPE_TEXT &&
-	//     strcmp((char*)ws_pkt.payload,"Trigger async") == 0) {
-	//     return trigger_async_send(req->handle, req);
-	// }
 
-	ret = httpd_ws_send_frame(req, &ws_pkt);
-	if (ret != ESP_OK) {
-		ESP_LOGE(T, "httpd_ws_send_frame failed with %d", ret);
+	// ESP_LOGI(T, "Got packet with message: %s", ws_pkt.payload);
+	// ESP_LOGI(T, "Packet type: %d", ws_pkt.type);
+	if (ws_pkt.type == HTTPD_WS_TYPE_TEXT) {
+		g_req = req;
+		ws_callback(ws_pkt.payload, ws_pkt.len);
 	}
-	return ret;
+	return ESP_OK;
+}
+
+esp_err_t ws_send(uint8_t *payload, unsigned len)
+{
+	httpd_ws_frame_t ws_pkt;
+	memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+	ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+	ws_pkt.payload = payload;
+	ws_pkt.len = len;
+	return httpd_ws_send_frame(g_req, &ws_pkt);
 }
 
 void startWebServer()
