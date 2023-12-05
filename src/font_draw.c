@@ -40,11 +40,13 @@ static int get_char_width(char c)
 	return 0;
 }
 
-static int get_str_width(char *c, unsigned scale)
+static int get_str_width(char *c, unsigned n, unsigned scale)
 {
 	int w = 0;
-	while (*c) {
-		if (*c == '\n')
+	if (c == NULL)
+		return w;
+	while (n-- > 0) {
+		if (*c == '\0' || *c == '\n')
 			break;
 		w += (get_char_width(*c)) * scale / 64;
 		c++;
@@ -143,7 +145,6 @@ static void _push_char_arc(const int8_t *p, unsigned len, unsigned scale, unsign
 
 static void push_char(char c, unsigned scale, unsigned density)
 {
-	// printf("push_char(%c, %d, %d) (%d, %d)\n", c, scale, density, x_c, y_c);
 	if (c < 0x20)
 		return;
 	c -= 0x20;
@@ -179,7 +180,7 @@ void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned sc
 			continue;
 		}
 		if (w_str == -1) {
-			w_str = get_str_width(c, scale);
+			w_str = get_str_width(c, n, scale);
 			if (align == A_RIGHT)
 				x_c = x_a - w_str;
 			else if (align == A_CENTER)

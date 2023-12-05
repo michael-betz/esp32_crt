@@ -8,9 +8,9 @@ static uint32_t phases[N_DDS] = {0, 0, 0, 0};
 static uint32_t lut_type = 0x1002;
 static uint32_t delta_fs[N_DDS] = {
 	// Carrier
-	0x17300800, 0x17300000,
+	0x1730080, 0x1730000,
 	// Modulator
-	0x07000000, 0x07000700,
+	0x0700000, 0x0700070,
 };
 
 void setup_dds(unsigned fcx, unsigned fcy, unsigned fmx, unsigned fmy, unsigned wfm)

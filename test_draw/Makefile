@@ -14,5 +14,8 @@ test: $(OBJS)
 clean:
 	rm -rf test $(OBJS)
 
+%.c: %.json
+	./json_to_bin.py $^ | xxd -i -n dl_test > $@
+
 run: test
 	./json_to_bin.py draw_list.json | ./test -
