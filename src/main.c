@@ -36,7 +36,7 @@ static void i2s_stream_task(void *args)
 {
 	i2s_init();
 	while (1) {
-		push_list(dl_test, sizeof(dl_test));
+		// push_list(dl_test, sizeof(dl_test));
 		draw_dds(10000);
 	}
 	vTaskDelete(NULL);
@@ -58,8 +58,8 @@ void app_main(void)
 	// Load settings.json from SPIFFS, try to create file if it doesn't exist
 	set_settings_file("/spiffs/settings.json", "/spiffs/default_settings.json");
 
-	initWifi();
-	tryConnect();
+	// initWifi();
+	// tryConnect();
 
 	// This makes it quite easy for the application to place high priority tasks
 	// on Core 1. Using priority 19 or higher guarantees that an application task

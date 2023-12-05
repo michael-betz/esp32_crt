@@ -11,13 +11,68 @@
   <i>A small vector-based screen.</i>
   <b>WS: <span id=connected_status>❌</span></b>
   <div>
-    <button onclick="tab('f_tab');">FREQ / DUTY</button>
-    <button onclick="window.location.href=settings.htm;">Settings</button>
+    <button onclick="tab('t_dds');">DDS</button>
+    <button onclick="window.location.href='settings.htm';">Settings</button>
   </div>
+</div>
+<div class="tab" id="t_dds">
+<!--   <div class="slidecontainer">
+    <b>OFF</b>
+    <input type="range" min="1000" max="10000" class="slider" id="OFF_slider">
+    <div class=sliderNumber id=OFF_status>xxx</div>
+  </div>
+  <div class="slidecontainer">
+    <b>ON</b>
+    <input type="range" min="0" max="10000" class="slider" id="ON_slider">
+    <span class=sliderNumber id=ON_status>xxx</span>
+  </div> -->
 </div>
 </body>
 <script language="javascript" type="text/javascript">
   var websocket;
+  var knobValues = {};
+
+  function createKnob(id_name, target_div) {
+    knobValues[id_name] = 0x12340000;
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('wrapper');
+    wrapper.setAttribute('id', id_name);
+    for (let j = 0; j < 3; j++) {
+      for (let i = 0; i < 8; i++) {
+        const box = document.createElement('a');
+        box.classList.add('box');
+        if (j == 0) {
+          box.textContent = '🔼';
+          box.onclick = function() {
+            knobValues[id_name] += 2**((7 - i) * 4);
+            knobValues[id_name] = (knobValues[id_name] & 0xFFFFFFFF)>>>0;
+            updateKnob(id_name);
+          };
+        } else if (j == 1) {
+          box.classList.add('m');
+        } else if (j == 2) {
+          box.textContent = '🔽';
+          box.onclick = function() {
+            knobValues[id_name] -= 2**((7 - i) * 4);
+            knobValues[id_name] = (knobValues[id_name] & 0xFFFFFFFF)>>>0;
+            updateKnob(id_name);
+          };
+        }
+        wrapper.appendChild(box);
+      }
+    }
+    document.getElementById(target_div).appendChild(wrapper);
+    updateKnob(id_name, knobValues[id_name]);
+  }
+
+  function updateKnob(id_name) {
+    var value = knobValues[id_name];
+    var w = document.getElementById(id_name);
+    var val_str = value.toString(16).padStart(8, '0');
+    for (var i = 0; i < 8; i++) {
+      w.childNodes[i + 8].innerText = val_str[i];
+    }
+  }
 
   function init() {
     websocket = new WebSocket("ws://192.168.188.171/ws");
@@ -48,16 +103,14 @@
         }, 1000);
       } else if ("RSSI" in dat) {
         connected_status.innerHTML = "✅ (" + dat["RSSI"] + "dBm)";
-      } else if ("f" in dat) {
-        var li = document.createElement("li");
-        li.innerText = dat['f'];
-        document.getElementById("song_list").appendChild(li);
       }
     };
 
     websocket.onerror = function(evt) {
       connected_status.innerHTML = "🔥 " + evt;
     };
+
+    createKnob('test_knob', 't_dds');
   }
 
   window.addEventListener("load", init, false);
