@@ -88,6 +88,20 @@ li {
   background-color: #000000;
 }
 
+/* adjustment tb input */
+input {
+  padding: 10px;
+  margin: 10px;
+  width: 180px;
+  background-color: #000000;
+  font-family: monospace;
+  font-size: 24pt;
+  text-align: right;
+  color: #FF9F1C;
+  border: none;
+  border-radius: 10px;
+}
+
 /* adjustment input */
 .wrapper {
   display: grid;

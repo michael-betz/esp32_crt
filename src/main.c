@@ -80,6 +80,27 @@ void _putchar(char c){
 
 void ws_callback(uint8_t *payload, unsigned len)
 {
+	char *tok = NULL;
+	unsigned args[5];
+
 	log_i("ws_callback(%d)", len);
+	if (len < 1)
+		return;
+
 	hexDump(payload, len);
+
+	switch (payload[0]) {
+	case 'd':
+			for(unsigned i = 0; i < 6; i++) {
+				tok = strsep(&payload, ",");
+				if (tok == NULL) {
+					log_e("parse error!\n");
+					return;
+				}
+				if (i >= 1)
+					args[i] = strtoul(tok, NULL, 16);
+			}
+			setup_dds(args[0], args[1], args[2], args[3], args[4]);
+		break;
+	}
 }

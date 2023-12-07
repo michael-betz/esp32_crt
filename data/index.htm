@@ -7,7 +7,7 @@
 </head>
 <body>
 <div style="text-align: center;">
-  <h1>📺 esp32_crt 📺</h1>
+  <!-- <h1>📺 esp32_crt 📺</h1> -->
   <i>A small vector-based screen.</i>
   <b>WS: <span id=connected_status>❌</span></b>
   <div>
@@ -15,63 +15,54 @@
     <button onclick="window.location.href='settings.htm';">Settings</button>
   </div>
 </div>
-<div class="tab" id="t_dds">
-<!--   <div class="slidecontainer">
-    <b>OFF</b>
-    <input type="range" min="1000" max="10000" class="slider" id="OFF_slider">
-    <div class=sliderNumber id=OFF_status>xxx</div>
-  </div>
-  <div class="slidecontainer">
-    <b>ON</b>
-    <input type="range" min="0" max="10000" class="slider" id="ON_slider">
-    <span class=sliderNumber id=ON_status>xxx</span>
-  </div> -->
-</div>
+<div class="tab" id="t_dds"></div>
 </body>
 <script language="javascript" type="text/javascript">
   var websocket;
   var knobValues = {};
+  var waveforms = 0;
 
-  function createKnob(id_name, target_div) {
+  function createDDSKnob(id_name, target_div) {
     knobValues[id_name] = 0x12340000;
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('wrapper');
-    wrapper.setAttribute('id', id_name);
-    for (let j = 0; j < 3; j++) {
-      for (let i = 0; i < 8; i++) {
-        const box = document.createElement('a');
-        box.classList.add('box');
-        if (j == 0) {
-          box.textContent = '🔼';
-          box.onclick = function() {
-            knobValues[id_name] += 2**((7 - i) * 4);
-            knobValues[id_name] = (knobValues[id_name] & 0xFFFFFFFF)>>>0;
-            updateKnob(id_name);
-          };
-        } else if (j == 1) {
-          box.classList.add('m');
-        } else if (j == 2) {
-          box.textContent = '🔽';
-          box.onclick = function() {
-            knobValues[id_name] -= 2**((7 - i) * 4);
-            knobValues[id_name] = (knobValues[id_name] & 0xFFFFFFFF)>>>0;
-            updateKnob(id_name);
-          };
-        }
-        wrapper.appendChild(box);
-      }
-    }
-    document.getElementById(target_div).appendChild(wrapper);
-    updateKnob(id_name, knobValues[id_name]);
+    const tfi = document.createElement('input');
+    tfi.setAttribute('id', id_name);
+    tfi.value = "12340000";
+
+    tfi.addEventListener('change', e => {
+      val = parseInt(e.target.value, 16);
+      knobValues[id_name] = val
+      e.target.value = val.toString(16).padStart(8, '0');
+      sendDDS()
+    });
+
+    tfi.addEventListener('keydown', e => {
+      if (e.key == "ArrowDown")
+          var sign = -1;
+      else if (e.key == "ArrowUp")
+          var sign = 1;
+      else
+          return;
+      var start = e.target.selectionStart;
+      if (start >= 8)
+        start = 7;
+      knobValues[id_name] += 2**((7 - start) * 4) * sign;
+      knobValues[id_name] = (knobValues[id_name] & 0xFFFFFFFF)>>>0;
+      sendDDS()
+      var val_str = knobValues[id_name].toString(16).padStart(8, '0');
+      // console.log(start, val_str);
+      // store / restore cursor position
+      e.target.value = val_str;
+      e.target.setSelectionRange(start, start);
+      e.preventDefault();
+    });
+
+    document.getElementById(target_div).appendChild(tfi);
   }
 
-  function updateKnob(id_name) {
-    var value = knobValues[id_name];
-    var w = document.getElementById(id_name);
-    var val_str = value.toString(16).padStart(8, '0');
-    for (var i = 0; i < 8; i++) {
-      w.childNodes[i + 8].innerText = val_str[i];
-    }
+  function sendDDS() {
+    s = "d," + knobValues['fcx'].toString(16) + ',' + knobValues['fcy'].toString(16) + ',' + knobValues['fmx'].toString(16) + ',' + knobValues['fmy'].toString(16) + waveforms;
+    console.log(s);
+    // websocket.send(s);
   }
 
   function init() {
@@ -95,7 +86,6 @@
         BITS_PER_SEC = dat["BITS_PER_SEC"];
         tab('t_tab');
 
-        document.getElementById("song_list").innerHTML = '';  // clear list
         websocket.send("l");  // get names of all midi files
 
         setInterval(function() {
@@ -110,7 +100,10 @@
       connected_status.innerHTML = "🔥 " + evt;
     };
 
-    createKnob('test_knob', 't_dds');
+    createDDSKnob('fcx', 't_dds');
+    createDDSKnob('fcy', 't_dds');
+    createDDSKnob('fmx', 't_dds');
+    createDDSKnob('fmy', 't_dds');
   }
 
   window.addEventListener("load", init, false);
