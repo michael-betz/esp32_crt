@@ -1,11 +1,12 @@
 vpath %.c ../src
 
-LDLIBS = -lm -lSDL2
+LDLIBS = -lm -lSDL2 -lstdc++
 
-CFLAGS += -Wall
-CFLAGS += -I../src
+FLAGS = -Wall -I../src
+CFLAGS += $(FLAGS)
+CPPFLAGS += $(FLAGS)
 
-OBJS = draw.o fast_sin.o print.o font_data.o font_draw.o dds.o
+OBJS = draw.o fast_sin.o print.o font_data.o font_draw.o dds.o test_3d.o
 
 all: test
 

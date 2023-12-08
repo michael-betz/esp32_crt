@@ -10,6 +10,8 @@
 #include "fast_sin.h"
 #include "dds.h"
 
+#include "test_3d.h"
+
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
 #define D_SCALE 0.5
@@ -193,6 +195,8 @@ int main(int argc, char* args[])
 	init_lut();
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
+
+	draw_mesh();
 
 	unsigned frame = 0;
 	int demo = 0;
