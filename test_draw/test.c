@@ -120,28 +120,28 @@ static void demo_dds(unsigned frame)
 }
 
 // Visualize a sample, emulate the phosphor with additive blending
-void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
+void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t val_foc)
 {
 	static int x_ = 0;
 	static int y_ = 0;
 
 	// center and scale the DAC range to the window-size
-	int x = val_a * D_SCALE + D_OFFSET_X;
-	int y = val_b * D_SCALE + D_OFFSET_Y;
+	int x = val_x * D_SCALE + D_OFFSET_X;
+	int y = val_y * D_SCALE + D_OFFSET_Y;
 
 	// Vertical mirror
 	y = DISPLAY_HEIGHT - y;
 
 	// The longer the distance between 2 points, the lower the intensity
 	float len = sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_));
-	int intens = val_c / len / 2;
+	int intens = val_blank / len / 2;
 	if (intens < 0x30)
 		intens = 0x30;
 	if (intens > 0xFF)
 		intens = 0xFF;
 
 	// Draw lines connecting the samples. Red for blanked moves
-	if (val_c == 0) {
+	if (val_blank == 0) {
 		SDL_SetRenderDrawColor(rr, intens, 0x00, 0x00, 0xFF);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x00, intens, 0x00, 0xFF);
@@ -149,13 +149,13 @@ void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
 	SDL_RenderDrawLine(rr, x_, y_, x, y);
 
 	// Draw dots where the samples actually are to show the density
-	// if (val_c == 0) {
-	// 	SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
-	// } else {
-	// 	SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
-	// }
-	// SDL_Rect rect = {x - 2, y - 2, 5, 5};
-	// SDL_RenderFillRect(rr, &rect);
+	if (val_blank == 0) {
+		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
+	} else {
+		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
+	}
+	SDL_Rect rect = {x - 2, y - 2, 5, 5};
+	SDL_RenderFillRect(rr, &rect);
 	x_ = x;
 	y_ = y;
 	n_samples++;

@@ -83,6 +83,7 @@ bool push_circle(
     unsigned density
 );
 
-bool output_sample(int a, int b, int c, int d);
+bool output_sample(int x, int y, int blank, int focus);
+
 
 #endif

@@ -1,6 +1,6 @@
 [
 	// a frame around the screen
-	{"t": "poly", "density": 1, "pts": [
+	{"t": "poly", "density": 10, "pts": [
 		// means goto next point with the pen up
 		[-32768,-32768],
 		[-1000,-1000],
@@ -11,35 +11,35 @@
 	]},
 
 	// inner cross
-	// {"t": "line", "density": 0,  "x": -100, "y": -100},
-	// {"t": "line", "density": 255,"x":  100, "y":  100},
-	// {"t": "line", "density": 0,  "x": -100, "y":  100},
-	// {"t": "line", "density": 255,"x":  100, "y": -100},
+	{"t": "line", "density": 10,  "x": -100, "y": -100},
+	{"t": "line", "density": 255,"x":  100, "y":  100},
+	{"t": "line", "density": 10,  "x": -100, "y":  100},
+	{"t": "line", "density": 255,"x":  100, "y": -100},
 
 	// // inner +
-	// {"t": "line", "density": 0,  "x": -300, "y": 0},
-	// {"t": "line", "density": 50, "x":  300, "y": 0},
-	// {"t": "line", "density": 0,  "x":    0, "y": 300},
-	// {"t": "line", "density": 50, "x":    0, "y":-300},
+	{"t": "line", "density": 10,  "x": -300, "y": 0},
+	{"t": "line", "density": 50, "x":  300, "y": 0},
+	{"t": "line", "density": 10,  "x":    0, "y": 300},
+	{"t": "line", "density": 50, "x":    0, "y":-300},
 
 	// concentric circles
-	// {"t": "circle", "r_x": 100},
-	// {"t": "circle", "r_x": 200},
-	// {"t": "circle", "r_x": 300},
-	// {"t": "circle", "r_x": 400},
-	// {"t": "circle", "r_x": 500},
-	// {"t": "circle", "r_x": 600},
-	{"t": "circle", "r_x": 700, "a_start": 208, "a_length": 220},
-	{"t": "circle", "r_x": 800, "a_start": 208, "a_length": 220},
-	{"t": "circle", "r_x": 900, "a_start": 208, "a_length": 220},
+	{"t": "circle", "r_x": 100, "density": 100},
+	{"t": "circle", "r_x": 200, "density": 100},
+	{"t": "circle", "r_x": 300, "density": 100},
+	{"t": "circle", "r_x": 400, "density": 100},
+	{"t": "circle", "r_x": 500, "density": 100},
+	{"t": "circle", "r_x": 600, "density": 100},
+	{"t": "circle", "r_x": 700, "density": 100, "a_start": 208, "a_length": 220},
+	{"t": "circle", "r_x": 800, "density": 100, "a_start": 208, "a_length": 220},
+	{"t": "circle", "r_x": 900, "density": 100, "a_start": 208, "a_length": 220},
 
 	// <-- -->
 	{
 		"t": "string",
 		"y": -775,
 		"scale": 300,
-		"density": 50,
-		"font": 13,
+		"density": 200,
+		"font": 14,
 		"s": "<- ->\nHello World"
 	},
 

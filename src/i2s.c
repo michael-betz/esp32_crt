@@ -9,16 +9,10 @@
 #include "soc/io_mux_reg.h"
 #include "hal/gpio_hal.h"
 
+#include "main.h"
 #include "i2s.h"
 #include "draw.h"
 #include "print.h"
-
-// GPIO number definitions
-#define PIN_SCK 14
-#define PIN_SDO 13
-#define PIN_CS_N_A 15
-#define PIN_CS_N_B 2
-#define PIN_CS_N_B_NAME IO_MUX_GPIO2_REG
 
 // MCP4922 bit definitions
 #define A_N 15
@@ -116,23 +110,23 @@ void i2s_init(void)
 	ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
 }
 
-void push_sample(uint16_t val_a, uint16_t val_b, uint16_t val_c, uint16_t val_d)
+void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t val_foc)
 {
 	static uint8_t chunk_buf[CHUNK_SIZE];  // buffer of one chunk of data
 	static uint16_t *w_buf = (uint16_t *)chunk_buf;
 	static unsigned n_written = 0;
 	static unsigned n_underflows_ = 0;
 
-	// print_dec_fix(val_a, FP, 2);
+	// print_dec_fix(val_x, FP, 2);
 	// print_str(", ");
-	// print_dec_fix(val_b, FP, 2);
+	// print_dec_fix(val_y, FP, 2);
 	// print_str("\n");
 
 	// output the sample-data for 4 channels over the next 64 clocks
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_a;  // DACA
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_c;  // DACB
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_b;  // DACA
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_d;  // DACB
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_x;  // DACA
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_blank;  // DACB
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_y;  // DACA
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_foc;  // DACB
 	n_written += 4 * 2;
 
 	if (n_written >= CHUNK_SIZE) {

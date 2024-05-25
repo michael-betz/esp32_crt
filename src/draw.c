@@ -26,14 +26,15 @@ static unsigned usqrt4(unsigned val) {
     return a;
 }
 
-bool output_sample(int a, int b, int c, int d)
+bool output_sample(int x, int y, int blank, int focus)
 {
-	// printf("(%4d, %4d), %3x\n", a, b, c);
-	if (a >= C_MAX || a < -C_MAX || b >= C_MAX || b < -C_MAX)
+	// printf("(%4d, %4d), %3x\n", x, y, blank);
+	if (x >= C_MAX || x < -C_MAX || y >= C_MAX || y < -C_MAX)
 		return true;
 
 	// Only output sample if it is not clipped
-	push_sample(a + 0x800, b + 0x800, c, d);
+	push_sample(x + 0x800, y + 0x800, blank ? 0x800 : 0, 0);
+	// push_sample(x + 0x800, x + 0x800, x + 0x800, x + 0x800);
 	return false;
 }
 
