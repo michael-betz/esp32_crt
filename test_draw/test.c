@@ -149,13 +149,13 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 	SDL_RenderDrawLine(rr, x_, y_, x, y);
 
 	// Draw dots where the samples actually are to show the density
-	if (val_blank == 0) {
-		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
-	} else {
-		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
-	}
-	SDL_Rect rect = {x - 2, y - 2, 5, 5};
-	SDL_RenderFillRect(rr, &rect);
+	// if (val_blank == 0) {
+	// 	SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
+	// } else {
+	// 	SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
+	// }
+	// SDL_Rect rect = {x - 2, y - 2, 5, 5};
+	// SDL_RenderFillRect(rr, &rect);
 	x_ = x;
 	y_ = y;
 	n_samples++;
@@ -195,8 +195,6 @@ int main(int argc, char* args[])
 	init_lut();
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
-
-	draw_mesh();
 
 	unsigned frame = 0;
 	int demo = 0;
@@ -240,6 +238,7 @@ int main(int argc, char* args[])
 
 		switch (demo) {
 		case 0:
+			draw_mesh();
 			break;
 		case 1:
 			demo_circles(frame);
@@ -256,7 +255,7 @@ int main(int argc, char* args[])
 		n_samples = 0;
 
 		SDL_RenderPresent(rr);
-		SDL_Delay(50);
+		SDL_Delay(20);
 		frame++;
 		// return 0;
 	}

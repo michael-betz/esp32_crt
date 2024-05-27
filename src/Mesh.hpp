@@ -1,6 +1,10 @@
 #pragma once
 #include "Matrix.hpp"
 
+extern "C" {
+  #include "draw.h"
+}
+
 class Mesh
 {
   public:
@@ -38,14 +42,16 @@ class Mesh
     printf("drawEdges(%d)\n", edgeCount);
     for(int i = 0; i < edgeCount; i++) {
       // g.line(tvertices[edges[i][0]][0], tvertices[edges[i][0]][1], tvertices[edges[i][1]][0], tvertices[edges[i][1]][1], color);
-      printf(
-        "%d %d %d %d %d\n",
-        tvertices[edges[i][0]][0],
-        tvertices[edges[i][0]][1],
-        tvertices[edges[i][1]][0],
-        tvertices[edges[i][1]][1],
-        color
-      );
+      // printf(
+      //   "%d %d %d %d %d\n",
+      //   tvertices[edges[i][0]][0],
+      //   tvertices[edges[i][0]][1],
+      //   tvertices[edges[i][1]][0],
+      //   tvertices[edges[i][1]][1],
+      //   color
+      // );
+      push_goto(tvertices[edges[i][0]][0], tvertices[edges[i][0]][1]);
+      push_line(tvertices[edges[i][1]][0], tvertices[edges[i][1]][1], color);
     }
   }
 
