@@ -135,8 +135,8 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 	// The longer the distance between 2 points, the lower the intensity
 	float len = sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_));
 	int intens = val_blank / len / 2;
-	if (intens < 0x30)
-		intens = 0x30;
+	if (intens < 0x60)
+		intens = 0x60;
 	if (intens > 0xFF)
 		intens = 0xFF;
 
