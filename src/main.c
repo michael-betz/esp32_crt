@@ -52,8 +52,11 @@ static void i2s_stream_task(void *args)
 	i2s_init();
 	init_lut();
 	while (1) {
-		push_list(dl_test, sizeof(dl_test));
-		// draw_dds(10000);
+		if (gpio_get_level(PIN_BUTTON)) {
+			push_list(dl_test, sizeof(dl_test));
+		} else {
+			draw_dds(10000);
+		}
 	}
 	vTaskDelete(NULL);
 }
@@ -72,6 +75,7 @@ static void init_io()
 	gpio_set_level(PIN_LED_B, 0);
 
 	gpio_set_direction(PIN_PD_BAD, GPIO_MODE_INPUT);
+	gpio_set_direction(PIN_BUTTON, GPIO_MODE_INPUT);
 }
 
 void app_main(void)

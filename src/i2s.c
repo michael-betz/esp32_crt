@@ -89,7 +89,7 @@ void i2s_init(void)
 
 	// This produces a 40 MHz bit-clock
 	I2S1.clkm_conf.clk_en = 1;
-	I2S1.clkm_conf.clkm_div_num = 2;  // integral divider, min is 2
+	I2S1.clkm_conf.clkm_div_num = 3;  // integral divider, min is 2
 	I2S1.clkm_conf.clkm_div_a = 1;  // fractional divider numerator
 	I2S1.clkm_conf.clkm_div_b = 0;  // fractional divider denominator
 	I2S1.sample_rate_conf.tx_bck_div_num = 2;  // bit-clock divider, min is 2
