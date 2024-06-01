@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// The higher this, the slower we draw
+#define DENSITY_MULTIPLIER 4
+
 // Coordinate values are clipped tp +- C_MAX
 #define C_MAX 0x800
 
@@ -83,7 +86,7 @@ bool push_circle(
     unsigned density
 );
 
-bool output_sample(int x, int y, int blank, int focus);
+bool output_sample(int x, int y, bool beam_on, int focus);
 
 
 #endif

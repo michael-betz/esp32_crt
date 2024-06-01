@@ -26,15 +26,14 @@ static unsigned usqrt4(unsigned val) {
     return a;
 }
 
-bool output_sample(int x, int y, int blank, int focus)
+bool output_sample(int x, int y, bool beam_on, int focus)
 {
 	// printf("(%4d, %4d), %3x\n", x, y, blank);
 	if (x >= C_MAX || x < -C_MAX || y >= C_MAX || y < -C_MAX)
 		return true;
 
 	// Only output sample if it is not clipped
-	push_sample(x + 0x800, y + 0x800, blank ? 0x800 : 0, 0);
-	// push_sample(x + 0x800, x + 0x800, x + 0x800, x + 0x800);
+	push_sample(x + 0x800, y + 0x800, beam_on ? 0 : 0xFFF, 0);
 	return false;
 }
 
@@ -75,7 +74,7 @@ bool push_circle(
 		// Skip seek to first point if we are already there
 		if (i == 0 && x == x_last && y == y_last)
 			continue;
-		is_clipped = output_sample(x, y, i == 0 ? 0 : 0xFFF, 0);
+		is_clipped = output_sample(x, y, i > 0, 0);
 		if (is_clipped)
 			break;
 	}
@@ -94,7 +93,7 @@ bool push_goto(int x_a, int y_a)
 
 	x_last = x_a;
 	y_last = y_a;
-	return output_sample(x_a, y_a, 0, 0);
+	return output_sample(x_a, y_a, false, 0);
 }
 
 bool push_line(int x_b, int y_b, unsigned density)
@@ -124,7 +123,7 @@ bool push_line(int x_b, int y_b, unsigned density)
 	if (n <= 1) {
 		x_last = x_b;
 		y_last = y_b;
-		return output_sample(x_b, y_b, 0xFFF, 0);
+		return output_sample(x_b, y_b, true, 0);
 	}
 
 	int dx = (distx << 8) / n;
@@ -135,7 +134,7 @@ bool push_line(int x_b, int y_b, unsigned density)
 		is_clipped = output_sample(
 			x_last + ((i * dx) >> 8),
 			y_last + ((i * dy) >> 8),
-			0xFFF,
+			true,
 			0
 		);
 		if (is_clipped)
@@ -156,7 +155,7 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 
 		if (type == T_LINE) {
 			line_t *tmp = (line_t *)p;
-			push_line(tmp->x_b, tmp->y_b, tmp->density);
+			push_line(tmp->x_b, tmp->y_b, tmp->density * DENSITY_MULTIPLIER);
 			n = sizeof(line_t);
 		} else if (type == T_POLY) {
 			poly_t *tmp = (poly_t *)p;
@@ -175,7 +174,7 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 					pen_up = false;
 					continue;
 				}
-				push_line(x, y, tmp->density);
+				push_line(x, y, tmp->density * DENSITY_MULTIPLIER);
 			}
 			n = sizeof(poly_t) + j * sizeof(int16_t);
 		} else if (type == T_CIRCLE) {
@@ -187,7 +186,7 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 				tmp->r_y,
 				(tmp->a_start << 4) | (tmp->a_start >> 4),
 				(tmp->a_length << 4) | (tmp->a_length >> 4),
-				tmp->density
+				tmp->density * DENSITY_MULTIPLIER
 			);
 			n = sizeof(circle_t);
 		} else if ((type & 0xFC) == T_STRING) {
@@ -200,7 +199,7 @@ void push_list(uint8_t *p, unsigned n_bytes_max)
 				tmp->len,
 				type & 0x03,
 				tmp->scale,
-				tmp->density
+				tmp->density * DENSITY_MULTIPLIER
 			);
 			n = sizeof(string_t) + tmp->len * sizeof(char);
 		} else if (type == T_END){

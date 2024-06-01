@@ -89,7 +89,7 @@ void i2s_init(void)
 
 	// This produces a 40 MHz bit-clock
 	I2S1.clkm_conf.clk_en = 1;
-	I2S1.clkm_conf.clkm_div_num = 3;  // integral divider, min is 2
+	I2S1.clkm_conf.clkm_div_num = 2;  // integral divider, min is 2
 	I2S1.clkm_conf.clkm_div_a = 1;  // fractional divider numerator
 	I2S1.clkm_conf.clkm_div_b = 0;  // fractional divider denominator
 	I2S1.sample_rate_conf.tx_bck_div_num = 2;  // bit-clock divider, min is 2
@@ -124,9 +124,9 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 
 	// output the sample-data for 4 channels over the next 64 clocks
 	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_x;  // DACA
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_blank;  // DACB
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_y;  // DACA
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (0 << SHDN_N) | val_foc;  // DACB
+	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_y;  // DACB
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_blank;  // DACA
+	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_foc;  // DACB
 	n_written += 4 * 2;
 
 	if (n_written >= CHUNK_SIZE) {
