@@ -97,7 +97,7 @@ static void demo_text(unsigned frame, unsigned font)
 		sizeof(tmp),
 		A_LEFT,
 		300,
-		100
+		300
 	);
 
 	set_font(font);
@@ -106,7 +106,7 @@ static void demo_text(unsigned frame, unsigned font)
 		"esp_crt\nHello World\n12345678",
 		1024,
 		A_CENTER,
-		(sin(frame / 50.0) + 1.01) * 1000,
+		(sin(frame / 200.0) + 1.01) * 1000,
 		100
 	);
 }
@@ -116,7 +116,7 @@ static void demo_dds(unsigned frame)
 	// DAC \Delta t is 1.6 us
 	// SDL frame is 50 ms
 	// Need to draw 31k samples per frame
-	draw_dds(5000);
+	draw_dds(2000);
 }
 
 // Visualize a sample, emulate the phosphor with additive blending
@@ -141,7 +141,7 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 		intens = 0xFF;
 
 	// Draw lines connecting the samples. Red for blanked moves
-	if (val_blank == 0) {
+	if (val_blank >= 0xF00) {
 		SDL_SetRenderDrawColor(rr, intens, 0x00, 0x00, 0xFF);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x00, intens, 0x00, 0xFF);
@@ -149,13 +149,13 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 	SDL_RenderDrawLine(rr, x_, y_, x, y);
 
 	// Draw dots where the samples actually are to show the density
-	// if (val_blank == 0) {
-	// 	SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
-	// } else {
-	// 	SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
-	// }
-	// SDL_Rect rect = {x - 2, y - 2, 5, 5};
-	// SDL_RenderFillRect(rr, &rect);
+	if (val_blank >= 0xF00) {
+		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
+	} else {
+		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
+	}
+	SDL_Rect rect = {x - 2, y - 2, 5, 5};
+	SDL_RenderFillRect(rr, &rect);
 	x_ = x;
 	y_ = y;
 	n_samples++;
@@ -197,7 +197,7 @@ int main(int argc, char* args[])
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
 	unsigned frame = 0;
-	int demo = 0;
+	int demo = 3;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;

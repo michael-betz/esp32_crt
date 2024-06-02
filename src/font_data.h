@@ -14,24 +14,10 @@
 // t       Triplex (normal size, serifs, tripled lines)
 // cs      Complex Small (Complex, smaller than normal size)
 
-#define N_FONTS 15
+#define N_FONTS 1
 
-extern font_t f_gothgbt;          // 0
-extern font_t f_gothgrt;          // 1
-extern font_t f_gothitt;          // 2
-extern font_t f_italicc;          // 3
-extern font_t f_italiccs;         // 4
-extern font_t f_italict;          // 5
-extern font_t f_romanc;           // 6
-extern font_t f_romancs;          // 7
-extern font_t f_romand;           // 8
-extern font_t f_romanp;           // 9
-extern font_t f_romans;           // 10
-extern font_t f_romant;           // 11
-extern font_t f_scriptc;          // 12
-extern font_t f_scripts;          // 13
-extern font_t f_arc;              // 14
+extern const font_t f_arc;              // 0
 
-extern font_t* f_all[];
+extern const font_t* f_all[];
 
 #endif

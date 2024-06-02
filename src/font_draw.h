@@ -1,18 +1,27 @@
 #ifndef FONT_DRAW_H
 #define FONT_DRAW_H
 
-#define FONT_TYPE_LIN 0
-#define FONT_TYPE_ARC 1
-
-typedef struct {
-    uint8_t font_type;
-    const int8_t *glyphs;
-    const uint16_t *inds;
-} font_t;
-
 // scale is font-size. 100 is for ants, 300 is readable, 1000 is pretty huge
 void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density);
 
 void set_font(unsigned index);
+
+
+/** This describes a glyph. */
+typedef struct {
+    uint16_t start_index;           /**< Start index of the vector */
+    uint8_t adv_w;            /**< Draw the next glyph after this width. */
+    uint8_t box_w;                  /**< Width of the glyph's bounding box*/
+    uint8_t box_h;                  /**< Height of the glyph's bounding box*/
+    int8_t ofs_x;                   /**< x offset of the bounding box*/
+    int8_t ofs_y;                  /**< y offset of the bounding box. Measured from the top of the line*/
+} glyph_dsc_t;
+
+
+typedef struct {
+    const uint16_t n_glyphs;
+    const uint8_t *glyphs;
+    const glyph_dsc_t *glyph_dsc;
+} font_t;
 
 #endif
