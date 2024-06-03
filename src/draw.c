@@ -10,6 +10,10 @@
 #include "fast_sin.h"
 #include "print.h"  // for printing fixed-point numbers
 
+
+#define MIN_DENSITY 10  // Shall match the maximum speed of deflection amp
+
+
 // https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
 static unsigned usqrt4(unsigned val) {
     unsigned a, b;

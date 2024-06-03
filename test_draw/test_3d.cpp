@@ -1,19 +1,19 @@
 #include <stdio.h>
 #include "Matrix.hpp"
 #include "Mesh.hpp"
-#include "venus.hpp"
+// #include "venus.hpp"
 #include "numbers.h"
 
 
-static Mesh m(
-	venus::vertexCount,
-	venus::vertices,
-	venus::edgeCount,
-	venus::edges,
-	venus::triangleCount,
-	venus::triangles,
-	venus::triangleNormals
-);
+// static Mesh m(
+// 	venus::vertexCount,
+// 	venus::vertices,
+// 	venus::edgeCount,
+// 	venus::edges,
+// 	venus::triangleCount,
+// 	venus::triangles,
+// 	venus::triangleNormals
+// );
 
 Mesh *g_model = 0;
 
