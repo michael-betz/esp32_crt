@@ -134,15 +134,15 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 
 	// The longer the distance between 2 points, the lower the intensity
 	float len = sqrt((x - x_) * (x - x_) + (y - y_) * (y - y_));
-	int intens = val_blank / len / 2;
-	if (intens < 0x60)
-		intens = 0x60;
+	int intens = 2000 / len / 2;
+	if (intens < 0x02)
+		intens = 0x02;
 	if (intens > 0xFF)
 		intens = 0xFF;
 
 	// Draw lines connecting the samples. Red for blanked moves
 	if (val_blank >= 0xF00) {
-		SDL_SetRenderDrawColor(rr, intens, 0x00, 0x00, 0xFF);
+		SDL_SetRenderDrawColor(rr, 0x40, 0x00, 0x00, 0xFF);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x00, intens, 0x00, 0xFF);
 	}
@@ -150,9 +150,9 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 
 	// Draw dots where the samples actually are to show the density
 	if (val_blank >= 0xF00) {
-		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
+		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0x40);
 	} else {
-		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0xFF);
+		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0x40);
 	}
 	SDL_Rect rect = {x - 2, y - 2, 5, 5};
 	SDL_RenderFillRect(rr, &rect);

@@ -11,10 +11,10 @@
 #include "print.h"  // for printing fixed-point numbers
 
 
-#define BLANK_OFF_TIME 20  // How long it takes to disable the beam [n_samples]
-#define BLANK_ON_TIME 20  // How long it takes to enable the beam [n_samples]
-#define BLANK_DENSITY 100  // Density for blanked move [density]
-#define BLANK_MIN_DIST 100  // Blank only for distances larger than that
+#define BLANK_OFF_TIME 5  // How long it takes to disable the beam [n_samples]
+#define BLANK_ON_TIME 12  // How long it takes to enable the beam [n_samples]
+#define BLANK_DENSITY 1  // Density for blanked move [density]
+#define BLANK_MIN_DIST 1  // Blank only for distances larger than that
 
 
 // https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
@@ -81,9 +81,9 @@ bool push_circle(
 
 		// Seek to first point and draw the reset
 		if (i == 0)
-			is_clipped = push_goto(x, y);
-		else
-			is_clipped = output_sample(x, y, true, 0);
+			push_goto(x, y);
+
+		is_clipped = output_sample(x, y, true, 0);
 
 		if (is_clipped)
 			break;
