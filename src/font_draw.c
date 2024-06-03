@@ -269,7 +269,7 @@ static void push_char(char c, unsigned scale, unsigned density)
 				break;
 		}
 	}
-	x_c += (gdsc->adv_w + 3) * (int)scale / 64;
+	x_c += gdsc->adv_w * (int)scale / 64;
 }
 
 void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density)
