@@ -11,7 +11,10 @@
 #include "print.h"  // for printing fixed-point numbers
 
 
-#define MIN_DENSITY 10  // Shall match the maximum speed of deflection amp
+#define BLANK_OFF_TIME 20  // How long it takes to disable the beam [n_samples]
+#define BLANK_ON_TIME 20  // How long it takes to enable the beam [n_samples]
+#define BLANK_DENSITY 100  // Density for blanked move [density]
+#define BLANK_MIN_DIST 100  // Blank only for distances larger than that
 
 
 // https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
@@ -75,10 +78,13 @@ bool push_circle(
 		arg = alpha_start + ((i * d_alpha) >> 8);
 		x = x_a + (((get_cos(arg) >> 16) * (int)r_x) >> 15);
 		y = y_a + (((get_sin(arg) >> 16) * (int)r_y) >> 15);
-		// Skip seek to first point if we are already there
-		if (i == 0 && x == x_last && y == y_last)
-			continue;
-		is_clipped = output_sample(x, y, i > 0, 0);
+
+		// Seek to first point and draw the reset
+		if (i == 0)
+			is_clipped = push_goto(x, y);
+		else
+			is_clipped = output_sample(x, y, true, 0);
+
 		if (is_clipped)
 			break;
 	}
@@ -87,29 +93,13 @@ bool push_circle(
 	return is_clipped;
 }
 
-bool push_goto(int x_a, int y_a)
+// return the distance from current beam position to (x, y)
+static unsigned get_dist(int x, int y)
 {
-	if (x_a == x_last && y_a == y_last) {
-		// printf("goto(%d, %d)*\n", x_a, y_a);
-		return false;
-	}
-	// printf("goto(%d, %d)\n", x_a, y_a);
-
-	x_last = x_a;
-	y_last = y_a;
-	return output_sample(x_a, y_a, false, 0);
-}
-
-bool push_line(int x_b, int y_b, unsigned density)
-{
-	unsigned dist;
-
-	if (density == 0)
-		return push_goto(x_b, y_b);
-
 	// Calculate the distance in x, y and hypotenuse
-	int distx = x_b - x_last;
-	int disty = y_b - y_last;
+	int distx = x - x_last;
+	int disty = y - y_last;
+	unsigned dist = 0;
 
 	if (distx == 0)
 		dist = abs(disty);
@@ -118,7 +108,45 @@ bool push_line(int x_b, int y_b, unsigned density)
 	else
 		dist = usqrt4(distx * distx + disty * disty);
 
+	return dist;
+}
+
+bool push_goto(int x_a, int y_a)
+{
+	bool is_clipped = false;
+
+	if (x_a == x_last && y_a == y_last)
+		return is_clipped;
+
+	unsigned dist = get_dist(x_a, y_a);
+	unsigned n = (dist * BLANK_DENSITY) >> 11;
+
+	// Wait at current location until the beam has turned off
+	if (dist >= BLANK_MIN_DIST)
+		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
+			output_sample(x_last, y_last, false, 0);
+
+	// Move the beam while blanked. Interpolate N points for the move.
+	for (unsigned i=0; i<=n; i++)
+		is_clipped = output_sample(x_a, y_a, false, 0);
+	x_last = x_a;
+	y_last = y_a;
+
+	// Wait at new location until the beam is back on
+	if (dist >= BLANK_MIN_DIST)
+		for (unsigned i=0; i<BLANK_ON_TIME; i++)
+			output_sample(x_last, y_last, false, 0);
+
+	return is_clipped;
+}
+
+bool push_line(int x_b, int y_b, unsigned density)
+{
+	if (density == 0)
+		return push_goto(x_b, y_b);
+
 	// Check how many points to produce
+	unsigned dist = get_dist(x_b, y_b);
 	int n = (dist * density) >> 11;
 
 	// printf("push_line(%d, %d), n: %d\n", x_b, y_b, n);
@@ -130,8 +158,8 @@ bool push_line(int x_b, int y_b, unsigned density)
 		return output_sample(x_b, y_b, true, 0);
 	}
 
-	int dx = (distx << 8) / n;
-	int dy = (disty << 8) / n;
+	int dx = ((x_b - x_last) << 8) / n;
+	int dy = ((y_b - y_last) << 8) / n;
 	bool is_clipped = false;
 
 	for (int i = 1; i <= n; i++) {
