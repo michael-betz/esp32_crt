@@ -14,7 +14,7 @@
 // t       Triplex (normal size, serifs, tripled lines)
 // cs      Complex Small (Complex, smaller than normal size)
 
-#define N_FONTS 1
+#define N_FONTS 2
 
 extern const font_t f_arc;              // 0
 

@@ -1,15 +1,14 @@
 # TYPES
 T_GOTO = 0
 T_LINETO = 1
-T_QBEZ_ON = 2
-T_QBEZ_OFF = 3
+T_QBEZ = 2
 T_ARC = 4
 T_END = 0xF
 
 class CoordinateEncoder:
     def __init__(self, N=2):
         '''
-        Encodes a int16 x, y coordinate pair (N=2) into a blob of 3 - 5 bytes
+        Encodes a int16 x, y coordinate pair (N=2) into a blob of 1 - 5 bytes
         The upper 4 bits of the first byte are not used. The lower 4 bits are the flags.
         flags for N = 2: [positive_1, positive_0, short_1, short_0]
         '''
@@ -20,19 +19,23 @@ class CoordinateEncoder:
         flags = 0
         return_bytes = bytes()
 
-        for i in range(self.N):
-            val = vals[i]
+        for i in range(self.N):  # For each dimension (X and Y for N = 2)
+            val = round(vals[i])
             d_val = val - self.prev[i]
 
-            if abs(d_val) <= 255:
-                # Use relative encoding as uint8
+            if d_val == 0:
+                # Repeat previous value. Make sure the bits F_X_SHORT and F_X_POS are cleared
+                pass
+            elif abs(d_val) <= 255:
+                # Use short number format with relative encoding as uint8. Set the F_X_SHORT bit.
                 flags |= (1 << i)
                 return_bytes += abs(d_val).to_bytes(1, signed=False)
-                # set the sign bit in flags
+                # set the F_X_POS bit if the number is positive
                 if d_val > 0:
                     flags |= (1 << (i + self.N))
             else:
-                # Use absolute encoding as int16
+                # Use long number format with absolute encoding as int16. Set the F_X_POS bit.
+                flags |= (1 << (i + self.N))
                 return_bytes += val.to_bytes(2, signed=True)
 
             self.prev[i] = val

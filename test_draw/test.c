@@ -90,7 +90,7 @@ static void demo_text(unsigned frame, unsigned font)
 		return;
 	snprintf(tmp, sizeof(tmp), "font: %d", font);
 
-	set_font(9);
+	set_font(0);
 	push_str(
 		-970, 950,
 		tmp,
