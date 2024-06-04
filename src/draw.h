@@ -72,6 +72,8 @@ bool push_goto(int x_a, int y_a);
 // Returns true if a sample was clipped
 bool push_line(int x_b, int y_b, unsigned density);
 
+void push_q_bezier(int x1, int y1, int x2, int y2, int density);
+
 // Draws an ellipse, centered at (x_a, y_a) with radi (r_x, r_y)
 // where alpha_length is the arc_length (360 deg is MAX_ANGLE)
 // and alph_start is the start angle

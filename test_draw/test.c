@@ -116,7 +116,7 @@ static void demo_dds(unsigned frame)
 	// DAC \Delta t is 1.6 us
 	// SDL frame is 50 ms
 	// Need to draw 31k samples per frame
-	draw_dds(2000);
+	draw_dds(8000);
 }
 
 // Visualize a sample, emulate the phosphor with additive blending
@@ -197,7 +197,7 @@ int main(int argc, char* args[])
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
 	unsigned frame = 0;
-	int demo = 3;
+	int demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
@@ -231,23 +231,23 @@ int main(int argc, char* args[])
 		push_list(dl, n_dl);
 
 		if (demo < 0)
-			demo = N_FONTS + 2;
+			demo = N_FONTS + 3;
 
-		if (demo > N_FONTS + 2)
+		if (demo > N_FONTS + 3)
 			demo = 0;
 
 		switch (demo) {
-		case 0:
-			draw_mesh();
-			break;
 		case 1:
 			demo_circles(frame);
 			break;
 		case 2:
 			demo_dds(frame);
 			break;
+		case 3:
+			draw_mesh();
+			break;
 		default:
-			demo_text(frame, demo - 3);
+			demo_text(frame, demo - 4);
 			break;
 		}
 

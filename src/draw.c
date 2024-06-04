@@ -17,6 +17,11 @@
 #define BLANK_MIN_DIST 1  // Blank only for distances larger than that
 
 
+// current pen position. Use push_goto() to modify.
+static int x_last = 0;
+static int y_last = 0;
+
+
 // https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
 static unsigned usqrt4(unsigned val) {
     unsigned a, b;
@@ -33,6 +38,24 @@ static unsigned usqrt4(unsigned val) {
     return a;
 }
 
+// return the distance from current beam position to (x, y)
+static unsigned get_dist(int x, int y)
+{
+	// Calculate the distance in x, y and hypotenuse
+	int distx = x - x_last;
+	int disty = y - y_last;
+	unsigned dist = 0;
+
+	if (distx == 0)
+		dist = abs(disty);
+	else if (disty == 0)
+		dist = abs(distx);
+	else
+		dist = usqrt4(distx * distx + disty * disty);
+
+	return dist;
+}
+
 bool output_sample(int x, int y, bool beam_on, int focus)
 {
 	// printf("(%4d, %4d), %3x\n", x, y, blank);
@@ -44,9 +67,34 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 	return false;
 }
 
-// last outputted sample, used for drawing polygons, don't touch!
-static int x_last = 0;
-static int y_last = 0;
+// draw a quadratic Bezier curve. The 3 control points are:
+// * the current pen position, (x1, y1), (x2, y2)
+void push_q_bezier(int x1, int y1, int x2, int y2, int density)
+{
+	unsigned dist = get_dist(x2, y2);
+
+	// How many points to interpolate
+	int n = (dist * density) >> 11;
+
+	if (n < 3) {
+		output_sample(
+			(x_last + x2) / 4 + x1 / 2,
+			(y_last + y2) / 4 + y1 / 2,
+			true,
+			0
+		);
+		output_sample(x2, y2, true, 0);
+		return;
+	}
+
+	for (unsigned i = 0; i < n; i++) {
+
+	}
+	// t = linspace(0, 1, N_POINTS)
+	// xs = (1 - t)**2 * pt0[0] + 2 * (1 - t) * t * pt1[0] + t**2 * pt2[0]
+	// ys = (1 - t)**2 * pt0[1] + 2 * (1 - t) * t * pt1[1] + t**2 * pt2[1]
+	// return xs, ys
+}
 
 bool push_circle(
 	int x_a,
@@ -91,24 +139,6 @@ bool push_circle(
 	x_last = x;
 	y_last = y;
 	return is_clipped;
-}
-
-// return the distance from current beam position to (x, y)
-static unsigned get_dist(int x, int y)
-{
-	// Calculate the distance in x, y and hypotenuse
-	int distx = x - x_last;
-	int disty = y - y_last;
-	unsigned dist = 0;
-
-	if (distx == 0)
-		dist = abs(disty);
-	else if (disty == 0)
-		dist = abs(distx);
-	else
-		dist = usqrt4(distx * distx + disty * disty);
-
-	return dist;
 }
 
 bool push_goto(int x_a, int y_a)

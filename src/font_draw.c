@@ -13,8 +13,7 @@
 // `type` enumerates the drawing primitive:
 //  0 = goto(x, y)
 //  1 = lineto(x, y)
-//  2 = quadratic_bezier_off_curve(x, y)
-//  3 = quadratic_bezier_on_curve(x, y)
+//  2 = quadratic_bezier(x_b, y_b, x_c, y_c)
 //  4 = arc(x, y, rx:uint8, ry:uint8, fo:uint4, lo:uint4)
 //  F = end of glyph
 //
@@ -33,8 +32,7 @@
 
 #define F_GOTO 0
 #define F_LINETO 1
-#define F_QBEZ_ON 2
-#define F_QBEZ_OFF 3
+#define F_QBEZ 2
 #define F_ARC 4
 #define F_END 0xF
 
@@ -42,7 +40,6 @@
 #define F_Y_SHORT 2
 #define F_X_POS 4
 #define F_Y_POS 8
-
 
 
 static const font_t *current_font = &f_arc;
@@ -84,101 +81,64 @@ static int get_str_width(char *c, unsigned n, unsigned scale)
 	return w;
 }
 
-// static void _push_char_lin(const int8_t *p, unsigned len, unsigned scale, unsigned density)
-// {
-// 	bool is_pen_up = true, is_clipped = false;
+// Compress 16 bit signed coordinate pairs and encode them in a byte stream
+// Very similar to how true-type fonts encode their coordinate values.
+static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out)
+{
+		// Holds internal state
+		static int x = 0, y = 0;
 
-// 	if (len < 2)
-// 		return;
+		if (p == NULL) {
+			// reset internal state
+			x = 0;
+			y = 0;
+			return p;
+		}
 
-// 	// first 2 bytes are the left and right limits of the glyph bounding box
-// 	int l = *p++ * (int)scale / 64;
-// 	int r = *p++ * (int)scale / 64;
-// 	len -= 2;
+		// Consume 1 byte encoding the flags
+		unsigned flags = *p++ & 0xF;
 
-// 	x_c -= l;
+		if (flags & F_X_SHORT) {
+			// Short number format, consume one byte
+			// F_X_POS indicates if the byte is positive or negative
+			if (flags & F_X_POS)
+				x += *p;
+			else
+				x -= *p;
+			p++;
+		} else {
+			// Long number format. Consume 2 bytes if F_X_POS is set.
+			// Otherwise consume 0 bytes and don't change the value
+			if (flags & F_X_POS) {
+				int16_t tmp = (*p++) << 8;
+				tmp |= *p++;
+				x = tmp;
+			}
+		}
 
-// 	while (len >= 2) {
-// 		// Read chunks of 2 bytes
-// 		int x = *p++;  // X start of line
-// 		int y = *p++;  // Y start of line
-// 		len -= 2;
+		if (flags & F_Y_SHORT) {
+			if (flags & F_Y_POS)
+				y += *p;
+			else
+				y -= *p;
+			p++;
+		} else {
+			if (flags & F_Y_POS) {
+				int16_t tmp = (*p++) << 8;
+				tmp |= *p++;
+				y = tmp;
+			}
+		}
 
-// 		if (x == -50 && y == 0) {
-// 			// pen up command, next command is a goto
-// 			is_pen_up = true;
-// 			continue;
-// 		}
-// 		if (is_pen_up) {
-// 			is_clipped = push_goto(
-// 				x_c + (x * (int)scale / 64),
-// 				y_c - (y * (int)scale / 64)
-// 			);
-// 			if (!is_clipped)
-// 				is_pen_up = false;
-// 			continue;
-// 		}
-// 		is_clipped = push_line(
-// 			x_c + (x * (int)scale / 64),
-// 			y_c - (y * (int)scale / 64),
-// 			density
-// 		);
-// 		if (is_clipped)
-// 			is_pen_up = true;
-// 	}
+		*x_out = x;
+		*y_out = y;
 
-// 	x_c += r;
-// }
-
-// static void _push_char_arc(const int8_t *p, unsigned len, unsigned scale, unsigned density)
-// {
-// 	while (len > 5) {
-// 		// Read chunks of 5 bytes
-// 		unsigned type = *p++;  // 0 for lines, otherwise circle
-// 		int a_x = *p++;  // X start of line / center of circle
-// 		int a_y = *p++;  // Y start of line / center of circle
-// 		int b_x = *p++;  // X end of line / x-radius
-// 		int b_y = *p++;  // Y end of line / y-radius
-// 		len -= 5;
-
-// 		if (type == 0) {
-// 			push_goto(
-// 				x_c + (a_x * (int)scale / 64),
-// 				y_c + (a_y * (int)scale / 64)
-// 			);
-// 			push_line(
-// 				x_c + (b_x * (int)scale / 64),
-// 				y_c + (b_y * (int)scale / 64),
-// 				density
-// 			);
-// 		} else {
-// 			int fo = (type >> 4) & 0xF;  // Start angle 0..7 is 0 deg .. 315 deg 0 = E, 90 = N, 180 = W, 270 = S
-// 			int lo = type & 0xF;  // End angle 1..14 is 45 deg .. 630 deg
-// 			unsigned a_start = fo * MAX_ANGLE / 8;
-// 			unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
-// 			push_circle(
-// 				x_c + (a_x * (int)scale / 64),
-// 				y_c + (a_y * (int)scale / 64),
-// 				(b_x * (int)scale) / 2 / 64,
-// 				(b_y * (int)scale) / 2 / 64,
-// 				a_start,
-// 				a_stop - a_start,
-// 				density
-// 			);
-// 		}
-// 	}
-// 	if (len >= 1) {
-// 		// last byte is the width, advance the cursor
-// 		x_c += (*p + 3) * (int)scale / 64;
-// 	}
-// }
-
-
-
-
+		return p;
+}
 
 static void push_char(char c, unsigned scale, unsigned density)
 {
+	// Find the glyph data for the ascii letter c
 	if (c < 0x20)
 		return;
 	c -= 0x20;
@@ -190,41 +150,20 @@ static void push_char(char c, unsigned scale, unsigned density)
 
 	const uint8_t *p = &current_font->glyphs[gdsc->start_index];
 
-	// p points to a flag - byte
-	// printf("%d --> %d, %02x\n", c, gdsc->start_index, *p);
+	// Draw the glyph
+	// reset coordinate decoder state
+	coordinateDecoder(NULL, NULL, NULL);
 
 	int x = 0, y = 0;
+	int x_b = 0, y_b = 0;
 	while (1) {
-		unsigned flags = *p & 0xF;
+		// Upper 4 bit of the first byte indicates what to draw
 		unsigned type = *p >> 4;
-		p++;
 
 		if (type == F_END)
 			break;
 
-		if (flags & F_X_SHORT) {
-			if (flags & F_X_POS)
-				x += *p;
-			else
-				x -= *p;
-			p++;
-		} else {
-			int16_t tmp = (*p++) << 8;
-			tmp |= *p++;
-			x = tmp;
-		}
-
-		if (flags & F_Y_SHORT) {
-			if (flags & F_Y_POS)
-				y += *p;
-			else
-				y -= *p;
-			p++;
-		} else {
-			int16_t tmp = (*p++) << 8;
-			tmp |= *p++;
-			y = tmp;
-		}
+		p = coordinateDecoder(p, &x, &y);
 
 		switch (type) {
 			case F_GOTO:
@@ -242,6 +181,16 @@ static void push_char(char c, unsigned scale, unsigned density)
 				);
 				break;
 
+			case F_QBEZ:
+				p = coordinateDecoder(p, &x_b, &y_b);
+				push_q_bezier(
+					x_c + (x * (int)scale / 64),
+					y_c + (y * (int)scale / 64),
+					x_c + (x_b * (int)scale / 64),
+					y_c + (y_b * (int)scale / 64),
+					density
+				);
+				break;
 
 			case F_ARC:
 				unsigned r_x = *p++;
@@ -263,12 +212,12 @@ static void push_char(char c, unsigned scale, unsigned density)
 				break;
 
 			default:
-			// case T_QBEZ_ON:
-			// case T_QBEZ_OFF:
 				// not implemented
 				break;
 		}
 	}
+
+	// Advance the cursor by the correct amount
 	x_c += gdsc->adv_w * (int)scale / 64;
 }
 
