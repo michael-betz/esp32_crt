@@ -90,25 +90,27 @@ static void demo_text(unsigned frame, unsigned font)
 		return;
 	snprintf(tmp, sizeof(tmp), "font: %d", font);
 
-	set_font(0);
-	push_str(
-		-970, 950,
-		tmp,
-		sizeof(tmp),
-		A_LEFT,
-		300,
-		300
-	);
+	// set_font(0);
+	// push_str(
+	// 	-970, 950,
+	// 	tmp,
+	// 	sizeof(tmp),
+	// 	A_LEFT,
+	// 	300,
+	// 	300
+	// );
 
 	set_font(font);
 	push_str(
-		0, 300,
+		0, 500,
 		"esp_crt\nHello World\n12345678",
-		1024,
+		// "p",
+		128,
 		A_CENTER,
-		(sin(frame / 200.0) + 1.01) * 1000,
+		25,
 		100
 	);
+	// exit(0);
 }
 
 static void demo_dds(unsigned frame)
@@ -150,9 +152,9 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 
 	// Draw dots where the samples actually are to show the density
 	if (val_blank >= 0xF00) {
-		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0x40);
+		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0x80);
 	} else {
-		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0x40);
+		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0x80);
 	}
 	SDL_Rect rect = {x - 2, y - 2, 5, 5};
 	SDL_RenderFillRect(rr, &rect);
@@ -197,7 +199,7 @@ int main(int argc, char* args[])
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
 	unsigned frame = 0;
-	int demo = 0;
+	int demo = 5;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;

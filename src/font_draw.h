@@ -9,7 +9,8 @@ void set_font(unsigned index);
 
 /** This describes a glyph. */
 typedef struct {
-    uint16_t start_index;           /**< Start index of the vector */
+    // uint16_t start_index;           /**< Start index of the vector */
+    uint16_t end_index;           /**< Last valid index of the vector */
     int16_t adv_w;            /**< Draw the next glyph after this width. */
     int16_t ofs_x;                   /**< x offset of the bounding box*/
     // int16_t ofs_y;                  /**< y offset of the bounding box. Measured from the top of the line*/

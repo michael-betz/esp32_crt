@@ -138,25 +138,32 @@ static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out
 
 static void push_char(char c, unsigned scale, unsigned density)
 {
+	printf("push_char(%c, %d, %d)\n", c, scale, density);
 	// Find the glyph data for the ascii letter c
 	if (c < 0x20)
 		return;
-	c -= 0x20;
 
-	if (c >= current_font->n_glyphs)
+	unsigned glyph_index = c - 0x20;
+	if (glyph_index >= current_font->n_glyphs)
 		return;
 
-	const glyph_dsc_t *gdsc = &current_font->glyph_dsc[(unsigned)c];
+	const glyph_dsc_t *glyph_dsc = &current_font->glyph_dsc[glyph_index];
 
-	const uint8_t *p = &current_font->glyphs[gdsc->start_index];
+	// Find the beginning and end of the glyph blob
+	unsigned data_end = glyph_dsc->end_index;
+	unsigned data_start = 0;
+	if (glyph_index > 0)
+		data_start = current_font->glyph_dsc[glyph_index - 1].end_index;
+	const uint8_t *p = &current_font->glyphs[data_start];
+	const uint8_t *p_end = &current_font->glyphs[data_end];
 
-	// Draw the glyph
 	// reset coordinate decoder state
 	coordinateDecoder(NULL, NULL, NULL);
 
-	int x = 0, y = 0;
-	int x_b = 0, y_b = 0;
-	while (1) {
+	int x = 0, y = 0;  // raw glyph coordinates (relative to glyph origin)
+	int x_b = 0, y_b = 0;  // auxilary coordinates
+	int x_s = 0, y_s = 0; // scaled absolute coordinates
+	while (p < p_end) {
 		// Upper 4 bit of the first byte indicates what to draw
 		unsigned type = *p >> 4;
 
@@ -164,28 +171,26 @@ static void push_char(char c, unsigned scale, unsigned density)
 			break;
 
 		p = coordinateDecoder(p, &x, &y);
+		x_s = x_c + (x * (int)scale / 64);
+		y_s = y_c + (y * (int)scale / 64);
 
 		switch (type) {
 			case F_GOTO:
-				push_goto(
-					x_c + (x * (int)scale / 64),
-					y_c + (y * (int)scale / 64)
-				);
+				printf("goto (%d, %d)\n", x, y);
+				push_goto(x_s, y_s);
 				break;
 
 			case F_LINETO:
-				push_line(
-					x_c + (x * (int)scale / 64),
-					y_c + (y * (int)scale / 64),
-					density
-				);
+				printf("lineto (%d, %d)\n", x, y);
+				push_line(x_s, y_s, density);
 				break;
 
 			case F_QBEZ:
 				p = coordinateDecoder(p, &x_b, &y_b);
+				printf("qbez (), (%d, %d), (%d, %d)\n", x, y, x_b, y_b);
 				push_q_bezier(
-					x_c + (x * (int)scale / 64),
-					y_c + (y * (int)scale / 64),
+					x_s,
+					y_s,
 					x_c + (x_b * (int)scale / 64),
 					y_c + (y_b * (int)scale / 64),
 					density
@@ -200,9 +205,10 @@ static void push_char(char c, unsigned scale, unsigned density)
 				p++;
 				unsigned a_start = fo * MAX_ANGLE / 8;
 				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
+				printf("arc (%d, %d), %d, %d, %d, %d\n", x, y, r_x, r_y, fo, lo);
 				push_circle(
-					x_c + (x * (int)scale / 64),
-					y_c + (y * (int)scale / 64),
+					x_s,
+					y_s,
 					(r_x * (int)scale) / 2 / 64,
 					(r_y * (int)scale) / 2 / 64,
 					a_start,
@@ -218,7 +224,7 @@ static void push_char(char c, unsigned scale, unsigned density)
 	}
 
 	// Advance the cursor by the correct amount
-	x_c += gdsc->adv_w * (int)scale / 64;
+	x_c += glyph_dsc->adv_w * (int)scale / 64;
 }
 
 void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density)
@@ -227,7 +233,7 @@ void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned sc
 	int w_str = -1;
 	while (*c && n > 0) {
 		if (*c == '\n') {
-			y_c -= 26 * scale / 64;
+			y_c -= 1000 * scale / 64;
 			w_str = -1;
 			c++;
 			n--;

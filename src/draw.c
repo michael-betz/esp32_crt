@@ -68,32 +68,47 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 }
 
 // draw a quadratic Bezier curve. The 3 control points are:
-// * the current pen position, (x1, y1), (x2, y2)
+// the current pen position, (x1, y1), (x2, y2)
+// We'll do it in 20.12 fixed-point (precision is controlled by MAX_ANGLE)
 void push_q_bezier(int x1, int y1, int x2, int y2, int density)
 {
 	unsigned dist = get_dist(x2, y2);
 
-	// How many points to interpolate
+	// How many points to interpolate based on linear distance
 	int n = (dist * density) >> 11;
 
-	if (n < 3) {
+	if (n <= 2) {
+		// Output 2 points (the beginning and end-points)
+	} else if (n <= 3) {
+		// output 3 points (the middle one is interpolated)
 		output_sample(
 			(x_last + x2) / 4 + x1 / 2,
 			(y_last + y2) / 4 + y1 / 2,
 			true,
 			0
 		);
-		output_sample(x2, y2, true, 0);
-		return;
+	} else {
+		// output n points, need to interpolate n - 2 points.
+		int d_t = MAX_ANGLE / n;  // t step-size (n steps from 0 to MAX_ANGLE)
+
+		for (unsigned i = 1; i <= (n - 1); i++) {
+			int t = i * d_t;
+
+			// xs = (1 - t)**2 * pt0[0] + 2 * (1 - t) * t * pt1[0] + t**2 * pt2[0]
+			// xs =          A * pt0[0] +               B * pt1[0] +    C * pt2[0]
+			int A = (MAX_ANGLE - t) * (MAX_ANGLE - t) / MAX_ANGLE;
+			int B = 2 * (MAX_ANGLE - t) * t / MAX_ANGLE;
+			int C = t * t / MAX_ANGLE;
+
+			int xs = (A * x_last + B * x1 + C * x2 + MAX_ANGLE / 2) / MAX_ANGLE;
+			int ys = (A * y_last + B * y1 + C * y2 + MAX_ANGLE / 2) / MAX_ANGLE;
+			output_sample(xs, ys, true, 0);
+		}
 	}
 
-	for (unsigned i = 0; i < n; i++) {
-
-	}
-	// t = linspace(0, 1, N_POINTS)
-	// xs = (1 - t)**2 * pt0[0] + 2 * (1 - t) * t * pt1[0] + t**2 * pt2[0]
-	// ys = (1 - t)**2 * pt0[1] + 2 * (1 - t) * t * pt1[1] + t**2 * pt2[1]
-	// return xs, ys
+	output_sample(x2, y2, true, 0);
+	x_last = x2;
+	y_last = y2;
 }
 
 bool push_circle(
