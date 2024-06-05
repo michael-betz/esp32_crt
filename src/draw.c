@@ -75,7 +75,7 @@ void push_q_bezier(int x1, int y1, int x2, int y2, int density)
 	unsigned dist = get_dist(x2, y2);
 
 	// How many points to interpolate based on linear distance
-	int n = (dist * density) >> 11;
+	int n = (dist * density) / 2900;  // fudged to perfection xD
 
 	if (n <= 2) {
 		// Output 2 points (the beginning and end-points)

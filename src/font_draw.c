@@ -138,7 +138,7 @@ static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out
 
 static void push_char(char c, unsigned scale, unsigned density)
 {
-	printf("push_char(%c, %d, %d)\n", c, scale, density);
+	// printf("push_char(%c, %d, %d)\n", c, scale, density);
 	// Find the glyph data for the ascii letter c
 	if (c < 0x20)
 		return;
@@ -176,18 +176,18 @@ static void push_char(char c, unsigned scale, unsigned density)
 
 		switch (type) {
 			case F_GOTO:
-				printf("goto (%d, %d)\n", x, y);
+				// printf("goto (%d, %d)\n", x, y);
 				push_goto(x_s, y_s);
 				break;
 
 			case F_LINETO:
-				printf("lineto (%d, %d)\n", x, y);
+				// printf("lineto (%d, %d)\n", x, y);
 				push_line(x_s, y_s, density);
 				break;
 
 			case F_QBEZ:
 				p = coordinateDecoder(p, &x_b, &y_b);
-				printf("qbez (), (%d, %d), (%d, %d)\n", x, y, x_b, y_b);
+				// printf("qbez (), (%d, %d), (%d, %d)\n", x, y, x_b, y_b);
 				push_q_bezier(
 					x_s,
 					y_s,
@@ -205,7 +205,7 @@ static void push_char(char c, unsigned scale, unsigned density)
 				p++;
 				unsigned a_start = fo * MAX_ANGLE / 8;
 				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
-				printf("arc (%d, %d), %d, %d, %d, %d\n", x, y, r_x, r_y, fo, lo);
+				// printf("arc (%d, %d), %d, %d, %d, %d\n", x, y, r_x, r_y, fo, lo);
 				push_circle(
 					x_s,
 					y_s,

@@ -90,15 +90,15 @@ static void demo_text(unsigned frame, unsigned font)
 		return;
 	snprintf(tmp, sizeof(tmp), "font: %d", font);
 
-	// set_font(0);
-	// push_str(
-	// 	-970, 950,
-	// 	tmp,
-	// 	sizeof(tmp),
-	// 	A_LEFT,
-	// 	300,
-	// 	300
-	// );
+	set_font(0);
+	push_str(
+		-970, 950,
+		tmp,
+		sizeof(tmp),
+		A_LEFT,
+		300,
+		300
+	);
 
 	set_font(font);
 	push_str(
@@ -107,7 +107,8 @@ static void demo_text(unsigned frame, unsigned font)
 		// "p",
 		128,
 		A_CENTER,
-		25,
+		// 18,
+		(sin(frame / 200.0) + 1.01) * 10,
 		100
 	);
 	// exit(0);
