@@ -159,6 +159,7 @@ static const glyph_dsc_t glyph_dsc_arc[96] = {
 };
 
 const font_t f_arc = {
+    .units_per_em = 28,
     .n_glyphs = 96,
     .glyphs = glyphs_arc,
     .glyph_dsc = glyph_dsc_arc,
@@ -649,104 +650,105 @@ static const uint8_t glyphs_lobster[11410] = {
 
 // GLYPH DESCRIPTION
 static const glyph_dsc_t glyph_dsc_lobster[95] = {
-    {.end_index =     0, .adv_w =   217, .ofs_x =     0},
-    {.end_index =    61, .adv_w =   257, .ofs_x =    32},
-    {.end_index =    87, .adv_w =   353, .ofs_x =    80},
-    {.end_index =   174, .adv_w =   659, .ofs_x =    60},
-    {.end_index =   418, .adv_w =   548, .ofs_x =    14},
-    {.end_index =   646, .adv_w =   796, .ofs_x =    50},
-    {.end_index =   932, .adv_w =   682, .ofs_x =    14},
-    {.end_index =   946, .adv_w =   196, .ofs_x =    80},
-    {.end_index =  1011, .adv_w =   437, .ofs_x =   150},
-    {.end_index =  1076, .adv_w =   413, .ofs_x =   -68},
-    {.end_index =  1222, .adv_w =   515, .ofs_x =    85},
-    {.end_index =  1256, .adv_w =   442, .ofs_x =    15},
-    {.end_index =  1327, .adv_w =   216, .ofs_x =    24},
-    {.end_index =  1341, .adv_w =   290, .ofs_x =    19},
-    {.end_index =  1384, .adv_w =   263, .ofs_x =    31},
-    {.end_index =  1400, .adv_w =   311, .ofs_x =    11},
-    {.end_index =  1506, .adv_w =   546, .ofs_x =    21},
-    {.end_index =  1536, .adv_w =   317, .ofs_x =    21},
-    {.end_index =  1778, .adv_w =   492, .ofs_x =   -12},
-    {.end_index =  1987, .adv_w =   514, .ofs_x =     6},
-    {.end_index =  2131, .adv_w =   476, .ofs_x =    -2},
-    {.end_index =  2288, .adv_w =   517, .ofs_x =    15},
-    {.end_index =  2465, .adv_w =   500, .ofs_x =    16},
-    {.end_index =  2630, .adv_w =   464, .ofs_x =    57},
-    {.end_index =  2834, .adv_w =   499, .ofs_x =    -2},
-    {.end_index =  3017, .adv_w =   489, .ofs_x =    13},
-    {.end_index =  3104, .adv_w =   267, .ofs_x =    41},
-    {.end_index =  3220, .adv_w =   276, .ofs_x =    46},
-    {.end_index =  3246, .adv_w =   358, .ofs_x =     7},
-    {.end_index =  3277, .adv_w =   515, .ofs_x =    32},
-    {.end_index =  3303, .adv_w =   362, .ofs_x =     7},
-    {.end_index =  3495, .adv_w =   441, .ofs_x =    46},
-    {.end_index =  3766, .adv_w =   688, .ofs_x =    -9},
-    {.end_index =  3940, .adv_w =   668, .ofs_x =     9},
-    {.end_index =  4139, .adv_w =   641, .ofs_x =    12},
-    {.end_index =  4271, .adv_w =   497, .ofs_x =    19},
-    {.end_index =  4404, .adv_w =   663, .ofs_x =     6},
-    {.end_index =  4586, .adv_w =   459, .ofs_x =     7},
-    {.end_index =  4695, .adv_w =   459, .ofs_x =     9},
-    {.end_index =  4936, .adv_w =   578, .ofs_x =    19},
-    {.end_index =  5026, .adv_w =   665, .ofs_x =    12},
-    {.end_index =  5092, .adv_w =   375, .ofs_x =     6},
-    {.end_index =  5246, .adv_w =   536, .ofs_x =    17},
-    {.end_index =  5418, .adv_w =   601, .ofs_x =     6},
-    {.end_index =  5554, .adv_w =   379, .ofs_x =     6},
-    {.end_index =  5645, .adv_w =   787, .ofs_x =    67},
-    {.end_index =  5738, .adv_w =   668, .ofs_x =     6},
-    {.end_index =  5909, .adv_w =   665, .ofs_x =    16},
-    {.end_index =  6037, .adv_w =   573, .ofs_x =     6},
-    {.end_index =  6284, .adv_w =   665, .ofs_x =    16},
-    {.end_index =  6495, .adv_w =   601, .ofs_x =     6},
-    {.end_index =  6709, .adv_w =   570, .ofs_x =    34},
-    {.end_index =  6809, .adv_w =   481, .ofs_x =     6},
-    {.end_index =  6917, .adv_w =   716, .ofs_x =    -5},
-    {.end_index =  6994, .adv_w =   615, .ofs_x =     6},
-    {.end_index =  7091, .adv_w =   962, .ofs_x =     6},
-    {.end_index =  7182, .adv_w =   620, .ofs_x =     6},
-    {.end_index =  7267, .adv_w =   620, .ofs_x =     6},
-    {.end_index =  7405, .adv_w =   542, .ofs_x =    11},
-    {.end_index =  7431, .adv_w =   400, .ofs_x =    -7},
-    {.end_index =  7447, .adv_w =   362, .ofs_x =    42},
-    {.end_index =  7472, .adv_w =   400, .ofs_x =   -60},
-    {.end_index =  7495, .adv_w =   421, .ofs_x =    50},
-    {.end_index =  7510, .adv_w =   444, .ofs_x =    36},
-    {.end_index =  7524, .adv_w =   201, .ofs_x =    24},
-    {.end_index =  7683, .adv_w =   526, .ofs_x =   -13},
-    {.end_index =  7795, .adv_w =   444, .ofs_x =    -7},
-    {.end_index =  7908, .adv_w =   384, .ofs_x =   -13},
-    {.end_index =  8065, .adv_w =   525, .ofs_x =   -13},
-    {.end_index =  8185, .adv_w =   384, .ofs_x =   -13},
-    {.end_index =  8330, .adv_w =   267, .ofs_x =  -208},
-    {.end_index =  8535, .adv_w =   507, .ofs_x =   -13},
-    {.end_index =  8678, .adv_w =   505, .ofs_x =   -38},
-    {.end_index =  8790, .adv_w =   267, .ofs_x =    -8},
-    {.end_index =  8936, .adv_w =   240, .ofs_x =  -202},
-    {.end_index =  9051, .adv_w =   518, .ofs_x =   -38},
-    {.end_index =  9119, .adv_w =   267, .ofs_x =    -8},
-    {.end_index =  9302, .adv_w =   752, .ofs_x =   -38},
-    {.end_index =  9444, .adv_w =   505, .ofs_x =   -38},
-    {.end_index =  9595, .adv_w =   439, .ofs_x =   -14},
-    {.end_index =  9693, .adv_w =   468, .ofs_x =   -91},
-    {.end_index =  9803, .adv_w =   486, .ofs_x =   -13},
-    {.end_index =  9886, .adv_w =   376, .ofs_x =   -38},
-    {.end_index = 10032, .adv_w =   382, .ofs_x =   -32},
-    {.end_index = 10120, .adv_w =   267, .ofs_x =    -8},
-    {.end_index = 10239, .adv_w =   505, .ofs_x =    -8},
-    {.end_index = 10349, .adv_w =   414, .ofs_x =    -9},
-    {.end_index = 10505, .adv_w =   661, .ofs_x =    -8},
-    {.end_index = 10681, .adv_w =   522, .ofs_x =     0},
-    {.end_index = 10846, .adv_w =   486, .ofs_x =    -8},
-    {.end_index = 10984, .adv_w =   428, .ofs_x =     0},
-    {.end_index = 11147, .adv_w =   352, .ofs_x =    45},
-    {.end_index = 11161, .adv_w =   532, .ofs_x =   219},
-    {.end_index = 11324, .adv_w =   352, .ofs_x =   -65},
-    {.end_index = 11410, .adv_w =   431, .ofs_x =    49},
+    {.end_index =     0, .adv_w =   217},  // ' '
+    {.end_index =    61, .adv_w =   257},  // '!'
+    {.end_index =    87, .adv_w =   353},  // '"'
+    {.end_index =   174, .adv_w =   659},  // '#'
+    {.end_index =   418, .adv_w =   548},  // '$'
+    {.end_index =   646, .adv_w =   796},  // '%'
+    {.end_index =   932, .adv_w =   682},  // '&'
+    {.end_index =   946, .adv_w =   196},  // '''
+    {.end_index =  1011, .adv_w =   437},  // '('
+    {.end_index =  1076, .adv_w =   413},  // ')'
+    {.end_index =  1222, .adv_w =   515},  // '*'
+    {.end_index =  1256, .adv_w =   442},  // '+'
+    {.end_index =  1327, .adv_w =   216},  // ','
+    {.end_index =  1341, .adv_w =   290},  // '-'
+    {.end_index =  1384, .adv_w =   263},  // '.'
+    {.end_index =  1400, .adv_w =   311},  // '/'
+    {.end_index =  1506, .adv_w =   546},  // '0'
+    {.end_index =  1536, .adv_w =   317},  // '1'
+    {.end_index =  1778, .adv_w =   492},  // '2'
+    {.end_index =  1987, .adv_w =   514},  // '3'
+    {.end_index =  2131, .adv_w =   476},  // '4'
+    {.end_index =  2288, .adv_w =   517},  // '5'
+    {.end_index =  2465, .adv_w =   500},  // '6'
+    {.end_index =  2630, .adv_w =   464},  // '7'
+    {.end_index =  2834, .adv_w =   499},  // '8'
+    {.end_index =  3017, .adv_w =   489},  // '9'
+    {.end_index =  3104, .adv_w =   267},  // ':'
+    {.end_index =  3220, .adv_w =   276},  // ';'
+    {.end_index =  3246, .adv_w =   358},  // '<'
+    {.end_index =  3277, .adv_w =   515},  // '='
+    {.end_index =  3303, .adv_w =   362},  // '>'
+    {.end_index =  3495, .adv_w =   441},  // '?'
+    {.end_index =  3766, .adv_w =   688},  // '@'
+    {.end_index =  3940, .adv_w =   668},  // 'A'
+    {.end_index =  4139, .adv_w =   641},  // 'B'
+    {.end_index =  4271, .adv_w =   497},  // 'C'
+    {.end_index =  4404, .adv_w =   663},  // 'D'
+    {.end_index =  4586, .adv_w =   459},  // 'E'
+    {.end_index =  4695, .adv_w =   459},  // 'F'
+    {.end_index =  4936, .adv_w =   578},  // 'G'
+    {.end_index =  5026, .adv_w =   665},  // 'H'
+    {.end_index =  5092, .adv_w =   375},  // 'I'
+    {.end_index =  5246, .adv_w =   536},  // 'J'
+    {.end_index =  5418, .adv_w =   601},  // 'K'
+    {.end_index =  5554, .adv_w =   379},  // 'L'
+    {.end_index =  5645, .adv_w =   787},  // 'M'
+    {.end_index =  5738, .adv_w =   668},  // 'N'
+    {.end_index =  5909, .adv_w =   665},  // 'O'
+    {.end_index =  6037, .adv_w =   573},  // 'P'
+    {.end_index =  6284, .adv_w =   665},  // 'Q'
+    {.end_index =  6495, .adv_w =   601},  // 'R'
+    {.end_index =  6709, .adv_w =   570},  // 'S'
+    {.end_index =  6809, .adv_w =   481},  // 'T'
+    {.end_index =  6917, .adv_w =   716},  // 'U'
+    {.end_index =  6994, .adv_w =   615},  // 'V'
+    {.end_index =  7091, .adv_w =   962},  // 'W'
+    {.end_index =  7182, .adv_w =   620},  // 'X'
+    {.end_index =  7267, .adv_w =   620},  // 'Y'
+    {.end_index =  7405, .adv_w =   542},  // 'Z'
+    {.end_index =  7431, .adv_w =   400},  // '['
+    {.end_index =  7447, .adv_w =   362},  // '\'
+    {.end_index =  7472, .adv_w =   400},  // ']'
+    {.end_index =  7495, .adv_w =   421},  // '^'
+    {.end_index =  7510, .adv_w =   444},  // '_'
+    {.end_index =  7524, .adv_w =   201},  // '`'
+    {.end_index =  7683, .adv_w =   526},  // 'a'
+    {.end_index =  7795, .adv_w =   444},  // 'b'
+    {.end_index =  7908, .adv_w =   384},  // 'c'
+    {.end_index =  8065, .adv_w =   525},  // 'd'
+    {.end_index =  8185, .adv_w =   384},  // 'e'
+    {.end_index =  8330, .adv_w =   267},  // 'f'
+    {.end_index =  8535, .adv_w =   507},  // 'g'
+    {.end_index =  8678, .adv_w =   505},  // 'h'
+    {.end_index =  8790, .adv_w =   267},  // 'i'
+    {.end_index =  8936, .adv_w =   240},  // 'j'
+    {.end_index =  9051, .adv_w =   518},  // 'k'
+    {.end_index =  9119, .adv_w =   267},  // 'l'
+    {.end_index =  9302, .adv_w =   752},  // 'm'
+    {.end_index =  9444, .adv_w =   505},  // 'n'
+    {.end_index =  9595, .adv_w =   439},  // 'o'
+    {.end_index =  9693, .adv_w =   468},  // 'p'
+    {.end_index =  9803, .adv_w =   486},  // 'q'
+    {.end_index =  9886, .adv_w =   376},  // 'r'
+    {.end_index = 10032, .adv_w =   382},  // 's'
+    {.end_index = 10120, .adv_w =   267},  // 't'
+    {.end_index = 10239, .adv_w =   505},  // 'u'
+    {.end_index = 10349, .adv_w =   414},  // 'v'
+    {.end_index = 10505, .adv_w =   661},  // 'w'
+    {.end_index = 10681, .adv_w =   522},  // 'x'
+    {.end_index = 10846, .adv_w =   486},  // 'y'
+    {.end_index = 10984, .adv_w =   428},  // 'z'
+    {.end_index = 11147, .adv_w =   352},  // '{'
+    {.end_index = 11161, .adv_w =   532},  // '|'
+    {.end_index = 11324, .adv_w =   352},  // '}'
+    {.end_index = 11410, .adv_w =   431},  // '~'
 };
 
 const font_t f_lobster = {
+    .units_per_em = 1000,
     .n_glyphs = 95,
     .glyphs = glyphs_lobster,
     .glyph_dsc = glyph_dsc_lobster,

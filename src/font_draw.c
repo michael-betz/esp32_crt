@@ -75,7 +75,7 @@ static int get_str_width(char *c, unsigned n, unsigned scale)
 	while (n-- > 0) {
 		if (*c == '\0' || *c == '\n')
 			break;
-		w += (get_char_width(*c)) * scale / 64;
+		w += (get_char_width(*c)) * scale / current_font->units_per_em;
 		c++;
 	}
 	return w;
@@ -163,6 +163,9 @@ static void push_char(char c, unsigned scale, unsigned density)
 	int x = 0, y = 0;  // raw glyph coordinates (relative to glyph origin)
 	int x_b = 0, y_b = 0;  // auxilary coordinates
 	int x_s = 0, y_s = 0; // scaled absolute coordinates
+
+	uint16_t units_per_em = current_font->units_per_em;
+
 	while (p < p_end) {
 		// Upper 4 bit of the first byte indicates what to draw
 		unsigned type = *p >> 4;
@@ -171,8 +174,8 @@ static void push_char(char c, unsigned scale, unsigned density)
 			break;
 
 		p = coordinateDecoder(p, &x, &y);
-		x_s = x_c + (x * (int)scale / 64);
-		y_s = y_c + (y * (int)scale / 64);
+		x_s = x_c + (x * (int)scale / units_per_em);
+		y_s = y_c + (y * (int)scale / units_per_em);
 
 		switch (type) {
 			case F_GOTO:
@@ -191,8 +194,8 @@ static void push_char(char c, unsigned scale, unsigned density)
 				push_q_bezier(
 					x_s,
 					y_s,
-					x_c + (x_b * (int)scale / 64),
-					y_c + (y_b * (int)scale / 64),
+					x_c + (x_b * (int)scale / units_per_em),
+					y_c + (y_b * (int)scale / units_per_em),
 					density
 				);
 				break;
@@ -209,8 +212,8 @@ static void push_char(char c, unsigned scale, unsigned density)
 				push_circle(
 					x_s,
 					y_s,
-					(r_x * (int)scale) / 2 / 64,
-					(r_y * (int)scale) / 2 / 64,
+					(r_x * (int)scale) / 2 / units_per_em,
+					(r_y * (int)scale) / 2 / units_per_em,
 					a_start,
 					a_stop - a_start,
 					density
@@ -224,7 +227,7 @@ static void push_char(char c, unsigned scale, unsigned density)
 	}
 
 	// Advance the cursor by the correct amount
-	x_c += glyph_dsc->adv_w * (int)scale / 64;
+	x_c += glyph_dsc->adv_w * (int)scale / units_per_em;
 }
 
 void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density)
@@ -233,7 +236,7 @@ void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned sc
 	int w_str = -1;
 	while (*c && n > 0) {
 		if (*c == '\n') {
-			y_c -= 1000 * scale / 64;
+			y_c -= scale;
 			w_str = -1;
 			c++;
 			n--;
