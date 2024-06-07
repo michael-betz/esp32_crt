@@ -65,6 +65,9 @@ extern unsigned n_samples;
 // push all the samples of a draw-list to the DMA buffer once
 void push_list(uint8_t *p, unsigned n_items);
 
+// Run through a serialized draw-list. Used for font-glyphs too.
+void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a, int scale_div, int density);
+
 // Updates the cursor to (x_a, y_a). Returns true if coordinates were clipped
 bool push_goto(int x_a, int y_a);
 

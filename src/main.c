@@ -9,6 +9,7 @@
 #include "esp_spiffs.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "font_data.h"
 
 #include "i2s.h"
 #include "draw.h"
@@ -45,17 +46,65 @@ unsigned char dl_test[] = {
 unsigned int dl_test_len = 212;
 
 
+static void demo_text(unsigned font)
+{
+	static unsigned frame = 0;
+	char tmp[32];
+	if (font >= N_FONTS)
+		return;
+	snprintf(tmp, sizeof(tmp), "font: %d", font);
+
+	set_font(0);
+	push_str(
+		-800, 950,
+		tmp,
+		sizeof(tmp),
+		A_LEFT,
+		100,
+		200
+	);
+
+	set_font(font);
+	push_str(
+		0, 500,
+		"esp_crt\nHello World\n1234:5678",
+		// "p",
+		128,
+		A_CENTER,
+		// 18,
+		((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 10,
+		300
+	);
+	// exit(0);
+}
+
+
 static void i2s_stream_task(void *args)
 {
 	i2s_init();
 	init_lut();
+	int i = 0;
+	TickType_t ticks;
+	int frame = 0;
+
 	while (1) {
-		if (gpio_get_level(PIN_BUTTON)) {
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			demo_text(0);
+
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			demo_text(1);
+
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
 			push_list(dl_test, sizeof(dl_test));
-		} else {
+
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
 			draw_dds(10000);
-		}
 	}
+
 	vTaskDelete(NULL);
 }
 

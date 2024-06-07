@@ -30,18 +30,6 @@
 // then follows 3 bytes encoding x and y-radius and segment start and stop angle
 
 
-#define F_GOTO 0
-#define F_LINETO 1
-#define F_QBEZ 2
-#define F_ARC 4
-#define F_END 0xF
-
-#define F_X_SHORT 1
-#define F_Y_SHORT 2
-#define F_X_POS 4
-#define F_Y_POS 8
-
-
 static const font_t *current_font = &f_arc;
 
 // glyph cursor
@@ -81,61 +69,6 @@ static int get_str_width(char *c, unsigned n, unsigned scale)
 	return w;
 }
 
-// Compress 16 bit signed coordinate pairs and encode them in a byte stream
-// Very similar to how true-type fonts encode their coordinate values.
-static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out)
-{
-		// Holds internal state
-		static int x = 0, y = 0;
-
-		if (p == NULL) {
-			// reset internal state
-			x = 0;
-			y = 0;
-			return p;
-		}
-
-		// Consume 1 byte encoding the flags
-		unsigned flags = *p++ & 0xF;
-
-		if (flags & F_X_SHORT) {
-			// Short number format, consume one byte
-			// F_X_POS indicates if the byte is positive or negative
-			if (flags & F_X_POS)
-				x += *p;
-			else
-				x -= *p;
-			p++;
-		} else {
-			// Long number format. Consume 2 bytes if F_X_POS is set.
-			// Otherwise consume 0 bytes and don't change the value
-			if (flags & F_X_POS) {
-				int16_t tmp = (*p++) << 8;
-				tmp |= *p++;
-				x = tmp;
-			}
-		}
-
-		if (flags & F_Y_SHORT) {
-			if (flags & F_Y_POS)
-				y += *p;
-			else
-				y -= *p;
-			p++;
-		} else {
-			if (flags & F_Y_POS) {
-				int16_t tmp = (*p++) << 8;
-				tmp |= *p++;
-				y = tmp;
-			}
-		}
-
-		*x_out = x;
-		*y_out = y;
-
-		return p;
-}
-
 static void push_char(char c, unsigned scale, unsigned density)
 {
 	// printf("push_char(%c, %d, %d)\n", c, scale, density);
@@ -155,79 +88,12 @@ static void push_char(char c, unsigned scale, unsigned density)
 	if (glyph_index > 0)
 		data_start = current_font->glyph_dsc[glyph_index - 1].end_index;
 	const uint8_t *p = &current_font->glyphs[data_start];
-	const uint8_t *p_end = &current_font->glyphs[data_end];
+	unsigned len = &current_font->glyphs[data_end] - p;
 
-	// reset coordinate decoder state
-	coordinateDecoder(NULL, NULL, NULL);
-
-	int x = 0, y = 0;  // raw glyph coordinates (relative to glyph origin)
-	int x_b = 0, y_b = 0;  // auxilary coordinates
-	int x_s = 0, y_s = 0; // scaled absolute coordinates
-
-	uint16_t units_per_em = current_font->units_per_em;
-
-	while (p < p_end) {
-		// Upper 4 bit of the first byte indicates what to draw
-		unsigned type = *p >> 4;
-
-		if (type == F_END)
-			break;
-
-		p = coordinateDecoder(p, &x, &y);
-		x_s = x_c + (x * (int)scale / units_per_em);
-		y_s = y_c + (y * (int)scale / units_per_em);
-
-		switch (type) {
-			case F_GOTO:
-				// printf("goto (%d, %d)\n", x, y);
-				push_goto(x_s, y_s);
-				break;
-
-			case F_LINETO:
-				// printf("lineto (%d, %d)\n", x, y);
-				push_line(x_s, y_s, density);
-				break;
-
-			case F_QBEZ:
-				p = coordinateDecoder(p, &x_b, &y_b);
-				// printf("qbez (), (%d, %d), (%d, %d)\n", x, y, x_b, y_b);
-				push_q_bezier(
-					x_s,
-					y_s,
-					x_c + (x_b * (int)scale / units_per_em),
-					y_c + (y_b * (int)scale / units_per_em),
-					density
-				);
-				break;
-
-			case F_ARC:
-				unsigned r_x = *p++;
-				unsigned r_y = *p++;
-				int fo = (*p >> 4) & 0xF;  // Start angle 0..7 is 0 deg .. 315 deg 0 = E, 90 = N, 180 = W, 270 = S
-				int lo = *p & 0xF;  // End angle 1..14 is 45 deg .. 630 deg
-				p++;
-				unsigned a_start = fo * MAX_ANGLE / 8;
-				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
-				// printf("arc (%d, %d), %d, %d, %d, %d\n", x, y, r_x, r_y, fo, lo);
-				push_circle(
-					x_s,
-					y_s,
-					(r_x * (int)scale) / 2 / units_per_em,
-					(r_y * (int)scale) / 2 / units_per_em,
-					a_start,
-					a_stop - a_start,
-					density
-				);
-				break;
-
-			default:
-				// not implemented
-				break;
-		}
-	}
+	draw_blob(p, len, x_c, y_c, scale, current_font->units_per_em, density);
 
 	// Advance the cursor by the correct amount
-	x_c += glyph_dsc->adv_w * (int)scale / units_per_em;
+	x_c += glyph_dsc->adv_w * (int)scale / current_font->units_per_em;
 }
 
 void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density)

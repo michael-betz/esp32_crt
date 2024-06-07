@@ -222,7 +222,144 @@ bool push_line(int x_b, int y_b, unsigned density)
 	return is_clipped;
 }
 
-// void push_glyph(uint8_t *p, unsigned n_bytes_max, int x_o, int y_o, unsigned scale)
+#define F_GOTO 0
+#define F_LINETO 1
+#define F_QBEZ 2
+#define F_ARC 4
+#define F_END 0xF
+
+#define F_X_SHORT 1
+#define F_Y_SHORT 2
+#define F_X_POS 4
+#define F_Y_POS 8
+
+// Compress 16 bit signed coordinate pairs and encode them in a byte stream
+// Very similar to how true-type fonts encode their coordinate values.
+static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out)
+{
+		// Holds internal state
+		static int x = 0, y = 0;
+
+		if (p == NULL) {
+			// reset internal state
+			x = 0;
+			y = 0;
+			return p;
+		}
+
+		// Consume 1 byte encoding the flags
+		unsigned flags = *p++ & 0xF;
+
+		if (flags & F_X_SHORT) {
+			// Short number format, consume one byte
+			// F_X_POS indicates if the byte is positive or negative
+			if (flags & F_X_POS)
+				x += *p;
+			else
+				x -= *p;
+			p++;
+		} else {
+			// Long number format. Consume 2 bytes if F_X_POS is set.
+			// Otherwise consume 0 bytes and don't change the value
+			if (flags & F_X_POS) {
+				int16_t tmp = (*p++) << 8;
+				tmp |= *p++;
+				x = tmp;
+			}
+		}
+
+		if (flags & F_Y_SHORT) {
+			if (flags & F_Y_POS)
+				y += *p;
+			else
+				y -= *p;
+			p++;
+		} else {
+			if (flags & F_Y_POS) {
+				int16_t tmp = (*p++) << 8;
+				tmp |= *p++;
+				y = tmp;
+			}
+		}
+
+		*x_out = x;
+		*y_out = y;
+
+		return p;
+}
+
+// Run through a serialized draw-list. Used for font-glyphs too.
+void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a, int scale_div, int density)
+{
+	const uint8_t *p_end = p + n_bytes;
+
+	// reset coordinate decoder state
+	coordinateDecoder(NULL, NULL, NULL);
+
+	int x = 0, y = 0;  // raw coordinates
+	int x_b = 0, y_b = 0;  // auxiliary coordinates
+	int x_s = 0, y_s = 0; // scaled absolute coordinates
+
+	while (p < p_end) {
+		// Upper 4 bit of the first byte indicates what to draw
+		unsigned type = *p >> 4;
+
+		if (type == F_END)
+			break;
+
+		p = coordinateDecoder(p, &x, &y);
+		x_s = x_c + (x * (int)scale_a / scale_div);
+		y_s = y_c + (y * (int)scale_a / scale_div);
+
+		switch (type) {
+			case F_GOTO:
+				// printf("goto (%d, %d)\n", x, y);
+				push_goto(x_s, y_s);
+				break;
+
+			case F_LINETO:
+				// printf("lineto (%d, %d)\n", x, y);
+				push_line(x_s, y_s, density);
+				break;
+
+			case F_QBEZ:
+				p = coordinateDecoder(p, &x_b, &y_b);
+				// printf("qbez (), (%d, %d), (%d, %d)\n", x, y, x_b, y_b);
+				push_q_bezier(
+					x_s,
+					y_s,
+					x_c + (x_b * (int)scale_a / scale_div),
+					y_c + (y_b * (int)scale_a / scale_div),
+					density
+				);
+				break;
+
+			case F_ARC:
+				unsigned r_x = *p++;
+				unsigned r_y = *p++;
+				int fo = (*p >> 4) & 0xF;  // Start angle 0..7 is 0 deg .. 315 deg 0 = E, 90 = N, 180 = W, 270 = S
+				int lo = *p & 0xF;  // End angle 1..14 is 45 deg .. 630 deg
+				p++;
+				unsigned a_start = fo * MAX_ANGLE / 8;
+				unsigned a_stop = (lo + 1) * MAX_ANGLE / 8;
+				// printf("arc (%d, %d), %d, %d, %d, %d\n", x, y, r_x, r_y, fo, lo);
+				push_circle(
+					x_s,
+					y_s,
+					(r_x * (int)scale_a) / 2 / scale_div,
+					(r_y * (int)scale_a) / 2 / scale_div,
+					a_start,
+					a_stop - a_start,
+					density
+				);
+				break;
+
+			default:
+				// not implemented
+				return;
+		}
+	}
+}
 
 void push_list(uint8_t *p, unsigned n_bytes_max)
 {
