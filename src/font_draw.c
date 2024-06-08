@@ -6,30 +6,6 @@
 #include "font_data.h"
 #include "fast_sin.h"
 
-
-// glyph data format:
-
-// # byte 0: `<type:4>`<flags:4>
-// `type` enumerates the drawing primitive:
-//  0 = goto(x, y)
-//  1 = lineto(x, y)
-//  2 = quadratic_bezier(x_b, y_b, x_c, y_c)
-//  4 = arc(x, y, rx:uint8, ry:uint8, fo:uint4, lo:uint4)
-//  F = end of glyph
-//
-// `flags` indicates the coordinate encoding
-// y_pos, x_pos, y_short, x_short
-//
-// If `x_short` is set, the x-coordinate is encoded in the next byte as an
-// uint8. It describes the relative offset to the previous x-coordinate (or 0 if it's the first one).
-// Its sign is given by the `x_pos` bit.
-// If `x_short` is not set, the absolute x-coordinate is encoded as an int16 in the next 2 bytes
-// In this case, `x_pos` is reserved for other purpose.
-//
-// The arc command consists of the x and y coordinates of it's center point (encoded as described above)
-// then follows 3 bytes encoding x and y-radius and segment start and stop angle
-
-
 static const font_t *current_font = &f_arc;
 
 // glyph cursor

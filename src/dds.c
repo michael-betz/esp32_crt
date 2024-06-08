@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <stdlib.h>
 #include "draw.h"
 #include "fast_sin.h"
 #include "dds.h"
@@ -20,6 +21,23 @@ void setup_dds(unsigned fcx, unsigned fcy, unsigned fmx, unsigned fmy, unsigned 
 	delta_fs[2] = fmx;
 	delta_fs[3] = fmy;
 	lut_type = wfm;
+}
+
+void nudge_dds()
+{
+		int rnd = random() & 0xF;
+		delta_fs[0] += rnd;
+
+		// Keep x and y carrier frequency close together
+		rnd = random() & 0xF;
+		delta_fs[1] += (delta_fs[1] > delta_fs[0]) ? -rnd : rnd;
+
+		rnd = random() & 0xF;
+		delta_fs[2] += rnd;
+
+		// Keep x and y modulator frequency close together
+		rnd = random() & 0xF;
+		delta_fs[3] += (delta_fs[3] > delta_fs[2]) ? -rnd : rnd;
 }
 
 void draw_dds(unsigned n_samples)
@@ -52,10 +70,10 @@ void draw_dds(unsigned n_samples)
 		}
 
 		// // Amplitude modulation
-		x_val = (tmps[0] >> 16) * (tmps[2] >> 16);
-		y_val = (tmps[1] >> 16) * (tmps[3] >> 16);
-		// x_val = ((int64_t)tmps[0] * (int64_t)tmps[2]) >> 32;
-		// y_val = ((int64_t)tmps[1] * (int64_t)tmps[3]) >> 32;
+		// x_val = (tmps[0] >> 16) * (tmps[2] >> 16);
+		// y_val = (tmps[1] >> 16) * (tmps[3] >> 16);
+		x_val = ((int64_t)tmps[0] * (int64_t)tmps[2]) >> 32;
+		y_val = ((int64_t)tmps[1] * (int64_t)tmps[3]) >> 32;
 
 
 		// normalize for full amplitude

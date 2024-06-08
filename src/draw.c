@@ -11,13 +11,13 @@
 #include "print.h"  // for printing fixed-point numbers
 
 
-#define BLANK_OFF_TIME 5  // How long it takes to disable the beam [n_samples]
-#define BLANK_ON_TIME 12  // How long it takes to enable the beam [n_samples]
+#define BLANK_OFF_TIME 10  // How long it takes to disable the beam [n_samples]
+#define BLANK_ON_TIME 10  // How long it takes to enable the beam [n_samples]
 #define BLANK_DENSITY 1  // Density for blanked move [density]
 #define BLANK_MIN_DIST 1  // Blank only for distances larger than that
 
 
-// current pen position. Use push_goto() to modify.
+// current beam position. Use push_goto() to modify these values.
 static int x_last = 0;
 static int y_last = 0;
 
@@ -68,7 +68,7 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 }
 
 // draw a quadratic Bezier curve. The 3 control points are:
-// the current pen position, (x1, y1), (x2, y2)
+// the current beam position, (x1, y1), (x2, y2)
 // We'll do it in 20.12 fixed-point (precision is controlled by MAX_ANGLE)
 void push_q_bezier(int x1, int y1, int x2, int y2, int density)
 {
@@ -222,17 +222,6 @@ bool push_line(int x_b, int y_b, unsigned density)
 	return is_clipped;
 }
 
-#define F_GOTO 0
-#define F_LINETO 1
-#define F_QBEZ 2
-#define F_ARC 4
-#define F_END 0xF
-
-#define F_X_SHORT 1
-#define F_Y_SHORT 2
-#define F_X_POS 4
-#define F_Y_POS 8
-
 // Compress 16 bit signed coordinate pairs and encode them in a byte stream
 // Very similar to how true-type fonts encode their coordinate values.
 static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out)
@@ -359,71 +348,4 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a
 				return;
 		}
 	}
-}
-
-void push_list(uint8_t *p, unsigned n_bytes_max)
-{
-	unsigned n = 0, n_total = 0;  // bytes read / iteration, / total
-	while (n_total < n_bytes_max) {
-		uint8_t type = *p;
-
-		if (type == T_LINE) {
-			line_t *tmp = (line_t *)p;
-			push_line(tmp->x_b, tmp->y_b, tmp->density * DENSITY_MULTIPLIER);
-			n = sizeof(line_t);
-		} else if (type == T_POLY) {
-			poly_t *tmp = (poly_t *)p;
-			unsigned j = tmp->len * 2;
-			bool pen_up = false;
-			for (unsigned i = 0; i < j; i += 2) {
-				int x = tmp->pts[i];
-				int y = tmp->pts[i + 1];
-				// Most neg. coord means push a goto next
-				if (x == -32768 && y == -32768) {
-					pen_up = true;
-					continue;
-				}
-				if (pen_up) {
-					push_goto(x, y);
-					pen_up = false;
-					continue;
-				}
-				push_line(x, y, tmp->density * DENSITY_MULTIPLIER);
-			}
-			n = sizeof(poly_t) + j * sizeof(int16_t);
-		} else if (type == T_CIRCLE) {
-			circle_t *tmp = (circle_t *)p;
-			push_circle(
-				tmp->x,
-				tmp->y,
-				tmp->r_x,
-				tmp->r_y,
-				(tmp->a_start << 4) | (tmp->a_start >> 4),
-				(tmp->a_length << 4) | (tmp->a_length >> 4),
-				tmp->density * DENSITY_MULTIPLIER
-			);
-			n = sizeof(circle_t);
-		} else if ((type & 0xFC) == T_STRING) {
-			string_t *tmp = (string_t *)p;
-			set_font(tmp->font);
-			push_str(
-				tmp->x,
-				tmp->y,
-				tmp->c,
-				tmp->len,
-				type & 0x03,
-				tmp->scale,
-				tmp->density * DENSITY_MULTIPLIER
-			);
-			n = sizeof(string_t) + tmp->len * sizeof(char);
-		} else if (type == T_END){
-			return;
-		} else {
-			printf("unknown type %02x\n", type);
-			return;
-		}
-		p += n;
-		n_total += n;
-	}
-	printf("No end marker!\n");
 }

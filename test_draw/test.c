@@ -20,9 +20,9 @@
 #define D_OFFSET_X ((DISPLAY_WIDTH - (DAC_MAX * D_SCALE)) / 2)
 #define D_OFFSET_Y ((DISPLAY_HEIGHT - (DAC_MAX * D_SCALE)) / 2)
 
-#define MAX_DL_SIZE 4096
-static uint8_t dl[MAX_DL_SIZE];
-static unsigned n_dl = 0;  // bytes in dl
+// #define MAX_DL_SIZE 4096
+// static uint8_t dl[MAX_DL_SIZE];
+// static unsigned n_dl = 0;  // bytes in dl
 
 // Count how many samples were outputted
 unsigned n_samples = 0;
@@ -31,25 +31,25 @@ SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
 
-static void read_dl(char *fName)
-{
-	FILE *f = NULL;
-	if (strcmp(fName, "-") == 0) {
-		f = stdin;
-	} else {
-		f = fopen(fName, "r");
-		if (f == NULL)
-			perror("Couldn't open input file");
-	}
+// static void read_dl(char *fName)
+// {
+// 	FILE *f = NULL;
+// 	if (strcmp(fName, "-") == 0) {
+// 		f = stdin;
+// 	} else {
+// 		f = fopen(fName, "r");
+// 		if (f == NULL)
+// 			perror("Couldn't open input file");
+// 	}
 
-	int n = fread(dl, 1, MAX_DL_SIZE, f);
-	fclose(f);
+// 	int n = fread(dl, 1, MAX_DL_SIZE, f);
+// 	fclose(f);
 
-	if (n <= 0)
-		perror("Couldn't read from input file");
-	n_dl = n;
-	printf("draw_list of %d bytes\n", n_dl);
-}
+// 	if (n <= 0)
+// 		perror("Couldn't read from input file");
+// 	n_dl = n;
+// 	printf("draw_list of %d bytes\n", n_dl);
+// }
 
 static void demo_circles(unsigned frame)
 {
@@ -114,12 +114,52 @@ static void demo_text(unsigned frame, unsigned font)
 	// exit(0);
 }
 
+static void test_image()
+{
+	// a square around the screen
+	push_goto(-2000, -2000);
+	push_line(-2000, 2000, 10);
+	push_line(2000, 2000, 10);
+	push_line(2000, -2000, 10);
+	push_line(-2000, -2000, 10);
+
+	// inner cross
+	push_goto(-200, -200);
+	push_line(200, 200, 255);
+	push_goto(-200, 200);
+	push_line(200, -200, 255);
+
+	// inner +
+	push_goto(-500, 0);
+	push_line(500, 0, 50);
+	push_goto(0, 500);
+	push_line(0, -500, 50);
+
+	// concentric circles
+	push_circle(0, 0, 100, 100, 0, MAX_ANGLE, 10);
+	push_circle(0, 0, 200, 200, 0, MAX_ANGLE, 30);
+	push_circle(0, 0, 300, 300, 0, MAX_ANGLE, 50);
+	push_circle(0, 0, 400, 400, 0, MAX_ANGLE, 70);
+	push_circle(0, 0, 500, 500, 0, MAX_ANGLE, 90);
+	push_circle(0, 0, 600, 600, 0, MAX_ANGLE, 110);
+	push_circle(0, 0, 700, 700, 3341, 3534, 130);
+	push_circle(0, 0, 800, 800, 3341, 3534, 150);
+	push_circle(0, 0, 900, 900, 3341, 3534, 170);
+
+	set_font(0);
+	push_str(0, -775, "<- ->\nHello World", 18, A_CENTER, 200, 200);
+}
+
 static void demo_dds(unsigned frame)
 {
 	// DAC \Delta t is 1.6 us
 	// SDL frame is 50 ms
 	// Need to draw 31k samples per frame
 	draw_dds(8000);
+	if ((frame % 10) == 0) {
+		printf("nudge!!!");
+		nudge_dds();
+	}
 }
 
 // Visualize a sample, emulate the phosphor with additive blending
@@ -186,14 +226,14 @@ static void init_sdl()
 
 int main(int argc, char* args[])
 {
-	if (argc != 2) {
-		printf("also try %s draw_list.bin\n", args[0]);
-		*dl = T_END;
-		n_dl = 1;
-	} else {
-		printf("reading %s\n", args[1]);
-		read_dl(args[1]);
-	}
+	// if (argc != 2) {
+	// 	printf("also try %s draw_list.bin\n", args[0]);
+	// 	*dl = T_END;
+	// 	n_dl = 1;
+	// } else {
+	// 	printf("reading %s\n", args[1]);
+	// 	read_dl(args[1]);
+	// }
 
 	init_lut();
 	init_sdl();
@@ -231,7 +271,7 @@ int main(int argc, char* args[])
 		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(rr);
 
-		push_list(dl, n_dl);
+		// push_list(dl, n_dl);
 
 		if (demo < 0)
 			demo = N_FONTS + 3;
@@ -240,6 +280,9 @@ int main(int argc, char* args[])
 			demo = 0;
 
 		switch (demo) {
+		case 0:
+			test_image();
+			break;
 		case 1:
 			demo_circles(frame);
 			break;
