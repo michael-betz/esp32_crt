@@ -14,6 +14,7 @@
 #define F_LINETO 1
 #define F_QBEZ 2
 #define F_ARC 4
+#define F_TEXT 5
 #define F_END 0xF
 
 #define F_X_SHORT 1

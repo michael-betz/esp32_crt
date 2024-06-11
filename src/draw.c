@@ -278,7 +278,7 @@ static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out
 }
 
 // Run through a serialized draw-list. Used for font-glyphs too.
-void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a, int scale_div, int density)
+void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale, int scale_div, int density)
 {
 	const uint8_t *p_end = p + n_bytes;
 
@@ -297,8 +297,8 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a
 			break;
 
 		p = coordinateDecoder(p, &x, &y);
-		x_s = x_c + (x * (int)scale_a / scale_div);
-		y_s = y_c + (y * (int)scale_a / scale_div);
+		x_s = x_c + (x * (int)scale / scale_div);
+		y_s = y_c + (y * (int)scale / scale_div);
 
 		switch (type) {
 			case F_GOTO:
@@ -317,8 +317,8 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a
 				push_q_bezier(
 					x_s,
 					y_s,
-					x_c + (x_b * (int)scale_a / scale_div),
-					y_c + (y_b * (int)scale_a / scale_div),
+					x_c + (x_b * (int)scale / scale_div),
+					y_c + (y_b * (int)scale / scale_div),
 					density
 				);
 				break;
@@ -335,13 +335,17 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a
 				push_circle(
 					x_s,
 					y_s,
-					(r_x * (int)scale_a) / 2 / scale_div,
-					(r_y * (int)scale_a) / 2 / scale_div,
+					(r_x * (int)scale) / 2 / scale_div,
+					(r_y * (int)scale) / 2 / scale_div,
 					a_start,
 					a_stop - a_start,
 					density
 				);
 				break;
+
+			// "hhHBB", x, y, scale, font, len(string), string
+			// case F_TEXT:
+			// 	unsigned scale = *p++;
 
 			default:
 				// not implemented
