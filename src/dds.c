@@ -77,7 +77,7 @@ void draw_dds(unsigned n_samples)
 
 
 		// normalize for full amplitude
-		output_sample(x_val >> 20, y_val >> 20, 0xFFF, 0);
+		output_sample(x_val >> 19, y_val >> 19, 0xFFF, 0);
 	}
 	// printf("%08x %08x %08x %08x | %08x %08x\n", tmps[0], tmps[1], tmps[2], tmps[3], x_val, y_val);
 }

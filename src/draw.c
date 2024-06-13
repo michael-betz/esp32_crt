@@ -11,10 +11,10 @@
 #include "print.h"  // for printing fixed-point numbers
 
 
-#define BLANK_OFF_TIME 10  // How long it takes to disable the beam [n_samples]
-#define BLANK_ON_TIME 10  // How long it takes to enable the beam [n_samples]
-#define BLANK_DENSITY 1  // Density for blanked move [density]
-#define BLANK_MIN_DIST 1  // Blank only for distances larger than that
+#define BLANK_OFF_TIME 20  // How long it takes to disable the beam [n_samples]
+#define BLANK_ON_TIME 20  // How long it takes to enable the beam [n_samples]
+#define BLANK_DENSITY 30  // Density for blanked move [density]
+#define BLANK_MIN_DIST 10  // Blank only for distances larger than that
 
 
 // current beam position. Use push_goto() to modify these values.

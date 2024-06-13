@@ -60,10 +60,10 @@ static void test_image()
 {
 	// a square around the screen
 	push_goto(-2000, -2000);
-	push_line(-2000, 2000, 10);
-	push_line(2000, 2000, 10);
-	push_line(2000, -2000, 10);
-	push_line(-2000, -2000, 10);
+	push_line(-2000, 2000, 30);
+	push_line(2000, 2000, 30);
+	push_line(2000, -2000, 30);
+	push_line(-2000, -2000, 30);
 
 	// inner cross
 	push_goto(-200, -200);
@@ -78,18 +78,20 @@ static void test_image()
 	push_line(0, -500, 50);
 
 	// concentric circles
-	push_circle(0, 0, 100, 100, 0, MAX_ANGLE, 10);
-	push_circle(0, 0, 200, 200, 0, MAX_ANGLE, 30);
-	push_circle(0, 0, 300, 300, 0, MAX_ANGLE, 50);
-	push_circle(0, 0, 400, 400, 0, MAX_ANGLE, 70);
-	push_circle(0, 0, 500, 500, 0, MAX_ANGLE, 90);
-	push_circle(0, 0, 600, 600, 0, MAX_ANGLE, 110);
-	push_circle(0, 0, 700, 700, 3341, 3534, 130);
-	push_circle(0, 0, 800, 800, 3341, 3534, 150);
-	push_circle(0, 0, 900, 900, 3341, 3534, 170);
+	for (unsigned i=1; i<=10; i++) {
+		push_circle(
+			0,
+			0,
+			i * 200,
+			i * 200,
+			i <= 5 ? 0 : -280,
+			i <= 5 ? MAX_ANGLE : MAX_ANGLE - 1500,
+			100
+		);
+	}
 
 	set_font(0);
-	push_str(0, -775, "<- ->\nHello World", 18, A_CENTER, 200, 200);
+	push_str(0, -1800, "Hello World", 32, A_CENTER, 900, 200);
 }
 
 static void i2s_stream_task(void *args)
@@ -107,6 +109,10 @@ static void i2s_stream_task(void *args)
 			nudge_dds();
 		}
 
+		// ticks = xTaskGetTickCount();
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+		// 	draw_mesh();
+
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
 			demo_text(0);
@@ -117,7 +123,7 @@ static void i2s_stream_task(void *args)
 
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-			test_image();
+		test_image();
 	}
 
 	vTaskDelete(NULL);
@@ -168,9 +174,9 @@ void app_main(void)
 
 	int i = 0;
 	while (1) {
-		gpio_set_level(PIN_LED_R, !gpio_get_level(PIN_HVPS_DIS));
+		// gpio_set_level(PIN_LED_R, !gpio_get_level(PIN_HVPS_DIS));
 		gpio_set_level(PIN_LED_G, (i++ % 10) == 0);
-		gpio_set_level(PIN_LED_B, gpio_get_level(PIN_PD_BAD));
+		// gpio_set_level(PIN_LED_B, gpio_get_level(PIN_PD_BAD));
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
