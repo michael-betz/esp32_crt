@@ -10,10 +10,10 @@
 #include "fast_sin.h"
 #include "print.h"  // for printing fixed-point numbers
 
+#define DWELL_TIME 4  // how many extra samples at the end-point of a shape to wait for the beam
 
-#define BLANK_OFF_TIME 20  // How long it takes to disable the beam [n_samples]
-#define BLANK_ON_TIME 20  // How long it takes to enable the beam [n_samples]
-#define BLANK_DENSITY 30  // Density for blanked move [density]
+#define BLANK_OFF_TIME 10  // How long it takes to enable / disable the beam [n_samples]
+#define BLANK_DENSITY 10  // Density for blanked move [density]
 #define BLANK_MIN_DIST 10  // Blank only for distances larger than that
 
 
@@ -58,13 +58,28 @@ static unsigned get_dist(int x, int y)
 
 bool output_sample(int x, int y, bool beam_on, int focus)
 {
-	// printf("(%4d, %4d), %3x\n", x, y, blank);
-	if (x >= C_MAX || x < -C_MAX || y >= C_MAX || y < -C_MAX)
-		return true;
+	bool is_clipped = false;
 
-	// Only output sample if it is not clipped
+	// printf("(%4d, %4d), %3x\n", x, y, blank);
+	if (x > C_MAX) {
+		x = C_MAX;
+		is_clipped = true;
+	}
+	if (x < -C_MAX) {
+		x = -C_MAX;
+		is_clipped = true;
+	}
+	if (y > C_MAX) {
+		y = C_MAX;
+		is_clipped = true;
+	}
+	if (y < -C_MAX) {
+		y = -C_MAX;
+		is_clipped = true;
+	}
+
 	push_sample(x + 0x800, y + 0x800, beam_on ? 0 : 0xFFF, 0);
-	return false;
+	return is_clipped;
 }
 
 // draw a quadratic Bezier curve. The 3 control points are:
@@ -151,8 +166,15 @@ bool push_circle(
 		if (is_clipped)
 			break;
 	}
+
 	x_last = x;
 	y_last = y;
+
+	// output last sample a few more time to make sure beam had a chance to close the circle
+	if (!is_clipped)
+		for (unsigned i=0; i<DWELL_TIME; i++)
+			output_sample(x_last, y_last, true, 0);
+
 	return is_clipped;
 }
 
@@ -161,7 +183,7 @@ bool push_goto(int x_a, int y_a)
 	bool is_clipped = false;
 
 	if (x_a == x_last && y_a == y_last)
-		return is_clipped;
+		return false;
 
 	unsigned dist = get_dist(x_a, y_a);
 	unsigned n = (dist * BLANK_DENSITY) >> 11;
@@ -172,15 +194,23 @@ bool push_goto(int x_a, int y_a)
 			output_sample(x_last, y_last, false, 0);
 
 	// Move the beam while blanked. Interpolate N points for the move.
-	for (unsigned i=0; i<=n; i++)
+	for (unsigned i=0; i<=n; i++) {
 		is_clipped = output_sample(x_a, y_a, false, 0);
+		if (is_clipped)
+			break;
+	}
 	x_last = x_a;
 	y_last = y_a;
 
+	// Wait for beam to reach new location
+	if (dist >= BLANK_MIN_DIST && !is_clipped)
+		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
+			output_sample(x_a, y_a, false, 0);
+
 	// Wait at new location until the beam is back on
-	if (dist >= BLANK_MIN_DIST)
-		for (unsigned i=0; i<BLANK_ON_TIME; i++)
-			output_sample(x_last, y_last, false, 0);
+	if (dist >= BLANK_MIN_DIST && !is_clipped)
+		for (unsigned i=0; i<DWELL_TIME; i++)
+			output_sample(x_a, y_a, true, 0);
 
 	return is_clipped;
 }
@@ -206,19 +236,23 @@ bool push_line(int x_b, int y_b, unsigned density)
 	int dx = ((x_b - x_last) << 8) / n;
 	int dy = ((y_b - y_last) << 8) / n;
 	bool is_clipped = false;
+	int x = 0, y = 0;
 
 	for (int i = 1; i <= n; i++) {
-		is_clipped = output_sample(
-			x_last + ((i * dx) >> 8),
-			y_last + ((i * dy) >> 8),
-			true,
-			0
-		);
+		x = x_last + ((i * dx) >> 8);
+		y = y_last + ((i * dy) >> 8);
+		is_clipped = output_sample(x, y, true, 0);
 		if (is_clipped)
 			break;
 	}
 	x_last = x_b;
 	y_last = y_b;
+
+	// wait for beam to reach end-point
+	if (!is_clipped)
+		for (unsigned i=0; i<DWELL_TIME; i++)
+			output_sample(x_last, y_last, true, 0);
+
 	return is_clipped;
 }
 

@@ -20,36 +20,12 @@
 #define D_OFFSET_X ((DISPLAY_WIDTH - (DAC_MAX * D_SCALE)) / 2)
 #define D_OFFSET_Y ((DISPLAY_HEIGHT - (DAC_MAX * D_SCALE)) / 2)
 
-// #define MAX_DL_SIZE 4096
-// static uint8_t dl[MAX_DL_SIZE];
-// static unsigned n_dl = 0;  // bytes in dl
-
 // Count how many samples were outputted
 unsigned n_samples = 0;
 
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
-
-// static void read_dl(char *fName)
-// {
-// 	FILE *f = NULL;
-// 	if (strcmp(fName, "-") == 0) {
-// 		f = stdin;
-// 	} else {
-// 		f = fopen(fName, "r");
-// 		if (f == NULL)
-// 			perror("Couldn't open input file");
-// 	}
-
-// 	int n = fread(dl, 1, MAX_DL_SIZE, f);
-// 	fclose(f);
-
-// 	if (n <= 0)
-// 		perror("Couldn't read from input file");
-// 	n_dl = n;
-// 	printf("draw_list of %d bytes\n", n_dl);
-// }
 
 static void demo_circles(unsigned frame)
 {
@@ -92,11 +68,11 @@ static void demo_text(unsigned frame, unsigned font)
 
 	set_font(0);
 	push_str(
-		-970, 950,
+		-1200, 1200,
 		tmp,
 		sizeof(tmp),
 		A_LEFT,
-		100,
+		200,
 		200
 	);
 
@@ -108,7 +84,7 @@ static void demo_text(unsigned frame, unsigned font)
 		128,
 		A_CENTER,
 		// 18,
-		(sin(frame / 200.0) + 1.01) * 500,
+		(sin(frame / 200.0) + 1.05) * 500,
 		100
 	);
 	// exit(0);
@@ -123,33 +99,33 @@ static void test_image()
 	push_line(2000, -2000, 30);
 	push_line(-2000, -2000, 30);
 
-	// inner cross
-	push_goto(-200, -200);
-	push_line(200, 200, 255);
-	push_goto(-200, 200);
-	push_line(200, -200, 255);
+	// // inner cross
+	// push_goto(-200, -200);
+	// push_line(200, 200, 255);
+	// push_goto(-200, 200);
+	// push_line(200, -200, 255);
 
-	// inner +
-	push_goto(-500, 0);
-	push_line(500, 0, 50);
-	push_goto(0, 500);
-	push_line(0, -500, 50);
+	// // inner +
+	// push_goto(-500, 0);
+	// push_line(500, 0, 50);
+	// push_goto(0, 500);
+	// push_line(0, -500, 50);
 
 	// concentric circles
-	for (unsigned i=1; i<=10; i++) {
+	for (unsigned i=3; i<=10; i++) {
 		push_circle(
 			0,
 			0,
 			i * 200,
 			i * 200,
-			i <= 5 ? 0 : -280,
+			i <= 5 ? i * 256 : -280,
 			i <= 5 ? MAX_ANGLE : MAX_ANGLE - 1500,
-			100
+			10
 		);
 	}
 
 	set_font(0);
-	push_str(0, -1800, "Hello World", 32, A_CENTER, 900, 200);
+	push_str(0, -1800, "Hello2World", 32, A_CENTER, 900, 20);
 }
 
 static void demo_dds(unsigned frame)
@@ -195,7 +171,7 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 
 	// Draw dots where the samples actually are to show the density
 	if (val_blank >= 0xF00) {
-		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0x80);
+		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0x0);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0x80);
 	}

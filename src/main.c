@@ -104,14 +104,8 @@ static void i2s_stream_task(void *args)
 
 	while (1) {
 		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000)) {
-			draw_dds(100000);
-			nudge_dds();
-		}
-
-		// ticks = xTaskGetTickCount();
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		// 	draw_mesh();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+		test_image();
 
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
@@ -122,8 +116,15 @@ static void i2s_stream_task(void *args)
 			demo_text(1);
 
 		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		test_image();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000)) {
+			draw_dds(100000);
+			nudge_dds();
+		}
+
+		// ticks = xTaskGetTickCount();
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+		// 	draw_mesh();
+
 	}
 
 	vTaskDelete(NULL);
