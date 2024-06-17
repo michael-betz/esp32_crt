@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include "font_data.h"
 // -----------------------------------
 //  SCTV scope clock font
@@ -161,6 +162,8 @@ static const glyph_dsc_t glyph_dsc_arc[96] = {
 const font_t f_arc = {
     .units_per_em = 28,
     .n_glyphs = 96,
+    .map_n_ascii = 96,
+    .map_unicode_table = NULL,
     .glyphs = glyphs_arc,
     .glyph_dsc = glyph_dsc_arc,
 };
@@ -750,6 +753,8 @@ static const glyph_dsc_t glyph_dsc_lobster[95] = {
 const font_t f_lobster = {
     .units_per_em = 1000,
     .n_glyphs = 95,
+    .map_n_ascii = 95,
+    .map_unicode_table = NULL,
     .glyphs = glyphs_lobster,
     .glyph_dsc = glyph_dsc_lobster,
 };
