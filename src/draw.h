@@ -13,8 +13,8 @@
 #define F_GOTO 0
 #define F_LINETO 1
 #define F_QBEZ 2
+#define F_CBEZ 3
 #define F_ARC 4
-#define F_TEXT 5
 #define F_END 0xF
 
 #define F_X_SHORT 1
@@ -28,6 +28,7 @@
 //  0 = goto(x, y)
 //  1 = lineto(x, y)
 //  2 = quadratic_bezier(x_b, y_b, x_c, y_c)
+//  3 = cubic_bezier(x_b, y_b, x_c, y_c, x_d, y_d)
 //  4 = arc(x, y, rx:uint8, ry:uint8, fo:uint4, lo:uint4)
 //  F = end of glyph
 //
@@ -57,6 +58,8 @@ bool push_goto(int x_a, int y_a);
 bool push_line(int x_b, int y_b, unsigned density);
 
 void push_q_bezier(int x1, int y1, int x2, int y2, int density);
+
+void push_c_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int density);
 
 // Draws an ellipse, centered at (x_a, y_a) with radi (r_x, r_y)
 // where alpha_length is the arc_length (360 deg is MAX_ANGLE)

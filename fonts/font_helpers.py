@@ -1,9 +1,19 @@
+from numpy import *
+from matplotlib.pyplot import plot
+from fontTools.pens.basePen import BasePen
+
+
 # TYPES
 T_GOTO = 0
 T_LINETO = 1
 T_QBEZ = 2
+T_CBEZ = 2
 T_ARC = 4
 T_END = 0xF
+
+# for preview render only
+DENSITY = 0.1
+
 
 class CoordinateEncoder:
     def __init__(self, N=2):
@@ -43,6 +53,7 @@ class CoordinateEncoder:
         flags |= flag_or
         return flags.to_bytes(1, signed=False) + return_bytes
 
+
 class MinMax:
     def __init__(self):
         self.reset()
@@ -74,3 +85,119 @@ def print_table(vals, w=24, w_v=3, f=None):
         if i < ll:
             print(',', end='', file=f)
     print('\n};\n', file=f)
+
+
+def get_points(pt0, pt1, pt2):
+    ''' render a quadratic bezier for preview in plot window '''
+    dx = pt2[0] - pt0[0]
+    dy = pt2[1] - pt0[1]
+    dist = sqrt(dx**2 + dy**2)
+    N_POINTS = round(dist * DENSITY)
+    if N_POINTS < 3:
+        xs = array([pt0[0], (pt0[0] + pt2[0]) / 4 + pt1[0] / 2, pt2[0]])
+        ys = array([pt0[1], (pt0[1] + pt2[1]) / 4 + pt1[1] / 2, pt2[1]])
+        return xs, ys
+
+    t = linspace(0, 1, N_POINTS)
+    xs = (1 - t)**2 * pt0[0] + 2 * (1 - t) * t * pt1[0] + t**2 * pt2[0]
+    ys = (1 - t)**2 * pt0[1] + 2 * (1 - t) * t * pt1[1] + t**2 * pt2[1]
+    return xs, ys
+
+
+def get_points_c(pt0, pt1, pt2, pt3):
+    ''' render a cubic bezier for preview in plot window '''
+    dx = pt2[0] - pt0[0]
+    dy = pt2[1] - pt0[1]
+    dist = sqrt(dx**2 + dy**2)
+    N_POINTS = round(dist * DENSITY)
+    if N_POINTS < 3:
+        xs = array([pt0[0], (pt0[0] + 3 * (pt1[0] + pt2[0]) + pt3[0]) / 8, pt3[0]])
+        ys = array([pt0[1], (pt0[1] + 3 * (pt1[1] + pt2[1]) + pt3[1]) / 8, pt3[1]])
+        return xs, ys
+
+    t = linspace(0, 1, N_POINTS)
+
+    xs = (1 - t)**3 * pt0[0] + 3 * (1 - t)**2 * t * pt1[0] + 3 * (1 - t) * t**2 * pt2[0] + t**3 * pt3[0]
+    ys = (1 - t)**3 * pt0[1] + 3 * (1 - t)**2 * t * pt1[1] + 3 * (1 - t) * t**2 * pt2[1] + t**3 * pt3[1]
+    return xs, ys
+
+
+class CrtPen(BasePen):
+    def __init__(self, *args, do_plot=False, **kwargs):
+        ''' receive and convert coordinate and shape data from fontTools '''
+        self.do_plot = do_plot
+        self.reset()
+        super(CrtPen, self).__init__(*args, **kwargs)
+
+    def reset(self):
+        self.last_point = (0, 0)
+        self.bs = bytes()
+        self.ce = CoordinateEncoder()
+        self.cursor = [0, 0]
+        self.lsb = 0
+
+    def _lineTo(self, pt):
+        if self.do_plot:
+            pts = vstack((self.last_point, pt))
+            pts += self.cursor
+            pts[:, 0] += self.lsb
+            plot(pts[:, 0], pts[:, 1], 'k.-')
+            print('    lineTo', pt)
+        self.bs += self.ce.encode(pt, T_LINETO << 4)
+        self.last_point = pt
+
+    def _moveTo(self, pt):
+        if self.do_plot:
+            print('    moveTo', pt)
+        self.last_point = pt
+        self.first_point = pt
+        self.bs += self.ce.encode(pt, T_GOTO << 4)
+
+    def _curveToOne(self, pt1, pt2, pt3):
+        ''' draw a cubic bezier (never used for .ttf fonts) '''
+        pt0 = self.last_point
+
+        if self.do_plot:
+            pts = vstack((pt0, pt1, pt2, pt3))
+            pts += self.cursor
+            pts[:, 0] += self.lsb
+            plot(pts[:, 0], pts[:, 1], 'o')
+
+            xs, ys = get_points_c(pt0, pt1, pt2, pt3)
+            plot(xs + self.cursor[0] + self.lsb, ys + self.cursor[1], 'k.-')
+
+            print('curveToOne', pt0, pt1, pt2, pt3)
+
+        self.bs += self.ce.encode(pt1, T_CBEZ << 4)
+        self.bs += self.ce.encode(pt2)
+        self.bs += self.ce.encode(pt3)
+
+        self.last_point = pt3
+
+    def _qCurveToOne(self, pt1, pt2):
+        ''' draw a quadratic bezier '''
+        pt0 = self.last_point
+        if self.do_plot:
+            pts = vstack((pt0, pt1, pt2))
+            pts += self.cursor
+            pts[:, 0] += self.lsb
+            plot(pts[:, 0], pts[:, 1], 'o')
+
+            xs, ys = get_points(pt0, pt1, pt2)
+            plot(xs + self.cursor[0] + self.lsb, ys + self.cursor[1], 'k.-')
+
+            print('    qCurve', pt1, pt2)
+
+        self.bs += self.ce.encode(pt1, T_QBEZ << 4)
+        self.bs += self.ce.encode(pt2)
+
+        self.last_point = pt2
+
+    def _closePath(self):
+        if self.do_plot:
+            print('    closePath')
+        if self.last_point != self.first_point:
+            self._lineTo(self.first_point)
+
+    def _endPath(self):
+        print('endPath')

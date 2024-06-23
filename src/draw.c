@@ -126,6 +126,60 @@ void push_q_bezier(int x1, int y1, int x2, int y2, int density)
 	y_last = y2;
 }
 
+// draw a cubic Bezier curve. The 4 control points are:
+// the current beam position, (x1, y1), (x2, y2), (x3, y3)
+// We'll do it in 20.12 fixed-point (precision is controlled by MAX_ANGLE)
+void push_c_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int density)
+{
+	unsigned dist = get_dist(x3, y3);
+
+	// How many points to interpolate based on linear distance
+	int n = (dist * density) >> 11;
+
+	if (n <= 2) {
+		// Output 2 points (the beginning and end-points)
+	} else if (n <= 3) {
+		// output 3 points (the middle one is interpolated)
+		// xs = 0.5**3 * P0 + 3 * 0.5**2 * 0.5 * P1 + 3 * 0.5 * 0.5**2 * P2 + 0.5**3 * P3
+		// xs = 0.125 * P0 + 0.375 * P1 + 0.375 * P2 + 0.125 * P3
+		// xs = P0 / 8 + 3 * P1 / 8 + 3 * P2 / 8 + P3 / 8
+		// xs = (P0 + 3 * (P1 + P2) + P3) / 8
+		output_sample(
+			(x_last + 3 * (x1 + x2) + x3) / 8,
+			(y_last + 3 * (y1 + y2) + y3) / 8,
+			true,
+			0
+		);
+	} else {
+		// output n points, need to interpolate n - 2 points.
+		int d_t = MAX_ANGLE / n;  // t step-size (n steps from 0 to MAX_ANGLE)
+
+		for (unsigned i = 1; i <= (n - 1); i++) {
+			int t = i * d_t;
+
+			// xs = (1 - t)**3 * P0 + 3 * (1 - t)**2 * t * P1 + 3 * (1 - t) * t**2 * P2 + t**3 * P3
+			// xs =          A * P0 +          3 * B * t * P1 + 3 * (1 - t) *    C * P2 +    D * P3
+			int B = (MAX_ANGLE - t) * (MAX_ANGLE - t) / MAX_ANGLE;
+			int A = B * (MAX_ANGLE - t) / MAX_ANGLE;
+			int C = t * t / MAX_ANGLE;
+			int D = C * t / MAX_ANGLE;
+
+			int xs = A * x_last + (3 * B * t * x1) / MAX_ANGLE + (3 * (MAX_ANGLE - t) * C * x2) / MAX_ANGLE + D * x3;
+			int ys = A * y_last + (3 * B * t * y1) / MAX_ANGLE + (3 * (MAX_ANGLE - t) * C * y2) / MAX_ANGLE + D * y3;
+
+			// Round from fixed point back to integer
+			xs = (xs + MAX_ANGLE / 2) / MAX_ANGLE;
+			ys = (ys + MAX_ANGLE / 2) / MAX_ANGLE;
+
+			output_sample(xs, ys, true, 0);
+		}
+	}
+
+	output_sample(x3, y3, true, 0);
+	x_last = x3;
+	y_last = y3;
+}
+
 bool push_circle(
 	int x_a,
 	int y_a,
@@ -312,7 +366,7 @@ static const uint8_t *coordinateDecoder(const uint8_t *p, int *x_out, int *y_out
 }
 
 // Run through a serialized draw-list. Used for font-glyphs too.
-void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale, int scale_div, int density)
+void draw_blob(const uint8_t *p, unsigned n_bytes, int x_center, int y_center, int scale, int scale_div, int density)
 {
 	const uint8_t *p_end = p + n_bytes;
 
@@ -320,7 +374,7 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale, 
 	coordinateDecoder(NULL, NULL, NULL);
 
 	int x = 0, y = 0;  // raw coordinates
-	int x_b = 0, y_b = 0;  // auxiliary coordinates
+	int x_b = 0, y_b = 0, x_c = 0, y_c = 0;  // auxiliary coordinates
 	int x_s = 0, y_s = 0; // scaled absolute coordinates
 
 	while (p < p_end) {
@@ -331,8 +385,8 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale, 
 			break;
 
 		p = coordinateDecoder(p, &x, &y);
-		x_s = x_c + (x * (int)scale / scale_div);
-		y_s = y_c + (y * (int)scale / scale_div);
+		x_s = x_center + (x * (int)scale / scale_div);
+		y_s = y_center + (y * (int)scale / scale_div);
 
 		switch (type) {
 			case F_GOTO:
@@ -351,8 +405,23 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale, 
 				push_q_bezier(
 					x_s,
 					y_s,
-					x_c + (x_b * (int)scale / scale_div),
-					y_c + (y_b * (int)scale / scale_div),
+					x_center + (x_b * (int)scale / scale_div),
+					y_center + (y_b * (int)scale / scale_div),
+					density
+				);
+				break;
+
+			case F_CBEZ:
+				p = coordinateDecoder(p, &x_b, &y_b);
+				p = coordinateDecoder(p, &x_c, &y_c);
+				// printf("cbez (), (%d, %d), (%d, %d), (%d, %d)\n", x_s, y_s, x_b, y_b, x_c, y_c);
+				push_c_bezier(
+					x_s,
+					y_s,
+					x_center + (x_b * (int)scale / scale_div),
+					y_center + (y_b * (int)scale / scale_div),
+					x_center + (x_c * (int)scale / scale_div),
+					y_center + (y_c * (int)scale / scale_div),
 					density
 				);
 				break;
@@ -376,10 +445,6 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale, 
 					density
 				);
 				break;
-
-			// "hhHBB", x, y, scale, font, len(string), string
-			// case F_TEXT:
-			// 	unsigned scale = *p++;
 
 			default:
 				// not implemented
