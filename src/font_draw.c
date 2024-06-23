@@ -71,17 +71,53 @@ static unsigned utf8_dec(char c)
     return 0;
 }
 
+static int binary_search(unsigned target, const unsigned *arr, int length) {
+    int left = 0;
+    int right = length - 1;
+
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+
+        // Check if target is present at mid
+        if (arr[mid] == target) {
+            return mid;
+        }
+
+        // If target greater, ignore left half
+        if (arr[mid] < target) {
+            left = mid + 1;
+        }
+        // If target is smaller, ignore right half
+        else {
+            right = mid - 1;
+        }
+    }
+
+    // Target is not present in array
+    return -1;
+}
+
 // returns a pointer to the glyph-description entry for the unicode character dc
 // or NULL, if the character doesn't exist.
 static const glyph_dsc_t *find_glyph_dsc(unsigned dc)
 {
+	int glyph_index = -1;
+
 	// check if the character is in the ascii map
 	if (dc >= 0x20 && dc <= 0x80 && (dc - 0x20) < current_font->map_n_ascii) {
-		return &current_font->glyph_dsc[dc - 0x20];
+		glyph_index = dc - 0x20;
+	} else {
+		// otherwise binary search in map_unicode_table
+		glyph_index = binary_search(
+			dc,
+			current_font->map_unicode_table,
+			current_font->n_glyphs - current_font->map_n_ascii
+		);
 	}
 
-	// otherwise binary search
-	// TBD
+	if (glyph_index >= 0 && glyph_index < current_font->n_glyphs)
+		return &current_font->glyph_dsc[glyph_index];
+
 	return NULL;
 }
 
