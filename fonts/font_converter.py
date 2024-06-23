@@ -1,5 +1,5 @@
 '''
-Convert true-type files to the internally used font format (C-code file)
+Convert font files (.ttf, .otf, .woff2) to the internally used font format (C-code file)
 '''
 import argparse
 from pathlib import Path
@@ -12,11 +12,10 @@ from font_helpers import *
 
 
 def convert(args):
-    tt = ttLib.TTFont(args.ttf_file) # Load an existing font file
+    tt = ttLib.TTFont(args.font_file) # Load an existing font file
     tt.ensureDecompiled()
     cmap = tt["cmap"].getBestCmap()
     gs = tt.getGlyphSet()
-    glyf = tt['glyf']
 
     crt_pen = CrtPen(gs, do_plot=args.plot)
 
@@ -29,7 +28,7 @@ def convert(args):
             g.draw(crt_pen)
             crt_pen.cursor[0] += g.width
             axis("equal")
-            show()
+        show()
 
     else:
         # Generate code
@@ -55,7 +54,7 @@ def convert(args):
         # print(len(all_bs))
         # print(glyph_props)
 
-        out_name = Path(args.ttf_file).with_suffix(".c")
+        out_name = Path(args.font_file).with_suffix(".c")
         name = tt["name"].getBestFullName().lower()
 
         with open(out_name, 'w') as f:
@@ -91,8 +90,8 @@ def main():
     parser.add_argument('--plot', action='store_true', help='Plot some text to preview the font (Needs Matplotlib)')
     parser.add_argument('--text', default="(123)", help='String to plot for preview')
     parser.add_argument(
-        'ttf_file',
-        help='Name of the .ttf file to convert'
+        'font_file',
+        help='Name of the .ttf, .otf or .woff2 file to convert'
     )
     args = parser.parse_args()
 
