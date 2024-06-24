@@ -11,10 +11,40 @@ from fontTools.pens.basePen import BasePen
 from font_helpers import *
 
 
+def get_cp_set(args, cmap):
+    ''' assemble the set of code-points to convert '''
+    cp_set = set()
+
+    if args.add_range is not None:
+        cp_set.update((int(x, base=0) for x in args.add_range.split(",")))
+
+    if args.add_ascii:
+        cp_set.update(range(0x20, 0x20 + 95))
+
+    if args.add_all:
+        cp_set.update(cmap.keys())
+
+    # We don't support ascii codes below 0x20
+    cp_set.difference_update(range(0x20))
+
+    return sorted(cp_set)
+
+
+def get_n_ascii(cp_set):
+    ''' how many characters correspond to the basic ascii scheme? '''
+    for i, cp in enumerate(cp_set):
+        if i + 0x20 != cp:
+            return(i)
+    return(len(cp_set))
+
+
 def convert(args):
     tt = ttLib.TTFont(args.font_file) # Load an existing font file
     tt.ensureDecompiled()
+
+    # Map between unicode code-point and glyph name (key for the GlyphSet)
     cmap = tt["cmap"].getBestCmap()
+
     gs = tt.getGlyphSet()
 
     crt_pen = CrtPen(gs, do_plot=args.plot)
@@ -35,7 +65,10 @@ def convert(args):
         all_bs = bytes()
         glyph_props = []
 
-        for c in arange(0x20, 0x20 + 95):
+        cp_set = get_cp_set(args, cmap)
+        n_ascii = get_n_ascii(cp_set)
+
+        for c in cp_set:
             name = cmap[c]
             g = gs[name]
 
@@ -69,14 +102,16 @@ static const uint8_t glyphs_{name}[{len(all_bs)}] = {{''', file=f)
             print(f'''\
 // GLYPH DESCRIPTION
 static const glyph_dsc_t glyph_dsc_{name}[{len(glyph_props)}] = {{''', file=f)
-            for i, line in enumerate(glyph_props):
-                print("    {" + ", ".join([f'.{k} = {v:5d}' for k, v in line.items()]) + f"}},  // '{chr(0x20 + i)}'", file=f)
+            for cp, line in zip(cp_set, glyph_props):
+                print("    {" + ", ".join([f'.{k} = {v:5d}' for k, v in line.items()]) + f"}},  // U+{cp:04X} '{chr(cp)}' {cmap[cp]}", file=f)
             print("};", file=f)
 
             print(f'''
 const font_t f_{name} = {{
     .units_per_em = {tt['head'].unitsPerEm},
     .n_glyphs = {len(glyph_props)},
+    .map_n_ascii = {n_ascii},
+    .map_unicode_table = NULL,
     .glyphs = glyphs_{name},
     .glyph_dsc = glyph_dsc_{name},
 }};
@@ -89,6 +124,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--plot', action='store_true', help='Plot some text to preview the font (Needs Matplotlib)')
     parser.add_argument('--text', default="(123)", help='String to plot for preview')
+    parser.add_argument('--add-ascii', action='store_true', help='Add 95 Ascii characters to the generated file')
+    parser.add_argument('--add-all', action='store_true', help='Add all glyphs in the font')
+    parser.add_argument('--add-range', help='Add comma separated list of unicodes to the generated file')
+
     parser.add_argument(
         'font_file',
         help='Name of the .ttf, .otf or .woff2 file to convert'
