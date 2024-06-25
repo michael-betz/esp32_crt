@@ -89,6 +89,7 @@ def convert(args):
 
         out_name = Path(args.font_file).with_suffix(".c")
         name = tt["name"].getBestFullName().lower()
+        name = re.sub('[^A-Za-z0-9]+', '_', name)
 
         with open(out_name, 'w') as f:
             print(f'''\
