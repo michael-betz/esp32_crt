@@ -14,7 +14,7 @@ void set_font(unsigned index);
 /** This describes a glyph. */
 typedef struct {
     // uint16_t start_index;           /**< Start index of the vector */
-    uint16_t end_index;           /**< Last valid index of the vector */
+    unsigned end_index;           /**< Last valid index of the vector */
     int16_t adv_w;            /**< Draw the next glyph after this width. */
     // int16_t ofs_x;                   /**< x offset of the bounding box*/
     // int16_t ofs_y;                  /**< y offset of the bounding box. Measured from the top of the line*/
@@ -30,7 +30,7 @@ typedef struct {
     // Glyphs shall be sorted by their unicode values, such that the table can be searched faster.
     // There is a simplification if the first N glyphs are in ASCII-code order, starting with ascii code 0x20.
     // Then map_n_ascii is set to N and these glyphs will not need an entry in `map_unicode_table`
-    const uint8_t map_n_ascii;
+    const unsigned map_n_ascii;
     const unsigned *map_unicode_table;
 } font_t;
 

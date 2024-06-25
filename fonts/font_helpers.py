@@ -7,7 +7,7 @@ from fontTools.pens.basePen import BasePen
 T_GOTO = 0
 T_LINETO = 1
 T_QBEZ = 2
-T_CBEZ = 2
+T_CBEZ = 3
 T_ARC = 4
 T_END = 0xF
 
@@ -166,7 +166,7 @@ class CrtPen(BasePen):
             xs, ys = get_points_c(pt0, pt1, pt2, pt3)
             plot(xs + self.cursor[0] + self.lsb, ys + self.cursor[1], 'k.-')
 
-            print('curveToOne', pt0, pt1, pt2, pt3)
+            print('    cCurve', pt1, pt2, pt3)
 
         self.bs += self.ce.encode(pt1, T_CBEZ << 4)
         self.bs += self.ce.encode(pt2)

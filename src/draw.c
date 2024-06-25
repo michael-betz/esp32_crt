@@ -159,9 +159,9 @@ void push_c_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int density)
 
 			// xs = (1 - t)**3 * P0 + 3 * (1 - t)**2 * t * P1 + 3 * (1 - t) * t**2 * P2 + t**3 * P3
 			// xs =          A * P0 +          3 * B * t * P1 + 3 * (1 - t) *    C * P2 +    D * P3
-			int B = (MAX_ANGLE - t) * (MAX_ANGLE - t) / MAX_ANGLE;
+			long int B = (MAX_ANGLE - t) * (MAX_ANGLE - t) / MAX_ANGLE;
 			int A = B * (MAX_ANGLE - t) / MAX_ANGLE;
-			int C = t * t / MAX_ANGLE;
+			long int C = t * t / MAX_ANGLE;
 			int D = C * t / MAX_ANGLE;
 
 			int xs = A * x_last + (3 * B * t * x1) / MAX_ANGLE + (3 * (MAX_ANGLE - t) * C * x2) / MAX_ANGLE + D * x3;
@@ -448,6 +448,7 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_center, int y_center, i
 
 			default:
 				// not implemented
+				printf("HUH! %x\n", type);
 				return;
 		}
 	}

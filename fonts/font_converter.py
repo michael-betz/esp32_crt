@@ -1,6 +1,7 @@
 '''
 Convert font files (.ttf, .otf, .woff2) to the internally used font format (C-code file)
 '''
+import re
 import argparse
 from pathlib import Path
 from matplotlib.pyplot import plot, close, show, axis
@@ -94,7 +95,7 @@ def convert(args):
         with open(out_name, 'w') as f:
             print(f'''\
 // -----------------------------------
-//  {tt["name"].getBestFullName()} (.ttf font)
+//  {tt["name"].getBestFullName()}
 // -----------------------------------
 
 static const uint8_t glyphs_{name}[{len(all_bs)}] = {{''', file=f)
@@ -105,14 +106,21 @@ static const uint8_t glyphs_{name}[{len(all_bs)}] = {{''', file=f)
 static const glyph_dsc_t glyph_dsc_{name}[{len(glyph_props)}] = {{''', file=f)
             for cp, line in zip(cp_set, glyph_props):
                 print("    {" + ", ".join([f'.{k} = {v:5d}' for k, v in line.items()]) + f"}},  // U+{cp:04X} '{chr(cp)}' {cmap[cp]}", file=f)
-            print("};", file=f)
+            print("};\n", file=f)
 
-            print(f'''
+            n_cp_table_entries = len(cp_set) - n_ascii
+            cp_table_name = "NULL"
+            if n_cp_table_entries > 0:
+                cp_table_name = f"code_points_{name}"
+                print(f'const unsigned {cp_table_name}[{n_cp_table_entries}] = {{', file=f)
+                print_table(cp_set[n_ascii:], w=19, w_v=6, f=f)
+
+            print(f'''\
 const font_t f_{name} = {{
     .units_per_em = {tt['head'].unitsPerEm},
     .n_glyphs = {len(glyph_props)},
     .map_n_ascii = {n_ascii},
-    .map_unicode_table = NULL,
+    .map_unicode_table = {cp_table_name},
     .glyphs = glyphs_{name},
     .glyph_dsc = glyph_dsc_{name},
 }};
