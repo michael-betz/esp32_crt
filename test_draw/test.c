@@ -79,12 +79,12 @@ static void demo_text(unsigned frame, unsigned font)
 	set_font(font);
 	push_str(
 		0, 500,
-		"esp_crt\nHello World\n1234:5678",
+		"esp_crt\n✌\n1234:5678",
 		// "p",
 		128,
 		A_CENTER,
 		// 18,
-		(sin(frame / 200.0) + 1.05) * 500,
+		(sin(frame / 200.0) + 1.2) * 500,
 		100
 	);
 	// exit(0);

@@ -2,7 +2,7 @@ vpath %.c ../src
 
 LDLIBS = -lm -lSDL2 -lstdc++
 
-FLAGS = -Wall -I../src
+FLAGS = -Wall -I../src -g
 CFLAGS += $(FLAGS)
 CPPFLAGS += $(FLAGS)
 

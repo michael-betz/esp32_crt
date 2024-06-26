@@ -159,13 +159,13 @@ void push_c_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int density)
 
 			// xs = (1 - t)**3 * P0 + 3 * (1 - t)**2 * t * P1 + 3 * (1 - t) * t**2 * P2 + t**3 * P3
 			// xs =          A * P0 +          3 * B * t * P1 + 3 * (1 - t) *    C * P2 +    D * P3
-			long int B = (MAX_ANGLE - t) * (MAX_ANGLE - t) / MAX_ANGLE;
+			int B = (MAX_ANGLE - t) * (MAX_ANGLE - t) / MAX_ANGLE;
 			int A = B * (MAX_ANGLE - t) / MAX_ANGLE;
-			long int C = t * t / MAX_ANGLE;
+			int C = t * t / MAX_ANGLE;
 			int D = C * t / MAX_ANGLE;
 
-			int xs = A * x_last + (3 * B * t * x1) / MAX_ANGLE + (3 * (MAX_ANGLE - t) * C * x2) / MAX_ANGLE + D * x3;
-			int ys = A * y_last + (3 * B * t * y1) / MAX_ANGLE + (3 * (MAX_ANGLE - t) * C * y2) / MAX_ANGLE + D * y3;
+			int xs = A * x_last + 3 * B * t / MAX_ANGLE * x1 + 3 * (MAX_ANGLE - t) * C / MAX_ANGLE * x2 + D * x3;
+			int ys = A * y_last + 3 * B * t / MAX_ANGLE * y1 + 3 * (MAX_ANGLE - t) * C / MAX_ANGLE * y2 + D * y3;
 
 			// Round from fixed point back to integer
 			xs = (xs + MAX_ANGLE / 2) / MAX_ANGLE;

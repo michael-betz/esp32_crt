@@ -98,7 +98,7 @@ static int binary_search(unsigned target, const unsigned *arr, int length) {
 }
 
 // returns a pointer to the glyph-description entry for the unicode character dc
-// or NULL, if the character doesn't exist.
+// or NULL, if the character can't be found
 static const glyph_dsc_t *find_glyph_dsc(unsigned dc)
 {
 	int glyph_index = -1;
@@ -106,13 +106,15 @@ static const glyph_dsc_t *find_glyph_dsc(unsigned dc)
 	// check if the character is in the ascii map
 	if (dc >= 0x20 && (dc - 0x20) < current_font->map_n_ascii) {
 		glyph_index = dc - 0x20;
-	} else {
+	} else if (current_font->map_unicode_table != NULL) {
 		// otherwise binary search in map_unicode_table
 		glyph_index = binary_search(
 			dc,
 			current_font->map_unicode_table,
 			current_font->n_glyphs - current_font->map_n_ascii
 		);
+		if (glyph_index > -1)
+			glyph_index += current_font->map_n_ascii;
 	}
 
 	if (glyph_index >= 0 && glyph_index < current_font->n_glyphs)
@@ -159,7 +161,6 @@ static int get_str_width(char *c, unsigned n, unsigned scale)
 
 static void push_char(unsigned dc, unsigned scale, unsigned density)
 {
-	// printf("push_char(%8x, %d, %d)\n", dc, scale, density);
 
 	// Find the glyph data for the unicode letter dc
 	const glyph_dsc_t *glyph_dsc = find_glyph_dsc(dc);
@@ -179,6 +180,8 @@ static void push_char(unsigned dc, unsigned scale, unsigned density)
 
 	// Advance the cursor by the correct amount
 	x_c += glyph_dsc->adv_w * (int)scale / current_font->units_per_em;
+
+	// printf("push_char(%8x) %8x %8x\n", dc, data_start, data_end);
 }
 
 static void set_x_cursor(int x_a, char *c, unsigned n, unsigned scale, unsigned align)
