@@ -78,6 +78,9 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 		is_clipped = true;
 	}
 
+	if (is_clipped)
+		beam_on = false;
+
 	push_sample(x + 0x800, y + 0x800, beam_on ? 0 : 0xFFF, 0);
 	return is_clipped;
 }
@@ -117,7 +120,9 @@ void push_q_bezier(int x1, int y1, int x2, int y2, int density)
 
 			int xs = (A * x_last + B * x1 + C * x2 + MAX_ANGLE / 2) / MAX_ANGLE;
 			int ys = (A * y_last + B * y1 + C * y2 + MAX_ANGLE / 2) / MAX_ANGLE;
-			output_sample(xs, ys, true, 0);
+
+			if (output_sample(xs, ys, true, 0))
+				break;
 		}
 	}
 
@@ -171,7 +176,8 @@ void push_c_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int density)
 			xs = (xs + MAX_ANGLE / 2) / MAX_ANGLE;
 			ys = (ys + MAX_ANGLE / 2) / MAX_ANGLE;
 
-			output_sample(xs, ys, true, 0);
+			if (output_sample(xs, ys, true, 0))
+				break;
 		}
 	}
 
@@ -180,7 +186,7 @@ void push_c_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int density)
 	y_last = y3;
 }
 
-bool push_circle(
+void push_circle(
 	int x_a,
 	int y_a,
 	unsigned r_x,
@@ -205,7 +211,6 @@ bool push_circle(
 	int d_alpha = (alpha_length << 8) / n;  // angular step-size
 
 	int x = 0, y = 0, arg;
-	bool is_clipped = false;
 	for (unsigned i = 0; i <= n; i++) {
 		arg = alpha_start + ((i * d_alpha) >> 8);
 		x = x_a + (((get_cos(arg) >> 16) * (int)r_x) >> 15);
@@ -215,9 +220,7 @@ bool push_circle(
 		if (i == 0)
 			push_goto(x, y);
 
-		is_clipped = output_sample(x, y, true, 0);
-
-		if (is_clipped)
+		if (output_sample(x, y, true, 0))
 			break;
 	}
 
@@ -225,19 +228,16 @@ bool push_circle(
 	y_last = y;
 
 	// output last sample a few more time to make sure beam had a chance to close the circle
-	if (!is_clipped)
-		for (unsigned i=0; i<DWELL_TIME; i++)
-			output_sample(x_last, y_last, true, 0);
-
-	return is_clipped;
+	for (unsigned i=0; i<DWELL_TIME; i++)
+		output_sample(x_last, y_last, true, 0);
 }
 
-bool push_goto(int x_a, int y_a)
+void push_goto(int x_a, int y_a)
 {
 	bool is_clipped = false;
 
 	if (x_a == x_last && y_a == y_last)
-		return false;
+		return;
 
 	unsigned dist = get_dist(x_a, y_a);
 	unsigned n = (dist * BLANK_DENSITY) >> 11;
@@ -265,14 +265,14 @@ bool push_goto(int x_a, int y_a)
 	if (dist >= BLANK_MIN_DIST && !is_clipped)
 		for (unsigned i=0; i<DWELL_TIME; i++)
 			output_sample(x_a, y_a, true, 0);
-
-	return is_clipped;
 }
 
-bool push_line(int x_b, int y_b, unsigned density)
+void push_line(int x_b, int y_b, unsigned density)
 {
-	if (density == 0)
-		return push_goto(x_b, y_b);
+	if (density == 0) {
+		push_goto(x_b, y_b);
+		return;
+	}
 
 	// Check how many points to produce
 	unsigned dist = get_dist(x_b, y_b);
@@ -284,7 +284,8 @@ bool push_line(int x_b, int y_b, unsigned density)
 	if (n <= 1) {
 		x_last = x_b;
 		y_last = y_b;
-		return output_sample(x_b, y_b, true, 0);
+		output_sample(x_b, y_b, true, 0);
+		return;
 	}
 
 	int dx = ((x_b - x_last) << 8) / n;
@@ -306,8 +307,6 @@ bool push_line(int x_b, int y_b, unsigned density)
 	if (!is_clipped)
 		for (unsigned i=0; i<DWELL_TIME; i++)
 			output_sample(x_last, y_last, true, 0);
-
-	return is_clipped;
 }
 
 // Compress 16 bit signed coordinate pairs and encode them in a byte stream

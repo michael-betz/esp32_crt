@@ -50,12 +50,11 @@ extern unsigned n_samples;
 // Run through a serialized draw-list. Used for font-glyphs too.
 void draw_blob(const uint8_t *p, unsigned n_bytes, int x_c, int y_c, int scale_a, int scale_div, int density);
 
-// Updates the cursor to (x_a, y_a). Returns true if coordinates were clipped
-bool push_goto(int x_a, int y_a);
+// Blank the beam and move it to (x_a, y_a)
+void push_goto(int x_a, int y_a);
 
 // Draws a line from the current cursor to (x_b, y_b). updates the cursor
-// Returns true if a sample was clipped
-bool push_line(int x_b, int y_b, unsigned density);
+void push_line(int x_b, int y_b, unsigned density);
 
 void push_q_bezier(int x1, int y1, int x2, int y2, int density);
 
@@ -64,8 +63,7 @@ void push_c_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int density);
 // Draws an ellipse, centered at (x_a, y_a) with radi (r_x, r_y)
 // where alpha_length is the arc_length (360 deg is MAX_ANGLE)
 // and alph_start is the start angle
-// Returns true if a sample was clipped
-bool push_circle(
+void push_circle(
     int x_a,
     int y_a,
     unsigned r_x,
@@ -75,6 +73,7 @@ bool push_circle(
     unsigned density
 );
 
+// Output a single set of samples. Returns true when clipped.
 bool output_sample(int x, int y, bool beam_on, int focus);
 
 
