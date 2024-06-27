@@ -47,7 +47,7 @@ static void demo_text(unsigned font)
 	set_font(font);
 	push_str(
 		0, 500,
-		"esp_crt\nHello World\n1234:5678",
+		"esp_crt\n✌\n1234:5678",
 		// "p",
 		128,
 		A_CENTER,
@@ -105,15 +105,15 @@ static void i2s_stream_task(void *args)
 	while (1) {
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			demo_text(2);
+
+		// ticks = xTaskGetTickCount();
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+		// 	demo_text(1);
+
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
 		test_image();
-
-		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-			demo_text(0);
-
-		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-			demo_text(1);
 
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000)) {
