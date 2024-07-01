@@ -33,10 +33,13 @@ def get_cp_set(args, cmap):
 
 def get_n_ascii(cp_set):
     ''' how many characters correspond to the basic ascii scheme? '''
+    first_char = None
     for i, cp in enumerate(cp_set):
-        if i + 0x20 != cp:
-            return(i)
-    return(len(cp_set))
+        if i == 0:
+            first_char = cp
+        elif firstchar + i != cp:
+            return(first_char, i)
+    return(first_char, len(cp_set))
 
 
 def convert(args):
@@ -67,7 +70,7 @@ def convert(args):
         glyph_props = []
 
         cp_set = get_cp_set(args, cmap)
-        n_ascii = get_n_ascii(cp_set)
+        firstchar, n_ascii = get_n_ascii(cp_set)
 
         for c in cp_set:
             name = cmap[c]
@@ -119,7 +122,8 @@ static const glyph_dsc_t glyph_dsc_{name}[{len(glyph_props)}] = {{''', file=f)
 const font_t f_{name} = {{
     .units_per_em = {tt['head'].unitsPerEm},
     .n_glyphs = {len(glyph_props)},
-    .map_n_ascii = {n_ascii},
+    .map_start = 0x20,
+    .map_n = {n_ascii},
     .map_unicode_table = {cp_table_name},
     .glyphs = glyphs_{name},
     .glyph_dsc = glyph_dsc_{name},

@@ -28,9 +28,10 @@ typedef struct {
 
     // Each glyph is associated with its unicode value in `map_unicode_table`.
     // Glyphs shall be sorted by their unicode values, such that the table can be searched faster.
-    // There is a simplification if the first N glyphs are in ASCII-code order, starting with ascii code 0x20.
-    // Then map_n_ascii is set to N and these glyphs will not need an entry in `map_unicode_table`
-    const unsigned map_n_ascii;
+    // There is a simplification if the first N glyphs are in ASCII-code order, starting with ascii code map_start.
+    // Then map_n is set to N and these glyphs will not need an entry in `map_unicode_table`
+    const unsigned map_start;
+    const unsigned map_n;
     const unsigned *map_unicode_table;
 } font_t;
 

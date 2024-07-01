@@ -104,17 +104,17 @@ static const glyph_dsc_t *find_glyph_dsc(unsigned dc)
 	int glyph_index = -1;
 
 	// check if the character is in the ascii map
-	if (dc >= 0x20 && (dc - 0x20) < current_font->map_n_ascii) {
-		glyph_index = dc - 0x20;
+	if (dc >= current_font->map_start && (dc - current_font->map_start) < current_font->map_n) {
+		glyph_index = dc - current_font->map_start;
 	} else if (current_font->map_unicode_table != NULL) {
 		// otherwise binary search in map_unicode_table
 		glyph_index = binary_search(
 			dc,
 			current_font->map_unicode_table,
-			current_font->n_glyphs - current_font->map_n_ascii
+			current_font->n_glyphs - current_font->map_n
 		);
 		if (glyph_index > -1)
-			glyph_index += current_font->map_n_ascii;
+			glyph_index += current_font->map_n;
 	}
 
 	if (glyph_index >= 0 && glyph_index < current_font->n_glyphs)
