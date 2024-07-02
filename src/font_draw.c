@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "draw.h"
 #include "font_draw.h"
-#include "font_data.h"
+#include "fonts/font_data.h"
 #include "fast_sin.h"
 
 static const font_t *current_font = &f_arc;

@@ -1,5 +1,6 @@
 #ifndef FONT_DRAW_H
 #define FONT_DRAW_H
+#include <stdint.h>
 
 // Text alignment and horizontal anchor point
 #define A_LEFT 0

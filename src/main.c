@@ -9,7 +9,7 @@
 #include "esp_spiffs.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "font_data.h"
+#include "fonts/font_data.h"
 
 #include "i2s.h"
 #include "draw.h"

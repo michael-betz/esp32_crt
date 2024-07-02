@@ -37,7 +37,7 @@ def get_n_ascii(cp_set):
     for i, cp in enumerate(cp_set):
         if i == 0:
             first_char = cp
-        elif firstchar + i != cp:
+        elif first_char + i != cp:
             return(first_char, i)
     return(first_char, len(cp_set))
 
@@ -91,12 +91,15 @@ def convert(args):
         # print(len(all_bs))
         # print(glyph_props)
 
-        out_name = Path(args.font_file).with_suffix(".c")
         name = tt["name"].getBestFullName().lower()
         name = re.sub('[^A-Za-z0-9]+', '_', name)
+        out_name = Path(name).with_suffix(".c")
 
         with open(out_name, 'w') as f:
             print(f'''\
+#include <stdint.h>
+#include <stdio.h>
+#include <font_draw.h>
 // -----------------------------------
 //  {tt["name"].getBestFullName()}
 // -----------------------------------
@@ -115,14 +118,14 @@ static const glyph_dsc_t glyph_dsc_{name}[{len(glyph_props)}] = {{''', file=f)
             cp_table_name = "NULL"
             if n_cp_table_entries > 0:
                 cp_table_name = f"code_points_{name}"
-                print(f'const unsigned {cp_table_name}[{n_cp_table_entries}] = {{', file=f)
+                print(f'static const unsigned {cp_table_name}[{n_cp_table_entries}] = {{', file=f)
                 print_table(cp_set[n_ascii:], w=19, w_v=6, f=f)
 
             print(f'''\
 const font_t f_{name} = {{
     .units_per_em = {tt['head'].unitsPerEm},
     .n_glyphs = {len(glyph_props)},
-    .map_start = 0x20,
+    .map_start = {firstchar},
     .map_n = {n_ascii},
     .map_unicode_table = {cp_table_name},
     .glyphs = glyphs_{name},
