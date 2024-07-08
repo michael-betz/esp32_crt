@@ -80,21 +80,6 @@ extern "C" void draw_mesh()
 // 4. the draw thread has a list of entities and uses the transform_matrix to get transformed vertices
 //    it then uses the indexes from edges to draw lines between some of the transformed vertices
 
-
-// stores all vertices for all 3D objects. These come in packets of 3 for x, y, z.
-static const int all_vertices[] = {100, 200, 300, 110, 120, 130};
-
-// stores the edges for all 3D objects, these are indices into all_vertices.
-// These come in packets of 2 for start-point, end-point of the line
-// The index is relative to the start_index of the object.
-static const uint16_t all_edges[] = {1, 2, 3, 4};
-
-// end_vertice of the object
-static const uint16_t end_of_vertices[] = {8, 12, 15};
-
-// end edge of the object
-static const uint16_t end_of_edges[] = {3, 6, 10};
-
 int get_ptr_and_len(const uint16_t *end_index_array, unsigned end_index_array_len, unsigned obj_index, unsigned *start_index_out)
 {
 	// Find the beginning and length

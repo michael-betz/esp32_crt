@@ -1,10 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <font_draw.h>
+#include <wireframe_draw.h>
+
 // -----------------------------------
 //  3D objects: digits 0-9 and a colon
 // -----------------------------------
-
+    
 static const int all_vertices[576] = {
 -172798, 153423, -65536, -94536,  77166, -65536, 172654, 153423,
  -65536,  94637,  77166, -65536, -94502, -82208, -65536,-172746,
@@ -165,11 +166,11 @@ static const uint16_t edges_ends[11] = {
     468,    528,    576
 };
 
-const edges_3d_t d_numbers = {
-    .n_objects = 11;
-    .all_vertices = all_vertices;
-    .all_edges = all_edges;
-    .vertices_ends = vertices_ends;
-    .edges_ends = edges_ends;
+const edges_3d_t wf_numbers = {
+    .n_objects = 11,
+    .all_vertices = all_vertices,
+    .all_edges = all_edges,
+    .vertices_ends = vertices_ends,
+    .edges_ends = edges_ends
 };
-
+    

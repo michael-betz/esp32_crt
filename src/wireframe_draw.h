@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 // holds all the parameters needed to draw a 3D object at a specific position
 typedef struct {
