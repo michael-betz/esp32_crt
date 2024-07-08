@@ -73,19 +73,8 @@ extern "C" void draw_mesh()
 }
 
 
-typedef struct t_3d_entity {
-	int x; int y; int z;	// linear position
-	int u; int v; int w;	// angular orientation
-	int transform_matrix[4][4]; // (derived from the parameters above)
 
-	const int *vertices;	// 3 rows, n_vertices columns
-	uint16_t n_vertices;
-
-	const uint16_t *edges;	// 2 rows, n_edges columns
-	uint16_t n_edges;
-};
-
-// 1. Initialize entities (which objects to show, their positions and orientations)
+// 1. Initialize 3D objects (which edges to show, their positions and orientations)
 // 2. Set camera position
 // 3. call calc_transform_matrix(entity, camera) for each entity, it calculates the transform matrix
 // 4. the draw thread has a list of entities and uses the transform_matrix to get transformed vertices

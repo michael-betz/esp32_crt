@@ -79,14 +79,14 @@ def convert(args):
             crt_pen.reset()
             g.draw(crt_pen)
 
+            all_bs += crt_pen.bs
+
             glyph_props.append({
         #         "start_index": len(all_bs),
-                "end_index": len(all_bs) + len(crt_pen.bs),
+                "end_index": len(all_bs),
                 "adv_w": g.width,
         #         "ofs_x": g.lsb
             })
-
-            all_bs += crt_pen.bs
 
         # print(len(all_bs))
         # print(glyph_props)
