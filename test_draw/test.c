@@ -6,11 +6,10 @@
 #include <limits.h>
 #include "draw.h"
 #include "font_draw.h"
+#include "wireframe_draw.h"
 #include "fonts/font_data.h"
 #include "fast_sin.h"
 #include "dds.h"
-
-#include "test_3d.h"
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
@@ -216,6 +215,10 @@ int main(int argc, char* args[])
 	init_lut();
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
+
+	wf_test();
+	return(0);
+
 
 	unsigned frame = 0;
 	int demo = 5;

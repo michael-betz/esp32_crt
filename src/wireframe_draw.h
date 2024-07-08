@@ -14,6 +14,7 @@ typedef struct {
     uint16_t n_edges;
 } obj_3d_t;
 
+
 // holds the vertices and edge-indices of N wireframe 3D objects
 typedef struct {
     // how many different 3D objects do we store here
@@ -34,3 +35,8 @@ typedef struct {
     // end edge of the object
     const uint16_t *edges_ends;
 } edges_3d_t;
+
+
+void wf_test(void);
+
+extern const edges_3d_t wf_numbers;

@@ -9,7 +9,7 @@ CPPFLAGS += $(FLAGS)
 
 FNT_OBJS = $(patsubst %.c,%.o,$(wildcard ../src/fonts/*.c))
 
-OBJS = draw.o fast_sin.o print.o font_draw.o dds.o test_3d.o $(FNT_OBJS)
+OBJS = draw.o fast_sin.o print.o font_draw.o wireframe_draw.o dds.o test_3d.o $(FNT_OBJS)
 
 all: test
 

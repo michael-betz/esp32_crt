@@ -71,30 +71,3 @@ extern "C" void draw_mesh()
 
 	drawObj();
 }
-
-
-
-// 1. Initialize 3D objects (which edges to show, their positions and orientations)
-// 2. Set camera position
-// 3. call calc_transform_matrix(entity, camera) for each entity, it calculates the transform matrix
-// 4. the draw thread has a list of entities and uses the transform_matrix to get transformed vertices
-//    it then uses the indexes from edges to draw lines between some of the transformed vertices
-
-int get_ptr_and_len(const uint16_t *end_index_array, unsigned end_index_array_len, unsigned obj_index, unsigned *start_index_out)
-{
-	// Find the beginning and length
-	if (obj_index >= end_index_array_len)
-		return -1;
-
-	unsigned end_index = end_index_array[obj_index];
-	unsigned start_index = 0;
-
-	if (obj_index > 0)
-		start_index = end_index_array[obj_index - 1];
-
-	if (start_index_out != NULL)
-		*start_index_out = start_index;
-
-	return end_index - start_index;
-}
-
