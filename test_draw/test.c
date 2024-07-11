@@ -203,21 +203,12 @@ static void init_sdl()
 
 int main(int argc, char* args[])
 {
-	// if (argc != 2) {
-	// 	printf("also try %s draw_list.bin\n", args[0]);
-	// 	*dl = T_END;
-	// 	n_dl = 1;
-	// } else {
-	// 	printf("reading %s\n", args[1]);
-	// 	read_dl(args[1]);
-	// }
-
 	init_lut();
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
 	unsigned frame = 0;
-	int demo = 0;
+	int demo = 3;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
@@ -248,8 +239,6 @@ int main(int argc, char* args[])
 		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(rr);
 
-		// push_list(dl, n_dl);
-
 		if (demo < 0)
 			demo = N_FONTS + 3;
 
@@ -258,8 +247,7 @@ int main(int argc, char* args[])
 
 		switch (demo) {
 		case 0:
-			// test_image();
-			wf_test();
+			test_image();
 			break;
 		case 1:
 			demo_circles(frame);
@@ -268,7 +256,7 @@ int main(int argc, char* args[])
 			demo_dds(frame);
 			break;
 		case 3:
-			draw_mesh();
+			wf_test();
 			break;
 		default:
 			demo_text(frame, demo - 4);
@@ -281,7 +269,6 @@ int main(int argc, char* args[])
 		SDL_RenderPresent(rr);
 		SDL_Delay(20);
 		frame++;
-		// return 0;
 	}
 
 	SDL_DestroyRenderer(rr);
