@@ -1,6 +1,15 @@
 #pragma once
 #include <stdint.h>
 
+// We use fixed point integers with 12 bit fractional part: 1.0 = 0x1000 = 4096
+#define WF_ONE 0x1000
+
+// Normalize +- int_max to +- WF_ONE
+#define WF_INT_DIV ((1 << 31) / WF_ONE)
+
+// transformation matrixes (m_ prefix) are of dimension int[4][4]
+typedef int t_m4[4][4];
+
 // holds all the parameters needed to draw a 3D object at a specific position
 typedef struct {
     int x; int y; int z;    // linear position
