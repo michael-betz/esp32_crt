@@ -44,7 +44,7 @@ void obj_3d_set_edges(obj_3d_t *obj, const edges_3d_t *edge_data, unsigned asset
 	if (len < 0)
 		return;
 	obj->vertices = &edge_data->all_vertices[start_index];
-	obj->n_vertices = len;
+	obj->n_vertices = len / 3;
 
 	len = get_ptr_and_len(edge_data->edges_ends, edge_data->n_objects, asset_index, &start_index);
 	if (len < 0)
@@ -52,7 +52,7 @@ void obj_3d_set_edges(obj_3d_t *obj, const edges_3d_t *edge_data, unsigned asset
 	obj->edges = &edge_data->all_edges[start_index];
 	obj->n_edges = len;
 
-	printf("%d: n_verts: %d (%d, %d, %d), n_edges: %d (%d, %d)\n", asset_index, obj->n_vertices, obj->vertices[0], obj->vertices[1], obj->vertices[2], obj->n_edges, obj->edges[0], obj->edges[1]);
+	printf("%d: n_verts: %d (%d, %d, %d), n_edges: %d\n", asset_index, obj->n_vertices, obj->vertices[0], obj->vertices[1], obj->vertices[2], obj->n_edges);
 }
 
 void obj_3d_draw(obj_3d_t *obj, unsigned density)
@@ -72,7 +72,15 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 		int y = obj->vertices[index + 1];
 		int z = obj->vertices[index + 2];
 
-		// TODO apply coordinate transformation matrix
+		// TODO apply a general coordinate transformation matrix
+
+		x /= 128;
+		y /= 128;
+		z /= 128;
+
+		// Simple orthographic projection
+		x += z / 4;
+		y += z / 4;
 
 		if (is_goto)
 			push_goto(x, y);
@@ -83,16 +91,17 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 
 void wf_test(void)
 {
-	printf("wf_test\n");
+	static int frame = 0;
+	static obj_3d_t o;
 
-	for (unsigned obj_index = 0; obj_index <= 10; obj_index++) {
-		unsigned start_index = 0;
-
-		int len = get_ptr_and_len(wf_numbers.vertices_ends, wf_numbers.n_objects, obj_index, &start_index);
-		printf("%d:  start: %d, len: %d   (%d, %d, %d)\n", obj_index, start_index, len, wf_numbers.all_vertices[start_index], wf_numbers.all_vertices[start_index + 1], wf_numbers.all_vertices[start_index + 2]);
+	if ((frame % 100) == 0) {
+		int ind = frame / 100;
+		ind %= 11;
+		printf("obj_3d_set_edges(%d)\n", ind);
+		obj_3d_set_edges(&o, &wf_numbers, ind);
 	}
 
-	obj_3d_t o;
-	obj_3d_set_edges(&o, &wf_numbers, 0);
-	obj_3d_draw(&o, 100);
+	obj_3d_draw(&o, 50);
+
+	frame++;
 }

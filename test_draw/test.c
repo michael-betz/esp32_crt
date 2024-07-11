@@ -216,12 +216,8 @@ int main(int argc, char* args[])
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
-	wf_test();
-	return(0);
-
-
 	unsigned frame = 0;
-	int demo = 5;
+	int demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
@@ -262,7 +258,8 @@ int main(int argc, char* args[])
 
 		switch (demo) {
 		case 0:
-			test_image();
+			// test_image();
+			wf_test();
 			break;
 		case 1:
 			demo_circles(frame);
