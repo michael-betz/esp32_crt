@@ -82,7 +82,7 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 		beam_on = false;
 
 	push_sample(x + 0x800, y + 0x800, beam_on ? 0 : 0xFFF, 0);
-	return is_clipped;
+	return false;
 }
 
 // draw a quadratic Bezier curve. The 3 control points are:

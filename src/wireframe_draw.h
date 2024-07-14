@@ -8,15 +8,19 @@
 #define WF_INT_DIV ((1 << 31) / WF_ONE)
 
 // transformation matrixes (m_ prefix) are of dimension int[4][4]
-typedef int t_m4[4][4];
+typedef int t_m4[3][4];
+
+// 3 dimensional vector
+typedef int t_v3[3];
 
 // holds all the parameters needed to draw a 3D object at a specific position
 typedef struct {
+    int scale;
     int x; int y; int z;    // linear position
     int u; int v; int w;    // angular orientation
-    int transform_matrix[4][4]; // (derived from the parameters above)
+    t_m4 transform_matrix;  // (derived from the parameters above)
 
-    const int *vertices;    // 3 rows, n_vertices columns
+    const int16_t *vertices;    // 3 rows, n_vertices columns
     uint16_t n_vertices;
 
     const uint16_t *edges;  // 2 rows, n_edges columns
@@ -30,7 +34,7 @@ typedef struct {
     const uint16_t n_objects;
 
     // stores all vertices for all 3D objects. These come in packets of 3 for x, y, z.
-    const int *all_vertices;
+    const int16_t *all_vertices;
 
     // stores the edges for all 3D objects, these are indices into all_vertices.
     // These come in packets of 2 for start-point, end-point of the line

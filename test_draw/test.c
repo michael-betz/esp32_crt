@@ -263,7 +263,7 @@ int main(int argc, char* args[])
 			break;
 		}
 
-		printf("%d\n", n_samples);
+		// printf("%d\n", n_samples);
 		n_samples = 0;
 
 		SDL_RenderPresent(rr);

@@ -16,108 +16,49 @@
 
 void m_print(t_m4 m)
 {
-	for(int y = 0; y < 4; y++) {
+	for(int y = 0; y < 3; y++) {
 		for(int x = 0; x < 4; x++) {
-			printf("%6d ", m[y][x]);
+			printf("%9d ", m[y][x]);
 		}
 		printf("\n");
 	}
 }
 
-// Matrix multiplication. Can be in-place if m2 == out
-void m_multiply(t_m4 m1, t_m4 m2, t_m4 out)
+void v_m_multiply(const int16_t *in, t_m4 m, t_v3 out)
 {
-	t_m4 res;
-	for(int y = 0; y < 4; y++)
-		for(int x = 0; x < 4; x++)
-			res[y][x] =	m1[y][0] * m2[0][x] / WF_ONE + \
-						m1[y][1] * m2[1][x] / WF_ONE + \
-						m1[y][2] * m2[2][x] / WF_ONE + \
-						m1[y][3] * m2[3][x] / WF_ONE;
-	if (out != NULL)
-		memcpy(out, res, sizeof(res));
+    // out = in * m;
+    out[0] = m[0][0] * in[0] / WF_ONE + m[0][1] * in[1] / WF_ONE + m[0][2] * in[2] / WF_ONE + m[0][3];
+    out[1] = m[1][0] * in[0] / WF_ONE + m[1][1] * in[1] / WF_ONE + m[1][2] * in[2] / WF_ONE + m[1][3];
+    out[2] = m[2][0] * in[0] / WF_ONE + m[2][1] * in[1] / WF_ONE + m[2][2] * in[2] / WF_ONE + m[2][3];
 }
 
-void m_scale_translation(int s, int x, int y, int z, t_m4 out)
+// add rotation to the transformation matrix `out`
+// rotate around the X, Y or Z axis (axis = 0, 1, 2)
+void m_rotation(int a, int axis, t_m4 out)
 {
-	t_m4 tmp = {
-		{s, 0, 0, x},
-		{0, s, 0, y},
-		{0, 0, s, z},
-		{0, 0, 0, WF_ONE}
-	};
+	// zero angle = no rotation needed
+	if ((a & (MAX_ANGLE - 1)) == 0)
+		return;
 
-	m_multiply(tmp, out, out);
-}
-
-void m_rotation_x(int a, t_m4 out)
-{
-	// rotate around the X axis
 	int sina = get_sin(a) / WF_INT_DIV;
 	int cosa = get_cos(a) / WF_INT_DIV;
 
-	t_m4 tmp = {
-		{WF_ONE,	0,		0,		0},
-		{0,			cosa,	-sina,	0},
-		{0,			sina,	cosa,	0},
-		{0,			0,		0,		WF_ONE}
-	};
+	t_m4 tmp;
+	memcpy(tmp, out, sizeof(tmp));
 
-	m_multiply(tmp, out, out);
+	for (int i = 0; i < 4; i++) {
+		if (axis == 0) {
+			out[1][i] = cosa * tmp[1][i] / WF_ONE - sina * tmp[2][i] / WF_ONE;
+			out[2][i] = sina * tmp[1][i] / WF_ONE + cosa * tmp[2][i] / WF_ONE;
+		} else if (axis == 1) {
+			out[0][i] = cosa * tmp[0][i] / WF_ONE + sina * tmp[2][i] / WF_ONE;
+			out[2][i] = -sina * tmp[0][i] / WF_ONE + cosa * tmp[2][i] / WF_ONE;
+		} else if (axis == 2) {
+			out[0][i] = cosa * tmp[0][i] / WF_ONE - sina * tmp[1][i] / WF_ONE;
+			out[1][i] = sina * tmp[0][i] / WF_ONE + cosa * tmp[1][i] / WF_ONE;
+		}
+	}
 }
-
-void m_rotation_y(int a, t_m4 out)
-{
-	// rotate around the Y axis
-	int sina = get_sin(a) / WF_INT_DIV;
-	int cosa = get_cos(a) / WF_INT_DIV;
-
-	t_m4 tmp = {
-		{cosa,	0,		sina,	0},
-		{0,		WF_ONE,	0,		0},
-		{-sina,	0,		cosa,	0},
-		{0,		0,		0,		WF_ONE}
-	};
-
-	m_multiply(tmp, out, out);
-}
-
-void m_rotation_z(int a, t_m4 out)
-{
-	// rotate around the Y axis
-	int sina = get_sin(a) / WF_INT_DIV;
-	int cosa = get_cos(a) / WF_INT_DIV;
-
-	t_m4 tmp = {
-		{cosa,	-sina,	0,		0},
-		{sina,	cosa,	0,		0},
-		{0,		0,		WF_ONE,	0},
-		{0,		0,		0,		WF_ONE}
-	};
-
-	m_multiply(tmp, out, out);
-}
-
-// int *get_m_rotation(int a, int b, int c)
-// {
-// 	// rotate around the x, y, z axis
-// 	// https://en.wikipedia.org/wiki/Rotation_matrix#General_3D_rotations
-
-// 	int sina = get_sin(a) / WF_INT_DIV;
-// 	int sinb = get_sin(b) / WF_INT_DIV;
-// 	int sinc = get_sin(c) / WF_INT_DIV;
-// 	int cosa = get_cos(a) / WF_INT_DIV;
-// 	int cosb = get_cos(b) / WF_INT_DIV;
-// 	int cosc = get_cos(c) / WF_INT_DIV;
-
-// 	static int tmp[4][4] = {
-// 		cosb * cosc,	sina * sinb * cosc - cosa * sinc,	cosa * sinb * cosc + sina * sinc,	0,
-// 		cosb * sinc,	sina * sinb * sinc + cosa * cosc,	cosa * sinb * sinc - sina * cosc,	0,
-// 		-sinb,			sina * cosb,						cosa * cosb,						0,
-// 		0, 0, 0, WF_ONE
-// 	};
-// 	return tmp;
-// }
 
 // Find the beginning and length of a variable width array.
 // sets start_index_out to the index of the first element and returns the length
@@ -138,7 +79,30 @@ static int get_ptr_and_len(const uint16_t *end_index_array, unsigned end_index_a
 	return end_index - start_index;
 }
 
+// apply scaling, rotation around xYZ and translation to an object
+// from the parameters given in obj_3d_t
+void obj_3d_update_transform_matrix(obj_3d_t *obj)
+{
+	t_m4 tmp = {
+		{obj->scale, 0, 0, 0},
+		{0, obj->scale, 0, 0},
+		{0, 0, obj->scale, 0}
+	};
 
+	// Rotate about the objects center
+	m_rotation(obj->u, 0, tmp);
+	m_rotation(obj->v, 1, tmp);
+	m_rotation(obj->w, 2, tmp);
+
+	// Translate the object
+	tmp[0][3] = obj->x;
+	tmp[1][3] = obj->y;
+	tmp[2][3] = obj->z;
+
+	memcpy(obj->transform_matrix, tmp, sizeof(tmp));
+}
+
+// load 3D data into an obj_3d_t
 void obj_3d_set_edges(obj_3d_t *obj, const edges_3d_t *edge_data, unsigned asset_index)
 {
 	if (obj == NULL || edge_data == NULL)
@@ -162,32 +126,43 @@ void obj_3d_set_edges(obj_3d_t *obj, const edges_3d_t *edge_data, unsigned asset
 	printf("%d: n_verts: %d (%d, %d, %d), n_edges: %d\n", asset_index, obj->n_vertices, obj->vertices[0], obj->vertices[1], obj->vertices[2], obj->n_edges);
 }
 
+static obj_3d_t o_camera;
+
+// draw an obj_3d_t
 void obj_3d_draw(obj_3d_t *obj, unsigned density)
 {
+	unsigned n_edges = obj->n_edges;
+	const uint16_t *p = obj->edges;
+
 	if (obj == NULL)
 		return;
 
-	unsigned n_edges = obj->n_edges;
-	const uint16_t *p = obj->edges;
+	// apply global coordinate transformation (simulates camera position)
+	t_m4 m_cam;
+	memcpy(m_cam, obj->transform_matrix, sizeof(m_cam));
+	m_rotation(o_camera.u, 0, m_cam);
+	m_rotation(o_camera.v, 1, m_cam);
+	m_rotation(o_camera.w, 2, m_cam);
+	m_cam[0][3] -= o_camera.x;
+	m_cam[1][3] -= o_camera.y;
+	m_cam[2][3] -= o_camera.z;
 
 	while (n_edges-- > 0) {
 		unsigned index = *p++;
 		bool is_goto = (index & 0x8000) > 0;
 		index = (index & 0x7FFF) * 3;
 
-		int x = obj->vertices[index];
-		int y = obj->vertices[index + 1];
-		int z = obj->vertices[index + 2];
+		// Apply the coordinate transformation matrix for translation / rotation / scaling
+		t_v3 vert;
+		v_m_multiply(&obj->vertices[index], m_cam, vert);
 
-		// TODO apply a general coordinate transformation matrix
+		int x = vert[0];
+		int y = vert[1];
+		int z = vert[2];
 
-		x /= 128;
-		y /= 128;
-		z /= 128;
-
-		// Simple orthographic projection
-		x += z / 4;
-		y += z / 4;
+		// Simple perspective with wide FOV
+		x = x * (WF_ONE / 2) / z;
+		y = y * (WF_ONE / 2) / z;
 
 		if (is_goto)
 			push_goto(x, y);
@@ -199,32 +174,43 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 void wf_test(void)
 {
 	static int frame = 0;
-	static obj_3d_t o;
+	static obj_3d_t objs[5];
 
-	t_m4 tmp = {
-		{WF_ONE, 0, 0, 0},
-		{0, WF_ONE, 0, 0},
-		{0, 0, WF_ONE, 0},
-		{0, 0, 0, WF_ONE},
-	};
 
-	// m_scale_translation(WF_ONE * 2, 0x100, 0, 0, tmp);
-	// m_scale_translation(WF_ONE * 2, 0, 0, 0, tmp);
-	// m_rotation_x(MAX_ANGLE / 8, tmp);
-	// m_rotation_y(MAX_ANGLE / 16, tmp);
-	m_rotation_z(MAX_ANGLE / 32, tmp);
-	m_print(tmp);
+	if (frame == 0) {
+		o_camera.z = -0x1000;
 
-	exit(0);
+		// FIXME: this mirrors things :(
+		// objs[4].u = 0x1;
 
-	if ((frame % 100) == 0) {
-		int ind = frame / 100;
-		ind %= 11;
-		printf("obj_3d_set_edges(%d)\n", ind);
-		obj_3d_set_edges(&o, &wf_numbers, ind);
+		for (unsigned i=0; i<5; i++) {
+			objs[i].scale = WF_ONE / 16;
+			objs[i].x = -0xC00 + i * 0xC00 / 2;
+			obj_3d_update_transform_matrix(&objs[i]);
+		}
+
+		obj_3d_set_edges(&objs[2], &wf_numbers, 10);
 	}
 
-	obj_3d_draw(&o, 50);
+	// o_camera.v += 1;
+	// o_camera.w = 0x100;
+
+	if ((frame % 50) == 0) {
+		int frm = frame / 50;
+		printf("obj_3d_set_edges(%d)\n", frm);
+
+		int secs = frm % 60;
+		int min = (frm / 60) % 60;
+
+		obj_3d_set_edges(&objs[0], &wf_numbers, min / 10);
+		obj_3d_set_edges(&objs[1], &wf_numbers, min % 10);
+
+		obj_3d_set_edges(&objs[3], &wf_numbers, secs / 10);
+		obj_3d_set_edges(&objs[4], &wf_numbers, secs % 10);
+	}
+
+	for (unsigned i=0; i<5; i++)
+		obj_3d_draw(&objs[i], 50);
 
 	frame++;
 }
