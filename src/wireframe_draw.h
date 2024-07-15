@@ -5,7 +5,7 @@
 #define WF_ONE 0x1000
 
 // Normalize +- int_max to +- WF_ONE
-#define WF_INT_DIV ((1 << 31) / WF_ONE)
+#define WF_INT_DIV ((1L << 31) / WF_ONE)
 
 // transformation matrixes (m_ prefix) are of dimension int[4][4]
 typedef int t_m4[3][4];

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "wireframe_draw.h"
 #include "draw.h"
 #include "fast_sin.h"
@@ -139,6 +140,7 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 
 	// apply global coordinate transformation (simulates camera position)
 	t_m4 m_cam;
+
 	memcpy(m_cam, obj->transform_matrix, sizeof(m_cam));
 	m_rotation(o_camera.u, 0, m_cam);
 	m_rotation(o_camera.v, 1, m_cam);
@@ -160,9 +162,12 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 		int y = vert[1];
 		int z = vert[2];
 
+		if (z <= 0)
+			continue;
+
 		// Simple perspective with wide FOV
-		x = x * (WF_ONE / 2) / z;
-		y = y * (WF_ONE / 2) / z;
+		x = x * WF_ONE / z / 2;
+		y = y * WF_ONE / z / 2;
 
 		if (is_goto)
 			push_goto(x, y);
@@ -171,45 +176,55 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 	}
 }
 
+#define N_DIGITS 5
+#define DIGIT_DIST 0xB00
+
 void wf_test(void)
 {
-	static int frame = 0;
-	static obj_3d_t objs[5];
-
+	static int frame = 0, last_minute = -1;
+	static obj_3d_t objs[N_DIGITS];
 
 	if (frame == 0) {
 		o_camera.z = -0x1000;
 
-		// FIXME: this mirrors things :(
-		// objs[4].u = 0x1;
-
-		for (unsigned i=0; i<5; i++) {
-			objs[i].scale = WF_ONE / 16;
-			objs[i].x = -0xC00 + i * 0xC00 / 2;
+		for (unsigned i=0; i<N_DIGITS; i++) {
+			objs[i].scale = WF_ONE / 8;
+			objs[i].x = -DIGIT_DIST * N_DIGITS / 2 + i * DIGIT_DIST;
 			obj_3d_update_transform_matrix(&objs[i]);
 		}
 
 		obj_3d_set_edges(&objs[2], &wf_numbers, 10);
+		// obj_3d_set_edges(&objs[5], &wf_numbers, 10);
 	}
 
-	// o_camera.v += 1;
-	// o_camera.w = 0x100;
+	o_camera.x = get_sin(frame * 4) >> 21;
+	o_camera.u = get_sin(frame * 3) >> 23;
+	o_camera.w = get_sin(frame * 2) >> 23;
+	o_camera.v = get_sin(frame) >> 22;
+	o_camera.z = -0x1500 + (get_sin(frame) >> 21);
 
-	if ((frame % 50) == 0) {
-		int frm = frame / 50;
-		printf("obj_3d_set_edges(%d)\n", frm);
+	if ((frame % 40) == 0) {
+		time_t now;
+		time(&now);
 
-		int secs = frm % 60;
-		int min = (frm / 60) % 60;
+		struct tm timeinfo;
+		localtime_r(&now, &timeinfo);
 
-		obj_3d_set_edges(&objs[0], &wf_numbers, min / 10);
-		obj_3d_set_edges(&objs[1], &wf_numbers, min % 10);
+		if (timeinfo.tm_min != last_minute) {
+			obj_3d_set_edges(&objs[0], &wf_numbers, timeinfo.tm_hour / 10);
+			obj_3d_set_edges(&objs[1], &wf_numbers, timeinfo.tm_hour % 10);
 
-		obj_3d_set_edges(&objs[3], &wf_numbers, secs / 10);
-		obj_3d_set_edges(&objs[4], &wf_numbers, secs % 10);
+			obj_3d_set_edges(&objs[3], &wf_numbers, timeinfo.tm_min / 10);
+			obj_3d_set_edges(&objs[4], &wf_numbers, timeinfo.tm_min % 10);
+
+			last_minute = timeinfo.tm_min;
+		}
+
+		// obj_3d_set_edges(&objs[6], &wf_numbers, timeinfo.tm_sec / 10);
+		// obj_3d_set_edges(&objs[7], &wf_numbers, timeinfo.tm_sec % 10);
 	}
 
-	for (unsigned i=0; i<5; i++)
+	for (unsigned i=0; i<N_DIGITS; i++)
 		obj_3d_draw(&objs[i], 50);
 
 	frame++;
