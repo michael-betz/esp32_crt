@@ -56,33 +56,38 @@ static unsigned get_dist(int x, int y)
 	return dist;
 }
 
-bool output_sample(int x, int y, bool beam_on, int focus)
+static bool clip_off_screen(int *x, int *y)
 {
 	bool is_clipped = false;
 
-	// printf("(%4d, %4d), %3x\n", x, y, blank);
-	if (x > C_MAX) {
-		x = C_MAX;
+	if (*x >= C_MAX) {
+		*x = C_MAX;
 		is_clipped = true;
 	}
-	if (x < -C_MAX) {
-		x = -C_MAX;
+	if (*x < -C_MAX) {
+		*x = -C_MAX;
 		is_clipped = true;
 	}
-	if (y > C_MAX) {
-		y = C_MAX;
+	if (*y > C_MAX) {
+		*y = C_MAX;
 		is_clipped = true;
 	}
-	if (y < -C_MAX) {
-		y = -C_MAX;
+	if (*y < -C_MAX) {
+		*y = -C_MAX;
 		is_clipped = true;
 	}
+	return is_clipped;
+}
+
+bool output_sample(int x, int y, bool beam_on, int focus)
+{
+	bool is_clipped = clip_off_screen(&x, &y);
 
 	if (is_clipped)
 		beam_on = false;
 
 	push_sample(x + 0x800, y + 0x800, beam_on ? 0 : 0xFFF, 0);
-	return false;
+	return is_clipped;
 }
 
 // draw a quadratic Bezier curve. The 3 control points are:
@@ -234,7 +239,13 @@ void push_circle(
 
 void push_goto(int x_a, int y_a)
 {
-	bool is_clipped = false;
+	bool is_clipped = clip_off_screen(&x_a, &y_a);
+
+	if (is_clipped) {
+		x_last = x_a;
+		y_last = y_a;
+		return;
+	}
 
 	if (x_a == x_last && y_a == y_last)
 		return;
@@ -248,27 +259,38 @@ void push_goto(int x_a, int y_a)
 			output_sample(x_last, y_last, false, 0);
 
 	// Move the beam while blanked. Interpolate N points for the move.
-	for (unsigned i=0; i<=n; i++) {
-		is_clipped = output_sample(x_a, y_a, false, 0);
-		if (is_clipped)
-			break;
-	}
+	for (unsigned i=0; i<=n; i++)
+		output_sample(x_a, y_a, false, 0);
 	x_last = x_a;
 	y_last = y_a;
 
 	// Wait for beam to reach new location
-	if (dist >= BLANK_MIN_DIST && !is_clipped)
+	if (dist >= BLANK_MIN_DIST)
 		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
 			output_sample(x_a, y_a, false, 0);
 
 	// Wait at new location until the beam is back on
-	if (dist >= BLANK_MIN_DIST && !is_clipped)
+	if (dist >= BLANK_MIN_DIST)
 		for (unsigned i=0; i<DWELL_TIME; i++)
 			output_sample(x_a, y_a, true, 0);
 }
 
 void push_line(int x_b, int y_b, unsigned density)
 {
+	// draws a line from xy_last to xy_b
+	//
+	// if xy_last is on-screen but xy_b is off-screen, draw the line anyway,
+	// until we reach the edge of
+	// the screen. Then stop and blank the beam. Set xy_last to the first point
+	// off-screen
+	//
+	// if xy_last is off-screen and xy_b is off-screen, return
+	//
+	// if xy_last is on-screen and xy_b is on-screen, draw the line normally
+	//
+	// if xy_last is off-screen (it's never far off screen) and xy_b is on
+	// screen, draw the line normally
+
 	if (density == 0) {
 		push_goto(x_b, y_b);
 		return;
@@ -297,16 +319,15 @@ void push_line(int x_b, int y_b, unsigned density)
 		x = x_last + ((i * dx) >> 8);
 		y = y_last + ((i * dy) >> 8);
 		is_clipped = output_sample(x, y, true, 0);
-		if (is_clipped)
+		if (i > 2 && is_clipped)
 			break;
 	}
-	x_last = x_b;
-	y_last = y_b;
+	x_last = x;
+	y_last = y;
 
 	// wait for beam to reach end-point
-	if (!is_clipped)
-		for (unsigned i=0; i<DWELL_TIME; i++)
-			output_sample(x_last, y_last, true, 0);
+	for (unsigned i=0; i<DWELL_TIME; i++)
+		output_sample(x_last, y_last, !is_clipped, 0);
 }
 
 // Compress 16 bit signed coordinate pairs and encode them in a byte stream

@@ -13,6 +13,7 @@
 
 #include "i2s.h"
 #include "draw.h"
+#include "wireframe_draw.h"
 #include "fast_sin.h"
 #include "dds.h"
 #include "wifi.h"
@@ -104,6 +105,10 @@ static void i2s_stream_task(void *args)
 
 	while (1) {
 		ticks = xTaskGetTickCount();
+
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			wf_test();
+
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
 			demo_text(2);
 
