@@ -8,11 +8,11 @@
 // #include "soc/rtc.h"
 #include "soc/io_mux_reg.h"
 #include "hal/gpio_hal.h"
+#include "esp_log.h"
 
 #include "main.h"
 #include "i2s.h"
 #include "draw.h"
-#include "print.h"
 
 // MCP4922 bit definitions
 #define A_N 15
@@ -20,6 +20,8 @@
 #define SHDN_N 12
 
 #define CHUNK_SIZE 4096 * 4
+
+static const char *T = "I2C";
 
 unsigned n_samples = 0;
 unsigned n_underflows = 0;
@@ -117,11 +119,6 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 	static unsigned n_written = 0;
 	static unsigned n_underflows_ = 0;
 
-	// print_dec_fix(val_x, FP, 2);
-	// print_str(", ");
-	// print_dec_fix(val_y, FP, 2);
-	// print_str("\n");
-
 	// output the sample-data for 4 channels over the next 64 clocks
 	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_x;  // DACA
 	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_y;  // DACB
@@ -133,13 +130,13 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 		// Should block until CHUNK_SIZE bytes were written to DMA mem.
 		esp_err_t ret = i2s_channel_write(tx_chan, chunk_buf, CHUNK_SIZE, NULL, portMAX_DELAY);
 		if (ret != ESP_OK) {
-			printf("Write Task: i2s write failed with %d\n", ret);
+			ESP_LOGE(T, "Write Task: i2s write failed with %d", ret);
 		}
 		n_written = 0;
 		w_buf = (uint16_t *)chunk_buf;
 
 		if (n_underflows_ != n_underflows) {
-			printf("n_underflows: %d\n", n_underflows);
+			ESP_LOGW(T, "n_underflows: %d", n_underflows);
 			n_underflows_ = n_underflows;
 		}
 	}

@@ -60,13 +60,13 @@
   }
 
   function sendDDS() {
-    s = "d," + knobValues['fcx'].toString(16) + ',' + knobValues['fcy'].toString(16) + ',' + knobValues['fmx'].toString(16) + ',' + knobValues['fmy'].toString(16) + waveforms;
+    s = "d," + knobValues['fcx'].toString(16) + ',' + knobValues['fcy'].toString(16) + ',' + knobValues['fmx'].toString(16) + ',' + knobValues['fmy'].toString(16);
     console.log(s);
-    // websocket.send(s);
+    websocket.send(s);
   }
 
   function init() {
-    websocket = new WebSocket("ws://192.168.188.171/ws");
+    websocket = new WebSocket("ws://192.168.95.130/ws");
 
     websocket.onopen = function(evt) {
       connected_status.innerHTML = "⌚";

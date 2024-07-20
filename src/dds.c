@@ -1,9 +1,12 @@
 #include <limits.h>
 #include <stdlib.h>
+#include "esp_log.h"
 #include "draw.h"
 #include "fast_sin.h"
 #include "dds.h"
 #define N_DDS 4
+
+static const char *T = "DDS";
 
 static uint32_t phases[N_DDS] = {0, 0, 0, 0};
 static uint32_t lut_type = 0x1002;
@@ -16,6 +19,8 @@ static uint32_t delta_fs[N_DDS] = {
 
 void setup_dds(unsigned fcx, unsigned fcy, unsigned fmx, unsigned fmy, unsigned wfm)
 {
+	ESP_LOGI(T, "setup_dds(%08x, %08x, %08x, %08x, %08x)", fcx, fcy, fmx, fmy, wfm);
+
 	delta_fs[0] = fcx;
 	delta_fs[1] = fcy;
 	delta_fs[2] = fmx;

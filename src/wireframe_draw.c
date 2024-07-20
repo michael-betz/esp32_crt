@@ -9,6 +9,10 @@
 #include "draw.h"
 #include "fast_sin.h"
 
+#include "esp_log.h"
+
+static const char *T = "WF";
+
 // 1. Initialize 3D objects (which edges to show, their positions and orientations)
 // 2. Set camera position
 // 3. call calc_transform_matrix(entity, camera) for each entity, it calculates the transform matrix
@@ -17,12 +21,8 @@
 
 void m_print(t_m4 m)
 {
-	for(int y = 0; y < 3; y++) {
-		for(int x = 0; x < 4; x++) {
-			printf("%9d ", m[y][x]);
-		}
-		printf("\n");
-	}
+	for(int y = 0; y < 3; y++)
+		ESP_LOGI(T, "%9d %9d %9d %9d", m[y][0], m[y][1], m[y][2], m[y][3]);
 }
 
 void v_m_multiply(const int16_t *in, t_m4 m, t_v3 out)
@@ -124,7 +124,7 @@ void obj_3d_set_edges(obj_3d_t *obj, const edges_3d_t *edge_data, unsigned asset
 	obj->edges = &edge_data->all_edges[start_index];
 	obj->n_edges = len;
 
-	printf("%d: n_verts: %d (%d, %d, %d), n_edges: %d\n", asset_index, obj->n_vertices, obj->vertices[0], obj->vertices[1], obj->vertices[2], obj->n_edges);
+	ESP_LOGI(T, "%d: n_verts: %d (%d, %d, %d), n_edges: %d", asset_index, obj->n_vertices, obj->vertices[0], obj->vertices[1], obj->vertices[2], obj->n_edges);
 }
 
 static obj_3d_t o_camera;
@@ -201,7 +201,7 @@ void wf_test(void)
 	o_camera.u = get_sin(frame * 3) >> 23;
 	o_camera.w = get_sin(frame * 2) >> 23;
 	o_camera.v = get_sin(frame) >> 22;
-	o_camera.z = -0x1500 + (get_sin(frame) >> 21);
+	o_camera.z = -0x1800 + (get_sin(frame) >> 21);
 
 	if ((frame % 40) == 0) {
 		time_t now;

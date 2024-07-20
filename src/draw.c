@@ -8,13 +8,8 @@
 #include "draw.h"
 #include "font_draw.h"
 #include "fast_sin.h"
-#include "print.h"  // for printing fixed-point numbers
-
-#define DWELL_TIME 4  // how many extra samples at the end-point of a shape to wait for the beam
 
 #define BLANK_OFF_TIME 10  // How long it takes to enable / disable the beam [n_samples]
-#define BLANK_DENSITY 10  // Density for blanked move [density]
-#define BLANK_MIN_DIST 10  // Blank only for distances larger than that
 
 
 // current beam position. Use push_goto() to modify these values.
@@ -56,38 +51,75 @@ static unsigned get_dist(int x, int y)
 	return dist;
 }
 
-static bool clip_off_screen(int *x, int *y)
+static bool is_off_screen(int x, int y)
 {
-	bool is_clipped = false;
+	if (x >= C_MAX)
+		return true;
 
-	if (*x >= C_MAX) {
-		*x = C_MAX;
-		is_clipped = true;
-	}
-	if (*x < -C_MAX) {
-		*x = -C_MAX;
-		is_clipped = true;
-	}
-	if (*y > C_MAX) {
-		*y = C_MAX;
-		is_clipped = true;
-	}
-	if (*y < -C_MAX) {
-		*y = -C_MAX;
-		is_clipped = true;
-	}
-	return is_clipped;
+	if (x < -C_MAX)
+		return true;
+
+	if (y >= C_MAX)
+		return true;
+
+	if (y < -C_MAX)
+		return true;
+
+	return false;
 }
 
+// Handles clipping and the blanking delay-time
 bool output_sample(int x, int y, bool beam_on, int focus)
 {
-	bool is_clipped = clip_off_screen(&x, &y);
+	static bool l_beam_on = false;
+	static int l_x = 0, l_y = 0, l_focus = 0;
 
-	if (is_clipped)
+	bool is_out = is_off_screen(x, y);
+
+	if (is_out) {
+		// if beam is off already, skip points outside of the screen
+		if (!l_beam_on)
+			return true;
+
+		// output sample with previous position and switch off the beam
+		x = l_x;
+		y = l_y;
 		beam_on = false;
+		focus = l_focus;
+	} else {
+		// ADC can't do negative values
+		x += 0x800;
+		y += 0x800;
+	}
 
-	push_sample(x + 0x800, y + 0x800, beam_on ? 0 : 0xFFF, 0);
-	return is_clipped;
+	// Switch off the beam
+	if (l_beam_on && !beam_on) {
+		// wait for beam to reach final position
+		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
+			push_sample(l_x, l_y, 0, l_focus);
+
+		// stay there and blank the beam
+		for (unsigned i=0; i<(BLANK_OFF_TIME - 1); i++)
+			push_sample(l_x, l_y, 0xFFF, l_focus);
+	}
+
+	// Switch on the beam
+	if (!l_beam_on && beam_on) {
+		// wait for blanked beam to reach target position
+		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
+			push_sample(x, y, 0xFFF, focus);
+
+		// stay there and enable the beam
+		for (unsigned i=0; i<(BLANK_OFF_TIME - 1); i++)
+			push_sample(x, y, 0, focus);
+	}
+
+	push_sample(x, y, beam_on ? 0 : 0xFFF, focus);
+	l_beam_on = beam_on;
+	l_x = x;
+	l_y = y;
+	l_focus = focus;
+	return is_out;
 }
 
 // draw a quadratic Bezier curve. The 3 control points are:
@@ -231,70 +263,37 @@ void push_circle(
 
 	x_last = x;
 	y_last = y;
-
-	// output last sample a few more time to make sure beam had a chance to close the circle
-	for (unsigned i=0; i<DWELL_TIME; i++)
-		output_sample(x_last, y_last, true, 0);
 }
 
 void push_goto(int x_a, int y_a)
 {
-	bool is_clipped = clip_off_screen(&x_a, &y_a);
-
-	if (is_clipped) {
-		x_last = x_a;
-		y_last = y_a;
-		return;
-	}
-
 	if (x_a == x_last && y_a == y_last)
 		return;
 
-	unsigned dist = get_dist(x_a, y_a);
-	unsigned n = (dist * BLANK_DENSITY) >> 11;
-
-	// Wait at current location until the beam has turned off
-	if (dist >= BLANK_MIN_DIST)
-		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
-			output_sample(x_last, y_last, false, 0);
-
-	// Move the beam while blanked. Interpolate N points for the move.
-	for (unsigned i=0; i<=n; i++)
-		output_sample(x_a, y_a, false, 0);
+	output_sample(x_a, y_a, false, 0);
 	x_last = x_a;
 	y_last = y_a;
-
-	// Wait for beam to reach new location
-	if (dist >= BLANK_MIN_DIST)
-		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
-			output_sample(x_a, y_a, false, 0);
-
-	// Wait at new location until the beam is back on
-	if (dist >= BLANK_MIN_DIST)
-		for (unsigned i=0; i<DWELL_TIME; i++)
-			output_sample(x_a, y_a, true, 0);
 }
 
 void push_line(int x_b, int y_b, unsigned density)
 {
 	// draws a line from xy_last to xy_b
 	//
-	// if xy_last is on-screen but xy_b is off-screen, draw the line anyway,
-	// until we reach the edge of
-	// the screen. Then stop and blank the beam. Set xy_last to the first point
-	// off-screen
+	// if both are off-screen, don't draw anything
 	//
-	// if xy_last is off-screen and xy_b is off-screen, return
+	// if xy_last is on-screen but xy_b is off-screen, draw the line until we
+	// reach the edge of the screen, then skip the reset of the samples.
 	//
-	// if xy_last is on-screen and xy_b is on-screen, draw the line normally
-	//
-	// if xy_last is off-screen (it's never far off screen) and xy_b is on
-	// screen, draw the line normally
+	// if xy_last is off-screen and xy_b is on-screen, skip the samples
+	// until we reach the edge of the screen, then draw the line from there
 
 	if (density == 0) {
 		push_goto(x_b, y_b);
 		return;
 	}
+
+	bool last_off_screen = is_off_screen(x_last, y_last);
+	bool b_off_screen = is_off_screen(x_b, y_b);
 
 	// Check how many points to produce
 	unsigned dist = get_dist(x_b, y_b);
@@ -303,7 +302,7 @@ void push_line(int x_b, int y_b, unsigned density)
 	// printf("push_line(%d, %d), n: %d\n", x_b, y_b, n);
 
 	// Don't interpolate points, just output the final point
-	if (n <= 1) {
+	if (n <= 1 || (last_off_screen && b_off_screen)) {
 		x_last = x_b;
 		y_last = y_b;
 		output_sample(x_b, y_b, true, 0);
@@ -312,6 +311,7 @@ void push_line(int x_b, int y_b, unsigned density)
 
 	int dx = ((x_b - x_last) << 8) / n;
 	int dy = ((y_b - y_last) << 8) / n;
+
 	bool is_clipped = false;
 	int x = 0, y = 0;
 
@@ -319,15 +319,11 @@ void push_line(int x_b, int y_b, unsigned density)
 		x = x_last + ((i * dx) >> 8);
 		y = y_last + ((i * dy) >> 8);
 		is_clipped = output_sample(x, y, true, 0);
-		if (i > 2 && is_clipped)
+		if (is_clipped && b_off_screen)
 			break;
 	}
-	x_last = x;
-	y_last = y;
-
-	// wait for beam to reach end-point
-	for (unsigned i=0; i<DWELL_TIME; i++)
-		output_sample(x_last, y_last, !is_clipped, 0);
+	x_last = x_b;
+	y_last = y_b;
 }
 
 // Compress 16 bit signed coordinate pairs and encode them in a byte stream
