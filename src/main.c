@@ -123,7 +123,7 @@ static void i2s_stream_task(void *args)
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000)) {
 			draw_dds(100000);
-			nudge_dds();
+			// nudge_dds();
 		}
 
 		// ticks = xTaskGetTickCount();

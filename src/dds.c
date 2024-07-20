@@ -75,14 +75,14 @@ void draw_dds(unsigned n_samples)
 		}
 
 		// // Amplitude modulation
-		// x_val = (tmps[0] >> 16) * (tmps[2] >> 16);
-		// y_val = (tmps[1] >> 16) * (tmps[3] >> 16);
-		x_val = ((int64_t)tmps[0] * (int64_t)tmps[2]) >> 32;
-		y_val = ((int64_t)tmps[1] * (int64_t)tmps[3]) >> 32;
+		x_val = (tmps[0] >> 16) * (tmps[2] >> 16);
+		y_val = (tmps[1] >> 16) * (tmps[3] >> 16);
+		// x_val = ((int64_t)tmps[0] * (int64_t)tmps[2]) >> 32;
+		// y_val = ((int64_t)tmps[1] * (int64_t)tmps[3]) >> 32;
 
 
 		// normalize for full amplitude
-		output_sample(x_val >> 19, y_val >> 19, 0xFFF, 0);
+		output_sample(x_val >> 19, y_val >> 19, true, 0);
 	}
 	// printf("%08x %08x %08x %08x | %08x %08x\n", tmps[0], tmps[1], tmps[2], tmps[3], x_val, y_val);
 }
