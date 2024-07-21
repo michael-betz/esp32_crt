@@ -1,7 +1,7 @@
 {
     "hostname": "esp_crt",
     "ntp_host": "pool.ntp.org",
-    "timezone": "PST8PDT,M3.2.0,M11.1.0",
+    "timezone": "CET-1CEST,M3.5.0,M10.5.0/3",
     "ota_url": "https://ota_host:8000/firmware.bin",
     "log_disable": false,
     "log_ip": "192.168.1.11",
