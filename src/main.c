@@ -118,23 +118,23 @@ static void i2s_stream_task(void *args)
 	int demo_text_font = 0;
 
 	while (1) {
-		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(10000))
-			test_image();
+		// ticks = xTaskGetTickCount();
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(10000))
+		// 	test_image();
 
-		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-			wf_test();
+		// ticks = xTaskGetTickCount();
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+		// 	wf_test();
 
-		ticks = xTaskGetTickCount();
-		demo_text_font = random() % N_FONTS;
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-			demo_text(demo_text_font);
+		// ticks = xTaskGetTickCount();
+		// demo_text_font = random() % N_FONTS;
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+		// 	demo_text(demo_text_font);
 
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000)) {
 			draw_dds(100000);
-			nudge_dds();
+			// nudge_dds();
 		}
 	}
 
@@ -174,7 +174,7 @@ void app_main(void)
 	// Load settings.json from SPIFFS, try to create file if it doesn't exist
 	set_settings_file("/spiffs/settings.json", "/spiffs/default_settings.json");
 
-	ESP_LOGI(T, "Hello, this is %s, I2S version!\n", jGetS(getSettings(), "hostname", WIFI_HOST_NAME));
+	ESP_LOGI(T, "Hello, this is %s, I2S version!", jGetS(getSettings(), "hostname", WIFI_HOST_NAME));
 
 	initWifi();
 	tryConnect();

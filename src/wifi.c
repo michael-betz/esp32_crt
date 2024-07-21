@@ -101,15 +101,20 @@ static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, 
 	}
 
 	// Go through all found APs, use ssid as key and try to get item from json
+	ESP_LOGI(T, "Wifis I can see:");
+	for (unsigned i = 0; i < n; i++) {
+		ESP_LOGI(T, "    %s (%d dBm)", ap_info[i].ssid, ap_info[i].rssi);
+	}
+
 	for (unsigned i = 0; i < n; i++) {
 		const char *ssid = (const char *)ap_info[i].ssid;
-		ESP_LOGD(T, "%s, %d, %d", ssid, ap_info[i].primary, ap_info[i].rssi);
 		jWifi = jGet(jWifis, ssid);
 		if (!cJSON_IsString(jWifi))
 			continue;
-		char *pw = jWifi->valuestring;
 
 		// Found a known good WIFI, connect to it ...
+		ESP_LOGI(T, "Looks familiar: %s", ssid);
+		char *pw = jWifi->valuestring;
 		wifi_config_t cfg;
 		memset(&cfg, 0, sizeof(cfg));
 		strncpy((char*)cfg.sta.ssid, ssid, 31);
@@ -119,7 +124,6 @@ static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, 
 		memcpy(cfg.sta.bssid, ap_info[i].bssid, 6);
 		cfg.sta.channel = ap_info[i].primary;
 		cfg.sta.pmf_cfg.capable = true;
-		ESP_LOGI(T, "Looks familiar: %s", cfg.sta.ssid);
 
 		E(esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg));
 		E(esp_wifi_connect());

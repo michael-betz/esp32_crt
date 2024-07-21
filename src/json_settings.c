@@ -27,7 +27,7 @@ char *readFileDyn(const char* file_name, int *file_size) {
 	fseek(f, 0, SEEK_END);
 	int fsize = ftell(f);
 	fseek(f, 0, SEEK_SET);  //same as rewind(f);
-	ESP_LOGD(T, "loading %s, fsize: %d", file_name, fsize);
+	ESP_LOGI(T, "loading %s, fsize: %d", file_name, fsize);
 	char *string = (char*) malloc(fsize + 1);
 	if (!string) {
 		ESP_LOGE(T, "malloc(%d) failed: %s", fsize + 1, strerror(errno));
