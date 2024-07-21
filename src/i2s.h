@@ -1,6 +1,8 @@
 #ifndef I2S_H
 #define I2S_H
 
+#include <stdint.h>
+
 // init and start the DMA output
 void i2s_init(void);
 
