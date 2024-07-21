@@ -60,31 +60,37 @@ static void demo_circles(unsigned frame)
 
 static void demo_text(unsigned frame, unsigned font)
 {
-	char tmp[32];
+	char tmp_str[64];
 	if (font >= N_FONTS)
 		return;
-	snprintf(tmp, sizeof(tmp), "font: %d", font);
+	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
 	set_font(0);
 	push_str(
-		-1200, 1200,
-		tmp,
-		sizeof(tmp),
+		-1300, 1300,
+		tmp_str,
+		sizeof(tmp_str),
 		A_LEFT,
-		200,
+		300,
 		200
 	);
 
+	time_t now;
+	struct tm timeinfo;
+
+	time(&now);
+	localtime_r(&now, &timeinfo);
+    strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
+
+	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 50;
 	set_font(font);
 	push_str(
 		0, 500,
-		"esp_crt\n✌\n1234:5678",
-		// "p",
-		128,
+		tmp_str,
+		sizeof(tmp_str),
 		A_CENTER,
-		// 18,
-		(sin(frame / 200.0) + 1.2) * 500,
-		100
+		font_size,
+		300
 	);
 	// exit(0);
 }
@@ -123,9 +129,16 @@ static void test_image()
 		);
 	}
 
+	time_t now;
+	time(&now);
+
+	struct tm timeinfo;
+	localtime_r(&now, &timeinfo);
+	char tmp_str[16];
+    strftime(tmp_str, sizeof(tmp_str), "%H:%M:%S", &timeinfo);
+
 	set_font(0);
-	push_str(0, -1800, "Hello2World", 32, A_CENTER, 900, 20);
-	// exit(0);
+	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 200);
 }
 
 static void demo_dds(unsigned frame)
@@ -164,7 +177,7 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 		intens = 0xFF;
 
 	// Draw lines connecting the samples. Red for blanked moves
-	if (val_blank >= 0xF00) {
+	if (val_blank >= 0x800) {
 		SDL_SetRenderDrawColor(rr, 0x40, 0x00, 0x00, 0xFF);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x00, intens, 0x00, 0xFF);
@@ -172,7 +185,7 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 	SDL_RenderDrawLine(rr, x_, y_, x, y);
 
 	// Draw dots where the samples actually are to show the density
-	if (val_blank >= 0xF00) {
+	if (val_blank >= 0x800) {
 		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0x0);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0x80);

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_spiffs.h"
@@ -27,33 +28,39 @@ static const char *T = "MAIN";
 
 static void demo_text(unsigned font)
 {
-	static unsigned frame = 0;
-	char tmp[32];
+	char tmp_str[64];
+	static int frame = 0;
+
 	if (font >= N_FONTS)
 		return;
-	snprintf(tmp, sizeof(tmp), "font: %d", font);
+	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
 	set_font(0);
 	push_str(
-		-800, 950,
-		tmp,
-		sizeof(tmp),
+		-1300, 1300,
+		tmp_str,
+		sizeof(tmp_str),
 		A_LEFT,
-		100,
+		300,
 		200
 	);
 
-	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 50;
+	time_t now;
+	struct tm timeinfo;
 
+	time(&now);
+	localtime_r(&now, &timeinfo);
+    strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
+
+	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 50;
 	set_font(font);
 	push_str(
 		0, 500,
-		"esp_crt\n✌\n1234:5678",
-		// "p",
-		128,
+		tmp_str,
+		sizeof(tmp_str),
 		A_CENTER,
 		font_size,
-		200
+		300
 	);
 }
 
@@ -91,45 +98,44 @@ static void test_image()
 		);
 	}
 
+	time_t now;
+	struct tm timeinfo;
+	char tmp_str[16];
+
+	time(&now);
+	localtime_r(&now, &timeinfo);
+    strftime(tmp_str, sizeof(tmp_str), "%k:%M:%S", &timeinfo);
+
 	set_font(0);
-	push_str(0, -1800, "Hello World", 32, A_CENTER, 900, 200);
+	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 400);
 }
 
 static void i2s_stream_task(void *args)
 {
 	i2s_init();
 	init_lut();
-	int i = 0;
 	TickType_t ticks;
-	int frame = 0;
+	int demo_text_font = 0;
 
 	while (1) {
-		// ticks = xTaskGetTickCount();
-
-		// ticks = xTaskGetTickCount();
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(10000))
-		// test_image();
-
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000))
-		// 	wf_test();
-
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		// 	demo_text(2);
-
-		// ticks = xTaskGetTickCount();
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		// 	demo_text(1);
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(10000))
+			test_image();
 
 		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000)) {
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			wf_test();
+
+		ticks = xTaskGetTickCount();
+		demo_text_font = random() % N_FONTS;
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			demo_text(demo_text_font);
+
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000)) {
 			draw_dds(100000);
-			// nudge_dds();
+			nudge_dds();
 		}
-
-		// ticks = xTaskGetTickCount();
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		// 	draw_mesh();
-
 	}
 
 	vTaskDelete(NULL);
