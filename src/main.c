@@ -104,21 +104,21 @@ static void i2s_stream_task(void *args)
 	int frame = 0;
 
 	while (1) {
-		ticks = xTaskGetTickCount();
+		// ticks = xTaskGetTickCount();
 
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000))
-			wf_test();
+		// ticks = xTaskGetTickCount();
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(10000))
+		// test_image();
 
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-			demo_text(2);
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000))
+		// 	wf_test();
+
+		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+		// 	demo_text(2);
 
 		// ticks = xTaskGetTickCount();
 		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
 		// 	demo_text(1);
-
-		ticks = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		test_image();
 
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(120000)) {
@@ -155,7 +155,6 @@ static void init_io()
 void app_main(void)
 {
 	init_io();
-	ESP_LOGI(T, "Hello, this is esp32_crt, I2S version!\n");
 
 	// Mount spiffs for *.html and defaults.json
 	esp_vfs_spiffs_conf_t conf = {
@@ -168,6 +167,8 @@ void app_main(void)
 
 	// Load settings.json from SPIFFS, try to create file if it doesn't exist
 	set_settings_file("/spiffs/settings.json", "/spiffs/default_settings.json");
+
+	ESP_LOGI(T, "Hello, this is %s, I2S version!\n", jGetS(getSettings(), "hostname", WIFI_HOST_NAME));
 
 	initWifi();
 	tryConnect();
@@ -198,7 +199,7 @@ void ws_callback(uint8_t *payload, unsigned len)
 	switch (payload[0]) {
 	case 'd':
 			char *p_tmp = (char*)(&payload[2]);
-			for(unsigned i = 0; i < 4; i++) {
+			for(unsigned i = 0; i < 5; i++) {
 				tok = strsep(&p_tmp, ",");
 				if (tok == NULL) {
 					ESP_LOGE(T, "parse error!");
@@ -207,7 +208,7 @@ void ws_callback(uint8_t *payload, unsigned len)
 				}
 				args[i] = strtoul(tok, NULL, 16);
 			}
-			setup_dds(args[0], args[1], args[2], args[3], 0);
+			setup_dds(args[0], args[1], args[2], args[3], args[4]);
 		break;
 	}
 }

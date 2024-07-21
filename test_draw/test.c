@@ -93,22 +93,22 @@ static void test_image()
 {
 	// a square around the screen
 	push_goto(-2000, -2000);
-	push_line(-2000, 2000, 30);
-	push_line(2000, 2000, 30);
-	push_line(2000, -2000, 30);
-	push_line(-2000, -2000, 30);
+	push_line(-2000, 2000, 10);
+	push_line(2000, 2000, 10);
+	push_line(2000, -2000, 10);
+	push_line(-2000, -2000, 10);
 
 	// // inner cross
-	// push_goto(-200, -200);
-	// push_line(200, 200, 255);
-	// push_goto(-200, 200);
-	// push_line(200, -200, 255);
+	push_goto(-200, -200);
+	push_line(200, 200, 100);
+	push_goto(-200, 200);
+	push_line(200, -200, 100);
 
 	// // inner +
-	// push_goto(-500, 0);
-	// push_line(500, 0, 50);
-	// push_goto(0, 500);
-	// push_line(0, -500, 50);
+	push_goto(-500, 0);
+	push_line(500, 0, 50);
+	push_goto(0, 500);
+	push_line(0, -500, 50);
 
 	// concentric circles
 	for (unsigned i=3; i<=10; i++) {
@@ -125,6 +125,7 @@ static void test_image()
 
 	set_font(0);
 	push_str(0, -1800, "Hello2World", 32, A_CENTER, 900, 20);
+	// exit(0);
 }
 
 static void demo_dds(unsigned frame)
@@ -144,6 +145,8 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 {
 	static int x_ = 0;
 	static int y_ = 0;
+
+	// printf("(%6d, %6d, %6d)\n", val_x, val_y, val_blank);
 
 	// center and scale the DAC range to the window-size
 	int x = val_x * D_SCALE + D_OFFSET_X;
@@ -208,7 +211,7 @@ int main(int argc, char* args[])
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
 	unsigned frame = 0;
-	int demo = 3;
+	int demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;

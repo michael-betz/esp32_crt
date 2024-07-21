@@ -94,6 +94,8 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 
 	// Switch off the beam
 	if (l_beam_on && !beam_on) {
+		// printf("beam_off\n");
+
 		// wait for beam to reach final position
 		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
 			push_sample(l_x, l_y, 0, l_focus);
@@ -105,13 +107,15 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 
 	// Switch on the beam
 	if (!l_beam_on && beam_on) {
+		// printf("beam_on\n");
+
 		// wait for blanked beam to reach target position
 		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
-			push_sample(x, y, 0xFFF, focus);
+			push_sample(l_x, l_y, 0xFFF, focus);
 
 		// stay there and enable the beam
 		for (unsigned i=0; i<(BLANK_OFF_TIME - 1); i++)
-			push_sample(x, y, 0, focus);
+			push_sample(l_x, l_y, 0, focus);
 	}
 
 	push_sample(x, y, beam_on ? 0 : 0xFFF, focus);
@@ -270,7 +274,13 @@ void push_goto(int x_a, int y_a)
 	if (x_a == x_last && y_a == y_last)
 		return;
 
-	output_sample(x_a, y_a, false, 0);
+	// Check how many points to produce
+	unsigned dist = get_dist(x_a, y_a);
+	unsigned n = (dist >> 13);
+
+	for (unsigned i=0; i<=n; i++)
+		output_sample(x_a, y_a, false, 0);
+
 	x_last = x_a;
 	y_last = y_a;
 }

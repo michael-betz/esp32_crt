@@ -23,10 +23,10 @@
   var waveforms = 0;
 
   function createDDSKnob(id_name, target_div) {
-    knobValues[id_name] = 0x12340000;
     const tfi = document.createElement('input');
     tfi.setAttribute('id', id_name);
-    tfi.value = "12340000";
+
+    tfi.value = knobValues[id_name].toString(16).padStart(8, '0');
 
     tfi.addEventListener('change', e => {
       val = parseInt(e.target.value, 16);
@@ -60,13 +60,16 @@
   }
 
   function sendDDS() {
-    s = "d," + knobValues['fcx'].toString(16) + ',' + knobValues['fcy'].toString(16) + ',' + knobValues['fmx'].toString(16) + ',' + knobValues['fmy'].toString(16);
+    s = "d," + knobValues['fcx'].toString(16) + ',' + knobValues['fcy'].toString(16) + ',' + knobValues['fmx'].toString(16) + ',' + knobValues['fmy'].toString(16) + ',' + knobValues['wfm'].toString(16);
     console.log(s);
     websocket.send(s);
   }
 
   function init() {
-    websocket = new WebSocket("ws://192.168.95.130/ws");
+    var host = window.location.host;
+    if (host == "")
+      host = "esp_crt.local"
+    websocket = new WebSocket("ws://" + host + "/ws");
 
     websocket.onopen = function(evt) {
       connected_status.innerHTML = "⌚";
@@ -100,10 +103,17 @@
       connected_status.innerHTML = "🔥 " + evt;
     };
 
+    knobValues['fcx'] = 0x1730080;
+    knobValues['fcy'] = 0x1730000;
+    knobValues['fmx'] = 0x0700000;
+    knobValues['fmy'] = 0x0700070;
+    knobValues['wfm'] = 0x1002;
+
     createDDSKnob('fcx', 't_dds');
     createDDSKnob('fcy', 't_dds');
     createDDSKnob('fmx', 't_dds');
     createDDSKnob('fmy', 't_dds');
+    createDDSKnob('wfm', 't_dds');
   }
 
   window.addEventListener("load", init, false);

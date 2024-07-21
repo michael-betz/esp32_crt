@@ -5,6 +5,7 @@
 // #include "lwip/sys.h"
 #include "lwip/netdb.h"
 #include "lwip/dns.h"
+#include "mdns.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_wifi.h"
@@ -175,7 +176,7 @@ void initWifi()
 
 	// E(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
-	//  register some async callbacks
+	// register some async callbacks
 	E(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_SCAN_DONE, &scan_done, NULL));
 	E(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &got_ip, NULL));
 	E(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &got_discon, NULL));
@@ -185,18 +186,19 @@ void initWifi()
 	esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
 	assert(sta_netif);
 
+	// Init DNS and mDNS
 	const char *hostname = jGetS(getSettings(), "hostname", WIFI_HOST_NAME);
 	E(esp_netif_set_hostname(sta_netif, hostname));
+    E(mdns_init());
+    E(mdns_hostname_set(hostname));
 
-	startWebServer();
-
-	// ------------------------------
-	//  Set the timezone
-	// ------------------------------
+	// Set the timezone
 	const char *tz_str = jGetS(getSettings(), "timezone", "PST8PDT");
 	ESP_LOGI(T, "Setting timezone to TZ = %s", tz_str);
 	setenv("TZ", tz_str, 1);
 	tzset();
+
+	startWebServer();
 }
 
 void tryConnect()
