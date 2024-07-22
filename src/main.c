@@ -177,7 +177,9 @@ void app_main(void)
 	ESP_LOGI(T, "Hello, this is %s, I2S version!", jGetS(getSettings(), "hostname", WIFI_HOST_NAME));
 
 	initWifi();
-	tryConnect();
+	// tryEasyConnect();
+	tryJsonConnect();
+
 
 	// Using priority 19 or higher guarantees that an application task
 	// can run on Core 1 without being preempted by any built-in task.
@@ -189,6 +191,7 @@ void app_main(void)
 		// gpio_set_level(PIN_LED_R, !gpio_get_level(PIN_HVPS_DIS));
 		gpio_set_level(PIN_LED_G, (i++ % 10) == 0);
 		// gpio_set_level(PIN_LED_B, gpio_get_level(PIN_PD_BAD));
+
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }

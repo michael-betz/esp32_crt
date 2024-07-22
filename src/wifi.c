@@ -14,6 +14,9 @@
 #include "static_ws.h"
 #include "wifi.h"
 
+#include "esp_dpp.h"
+#include "qrcode.h"
+
 #define E(x) ESP_ERROR_CHECK_WITHOUT_ABORT(x)
 
 static const char *T = "WIFI";
@@ -81,7 +84,10 @@ static void udp_debug_init()
 	}
 }
 
-// go through scan results and look for the first known wifi
+
+// go through wifi scan results and look for the first known wifi
+// if the wifi is known, meaning it is configured in the .json, connect to it
+// if no known wifi is found, start the DPP easy_connect procedure
 static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
 	uint16_t n = 24;
@@ -125,13 +131,17 @@ static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, 
 		cfg.sta.channel = ap_info[i].primary;
 		cfg.sta.pmf_cfg.capable = true;
 
+		E(esp_wifi_set_mode(WIFI_MODE_STA));
 		E(esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg));
 		E(esp_wifi_connect());
 		E(esp_wifi_set_ps(WIFI_PS_MAX_MODEM));
 		return;
 	}
-	ESP_LOGI(T, "no known wifi found");
-	esp_wifi_stop();
+
+	// Start AP mode
+	ESP_LOGW(T, "no known Wifi found");
+	E(esp_wifi_set_mode(WIFI_MODE_APSTA));
+	ESP_LOGI(T, "started AP mode. SSID: %s", WIFI_HOST_NAME);
 }
 
 static void got_ip(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -159,9 +169,42 @@ static void got_discon(void* arg, esp_event_base_t event_base, int32_t event_id,
 	}
 
 	sntp_stop();
-	esp_wifi_stop();
+	// esp_wifi_stop();
 	isConnect = false;
 }
+
+wifi_config_t s_dpp_wifi_config;
+
+static void dpp_enrollee_event_cb(esp_supp_dpp_event_t event, void *data)
+{
+	switch (event) {
+	case ESP_SUPP_DPP_URI_READY:
+		if (data != NULL) {
+			esp_qrcode_config_t cfg = ESP_QRCODE_CONFIG_DEFAULT();
+
+			ESP_LOGI(T, "Scan below QR Code to configure the enrollee:\n");
+			esp_qrcode_generate(&cfg, (const char *)data);
+		}
+		break;
+
+	case ESP_SUPP_DPP_CFG_RECVD:
+		memcpy(&s_dpp_wifi_config, data, sizeof(s_dpp_wifi_config));
+		esp_wifi_set_config(ESP_IF_WIFI_STA, &s_dpp_wifi_config);
+		ESP_LOGI(T, "DPP Authentication successful, connecting to AP : %s",
+				 s_dpp_wifi_config.sta.ssid);
+		esp_wifi_connect();
+		break;
+
+	case ESP_SUPP_DPP_FAIL:
+		ESP_LOGI(T, "DPP Auth failed (Reason: %s), retry...", esp_err_to_name((int)data));
+; 		E(esp_supp_dpp_start_listen());
+		break;
+
+	default:
+		break;
+	}
+}
+
 
 void initWifi()
 {
@@ -175,10 +218,6 @@ void initWifi()
 
 	E(esp_netif_init());
 	E(esp_event_loop_create_default());
-	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-	E(esp_wifi_init(&cfg));
-
-	// E(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
 	// register some async callbacks
 	E(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_SCAN_DONE, &scan_done, NULL));
@@ -186,15 +225,20 @@ void initWifi()
 	E(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &got_discon, NULL));
 	E(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_STOP, &got_discon, NULL));
 
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	E(esp_wifi_init(&cfg));
+
 	// Initialize default station as network interface instance (esp-netif)
 	esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
 	assert(sta_netif);
+	esp_netif_t *ap_netif = esp_netif_create_default_wifi_ap();
+	assert(ap_netif);
 
 	// Init DNS and mDNS
 	const char *hostname = jGetS(getSettings(), "hostname", WIFI_HOST_NAME);
 	E(esp_netif_set_hostname(sta_netif, hostname));
-    E(mdns_init());
-    E(mdns_hostname_set(hostname));
+	E(mdns_init());
+	E(mdns_hostname_set(hostname));
 
 	// Set the timezone
 	const char *tz_str = jGetS(getSettings(), "timezone", "PST8PDT");
@@ -202,15 +246,46 @@ void initWifi()
 	setenv("TZ", tz_str, 1);
 	tzset();
 
+	wifi_config_t wifi_ap_config = {
+		.ap = {
+			.ssid = WIFI_HOST_NAME,
+			.ssid_len = strlen(WIFI_HOST_NAME),
+			.channel = 6,
+			.max_connection = 3,
+			.authmode = WIFI_AUTH_OPEN,
+			.pmf_cfg = {
+				.required = false,
+			},
+		},
+	};
+	E(esp_wifi_set_config(WIFI_IF_AP, &wifi_ap_config));
+
+	E(esp_wifi_set_mode(WIFI_MODE_NULL));
+	E(esp_wifi_start());
+
 	startWebServer();
 }
 
-void tryConnect()
+void tryJsonConnect()
 {
-	isConnect = true;
 	// Initialize and start WiFi scan
 	E(esp_wifi_set_mode(WIFI_MODE_STA));
-	E(esp_wifi_start());
 	E(esp_wifi_scan_start(NULL, false));
 	// fires SYSTEM_EVENT_SCAN_DONE when done, calls scan_done() ...
+}
+
+void tryEasyConnect()
+{
+	// nice idea but doesn't work
+	E(esp_wifi_set_mode(WIFI_MODE_STA));
+	E(esp_supp_dpp_init(dpp_enrollee_event_cb));
+	E(esp_supp_dpp_bootstrap_gen(
+		"6",  // DPP Bootstrapping listen channels separated by commas.
+		DPP_BOOTSTRAP_QR_CODE,
+		NULL,  // Private key string for DPP Bootstrapping in PEM format.
+		NULL  // Additional ancillary information to be included in QR Code.
+	));
+
+	E(esp_supp_dpp_start_listen());
+	ESP_LOGI(T, "Started listening for DPP Authentication");
 }

@@ -5,6 +5,7 @@
 extern bool isConnect;
 
 void initWifi();
-void tryConnect();
+void tryJsonConnect();
+void tryEasyConnect();
 
 #endif
