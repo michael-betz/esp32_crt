@@ -2,10 +2,21 @@
 #define WIFI_H
 
 #define WIFI_HOST_NAME "esp_crt"
-extern bool isConnect;
+
+enum e_wifi {
+    WIFI_NOT_CONNECTED,
+    WIFI_SCANNING,
+    WIFI_DPP_LISTENING,
+    WIFI_CONNECTED,
+    WIFI_AP_MODE,
+};
+
+extern int wifi_state;
 
 void initWifi();
+
 void tryJsonConnect();
+void tryApMode();
 void tryEasyConnect();
 
 #endif

@@ -21,7 +21,7 @@
 
 static const char *T = "WIFI";
 
-bool isConnect = false;
+int wifi_state = WIFI_NOT_CONNECTED;
 
 // for sending the log output over UDP
 // receive it on the target machine with: netcat -lukp 1234
@@ -87,7 +87,7 @@ static void udp_debug_init()
 
 // go through wifi scan results and look for the first known wifi
 // if the wifi is known, meaning it is configured in the .json, connect to it
-// if no known wifi is found, start the DPP easy_connect procedure
+// if no known wifi is found, start the AP
 static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
 	uint16_t n = 24;
@@ -138,10 +138,8 @@ static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, 
 		return;
 	}
 
-	// Start AP mode
 	ESP_LOGW(T, "no known Wifi found");
-	E(esp_wifi_set_mode(WIFI_MODE_APSTA));
-	ESP_LOGI(T, "started AP mode. SSID: %s", WIFI_HOST_NAME);
+	wifi_state = WIFI_NOT_CONNECTED;
 }
 
 static void got_ip(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -156,6 +154,8 @@ static void got_ip(void* arg, esp_event_base_t event_base, int32_t event_id, voi
 	const char *ntp_str = jGetS(getSettings(), "ntp_host", "pool.ntp.org");
 	sntp_setservername(0, ntp_str);
 	sntp_init();
+
+	wifi_state = WIFI_CONNECTED;
 }
 
 static void got_discon(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -169,35 +169,38 @@ static void got_discon(void* arg, esp_event_base_t event_base, int32_t event_id,
 	}
 
 	sntp_stop();
-	// esp_wifi_stop();
-	isConnect = false;
+	wifi_state = WIFI_NOT_CONNECTED;
 }
 
-wifi_config_t s_dpp_wifi_config;
 
 static void dpp_enrollee_event_cb(esp_supp_dpp_event_t event, void *data)
 {
+	static int retries = 8;
+
 	switch (event) {
 	case ESP_SUPP_DPP_URI_READY:
+		retries = 8;
 		if (data != NULL) {
 			esp_qrcode_config_t cfg = ESP_QRCODE_CONFIG_DEFAULT();
-
 			ESP_LOGI(T, "Scan below QR Code to configure the enrollee:\n");
 			esp_qrcode_generate(&cfg, (const char *)data);
 		}
 		break;
 
 	case ESP_SUPP_DPP_CFG_RECVD:
+		retries = 8;
+		wifi_config_t s_dpp_wifi_config;
 		memcpy(&s_dpp_wifi_config, data, sizeof(s_dpp_wifi_config));
-		esp_wifi_set_config(ESP_IF_WIFI_STA, &s_dpp_wifi_config);
-		ESP_LOGI(T, "DPP Authentication successful, connecting to AP : %s",
-				 s_dpp_wifi_config.sta.ssid);
-		esp_wifi_connect();
+		ESP_LOGI(T, "DPP Authentication successful, ssid: %s", s_dpp_wifi_config.sta.ssid);
+		// TODO store ssid and pw in .json config, then call tryJsonConnect()
 		break;
 
 	case ESP_SUPP_DPP_FAIL:
-		ESP_LOGI(T, "DPP Auth failed (Reason: %s), retry...", esp_err_to_name((int)data));
-; 		E(esp_supp_dpp_start_listen());
+		ESP_LOGW(T, "DPP Auth failed (Reason: %s)", esp_err_to_name((int)data));
+		if (retries-- > 0) {
+			ESP_LOGI(T, "retry ...");
+ 			E(esp_supp_dpp_start_listen());
+		}
 		break;
 
 	default:
@@ -246,10 +249,9 @@ void initWifi()
 	setenv("TZ", tz_str, 1);
 	tzset();
 
+	// Setup AP mode (may be used if no known wifi is found)
 	wifi_config_t wifi_ap_config = {
 		.ap = {
-			.ssid = WIFI_HOST_NAME,
-			.ssid_len = strlen(WIFI_HOST_NAME),
 			.channel = 6,
 			.max_connection = 3,
 			.authmode = WIFI_AUTH_OPEN,
@@ -258,6 +260,11 @@ void initWifi()
 			},
 		},
 	};
+	int l = strlen(hostname);
+	if (l > sizeof(wifi_ap_config.ap.ssid))
+		l = sizeof(wifi_ap_config.ap.ssid);
+	wifi_ap_config.ap.ssid_len = l;
+	memcpy(wifi_ap_config.ap.ssid, hostname, l);
 	E(esp_wifi_set_config(WIFI_IF_AP, &wifi_ap_config));
 
 	E(esp_wifi_set_mode(WIFI_MODE_NULL));
@@ -268,14 +275,26 @@ void initWifi()
 
 void tryJsonConnect()
 {
+	wifi_state = WIFI_SCANNING;
+
 	// Initialize and start WiFi scan
 	E(esp_wifi_set_mode(WIFI_MODE_STA));
 	E(esp_wifi_scan_start(NULL, false));
 	// fires SYSTEM_EVENT_SCAN_DONE when done, calls scan_done() ...
 }
 
+void tryApMode()
+{
+	wifi_state = WIFI_AP_MODE;
+
+	E(esp_wifi_set_mode(WIFI_MODE_APSTA));
+	ESP_LOGI(T, "started AP mode. SSID: %s", WIFI_HOST_NAME);
+}
+
 void tryEasyConnect()
 {
+	wifi_state = WIFI_DPP_LISTENING;
+
 	// nice idea but doesn't work
 	E(esp_wifi_set_mode(WIFI_MODE_STA));
 	E(esp_supp_dpp_init(dpp_enrollee_event_cb));
