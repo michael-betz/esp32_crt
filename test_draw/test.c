@@ -11,6 +11,7 @@
 #include "fonts/font_data.h"
 #include "fast_sin.h"
 #include "dds.h"
+#include "demo_mode.h"
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
@@ -258,29 +259,31 @@ int main(int argc, char* args[])
 		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(rr);
 
-		if (demo < 0)
-			demo = N_FONTS + 3;
+		demo_mode();
 
-		if (demo > N_FONTS + 3)
-			demo = 0;
+		// if (demo < 0)
+		// 	demo = N_FONTS + 3;
 
-		switch (demo) {
-		case 0:
-			test_image();
-			break;
-		case 1:
-			demo_circles(frame);
-			break;
-		case 2:
-			demo_dds(frame);
-			break;
-		case 3:
-			wf_test();
-			break;
-		default:
-			demo_text(frame, demo - 4);
-			break;
-		}
+		// if (demo > N_FONTS + 3)
+		// 	demo = 0;
+
+		// switch (demo) {
+		// case 0:
+		// 	test_image();
+		// 	break;
+		// case 1:
+		// 	demo_circles(frame);
+		// 	break;
+		// case 2:
+		// 	demo_dds(frame);
+		// 	break;
+		// case 3:
+		// 	wf_test();
+		// 	break;
+		// default:
+		// 	demo_text(frame, demo - 4);
+		// 	break;
+		// }
 
 		// printf("%d\n", n_samples);
 		n_samples = 0;
