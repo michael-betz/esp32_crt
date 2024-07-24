@@ -74,24 +74,38 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 	#define BEAM_OFF_VAL 0xB00
 	#define BEAM_ON_VAL 0x500
 	static bool l_beam_on = false;
+	static bool l_is_out = false;
+
 	static int l_x = 0, l_y = 0, l_focus = 0;
 
 	bool is_out = is_off_screen(x, y);
 
 	if (is_out) {
-		// if beam is off already, skip points outside of the screen
+		// This sample is off-screen and should be skipped, also beam should be blanked
+		// if beam is off already, just skip this sample
 		if (!l_beam_on)
 			return true;
 
-		// output sample with previous position and switch off the beam
+		// otherwise, switch off the beam (output previous position again)
 		x = l_x;
 		y = l_y;
-		beam_on = false;
 		focus = l_focus;
+		beam_on = false;
 	} else {
 		// ADC can't do negative values
 		x += 0x800;
 		y += 0x800;
+
+		// We were-off screen and moved on-screen
+		// Do a blank move first as the previous position is invalid
+		if (l_is_out) {
+			l_x = x;
+			l_y = y;
+			l_focus = focus;
+			l_beam_on = false;
+			for (unsigned i=0; i<BLANK_OFF_TIME; i++)
+				push_sample(l_x, l_y, BEAM_OFF_VAL, l_focus);
+		}
 	}
 
 	if (l_beam_on && !beam_on) {
@@ -109,15 +123,16 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 
 		// wait for blanked beam to reach target position
 		for (unsigned i=0; i<BLANK_OFF_TIME; i++)
-			push_sample(l_x, l_y, BEAM_OFF_VAL, focus);
+			push_sample(l_x, l_y, BEAM_OFF_VAL, l_focus);
 
 		// stay there and enable the beam
 		for (unsigned i=0; i<(BLANK_OFF_TIME - 1); i++)
-			push_sample(l_x, l_y, 0, focus);
+			push_sample(l_x, l_y, BEAM_ON_VAL, l_focus);
 	}
 
 	push_sample(x, y, beam_on ? BEAM_ON_VAL : BEAM_OFF_VAL, focus);
 	l_beam_on = beam_on;
+	l_is_out = is_out;
 	l_x = x;
 	l_y = y;
 	l_focus = focus;

@@ -52,7 +52,7 @@ static void demo_text(unsigned font)
 	localtime_r(&now, &timeinfo);
     strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
 
-	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 50;
+	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 200;
 	set_font(font);
 	push_str(
 		0, 500,
@@ -118,18 +118,18 @@ static void i2s_stream_task(void *args)
 	int demo_text_font = 0;
 
 	while (1) {
-		// ticks = xTaskGetTickCount();
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(10000))
-		// 	test_image();
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(10000))
+			test_image();
 
-		// ticks = xTaskGetTickCount();
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		// 	wf_test();
+		ticks = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			wf_test();
 
-		// ticks = xTaskGetTickCount();
-		// demo_text_font = random() % N_FONTS;
-		// while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
-		// 	demo_text(demo_text_font);
+		ticks = xTaskGetTickCount();
+		demo_text_font = random() % N_FONTS;
+		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000))
+			demo_text(demo_text_font);
 
 		ticks = xTaskGetTickCount();
 		while ((xTaskGetTickCount() - ticks) < pdMS_TO_TICKS(60000)) {

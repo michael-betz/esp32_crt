@@ -132,6 +132,7 @@ static obj_3d_t o_camera;
 // draw an obj_3d_t
 void obj_3d_draw(obj_3d_t *obj, unsigned density)
 {
+	static bool last_skipped = false;
 	unsigned n_edges = obj->n_edges;
 	const uint16_t *p = obj->edges;
 
@@ -162,17 +163,21 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 		int y = vert[1];
 		int z = vert[2];
 
-		if (z <= 0)
+		if (z <= 0) {
+			last_skipped = true;
 			continue;
+		}
 
 		// Simple perspective with wide FOV
 		x = x * WF_ONE / z / 2;
 		y = y * WF_ONE / z / 2;
 
-		if (is_goto)
+		if (is_goto || last_skipped)
 			push_goto(x, y);
 		else
 			push_line(x, y, density);
+
+		last_skipped = false;
 	}
 }
 

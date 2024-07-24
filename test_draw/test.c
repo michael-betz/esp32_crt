@@ -1,5 +1,6 @@
 // demo the drawing engine on a PC using SDL2
 #include <stdbool.h>
+#include <assert.h>
 #include <SDL2/SDL.h>
 #include <time.h>
 #include <math.h>
@@ -160,6 +161,8 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 	static int y_ = 0;
 
 	// printf("(%6d, %6d, %6d)\n", val_x, val_y, val_blank);
+	assert(val_x < 0x1000);
+	assert(val_y < 0x1000);
 
 	// center and scale the DAC range to the window-size
 	int x = val_x * D_SCALE + D_OFFSET_X;
@@ -178,15 +181,15 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 
 	// Draw lines connecting the samples. Red for blanked moves
 	if (val_blank >= 0x800) {
-		SDL_SetRenderDrawColor(rr, 0x40, 0x00, 0x00, 0xFF);
+		SDL_SetRenderDrawColor(rr, 0xFF, 0x00, 0x00, 0x00);
 	} else {
-		SDL_SetRenderDrawColor(rr, 0x00, intens, 0x00, 0xFF);
+		SDL_SetRenderDrawColor(rr, 0x00, 0xFF, 0x00, 0xFF);
 	}
 	SDL_RenderDrawLine(rr, x_, y_, x, y);
 
 	// Draw dots where the samples actually are to show the density
 	if (val_blank >= 0x800) {
-		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0x0);
+		SDL_SetRenderDrawColor(rr, 0x80, 0x00, 0x00, 0xFF);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x60, 0x60, 0x60, 0x80);
 	}
@@ -224,7 +227,7 @@ int main(int argc, char* args[])
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
 	unsigned frame = 0;
-	int demo = 0;
+	int demo = 3;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;

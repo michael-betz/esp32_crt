@@ -208,6 +208,16 @@ static void dpp_enrollee_event_cb(esp_supp_dpp_event_t event, void *data)
 	}
 }
 
+static wifi_config_t wifi_ap_config = {
+	.ap = {
+		.channel = 6,
+		.max_connection = 3,
+		.authmode = WIFI_AUTH_OPEN,
+		.pmf_cfg = {
+			.required = false,
+		},
+	},
+};
 
 void initWifi()
 {
@@ -250,24 +260,12 @@ void initWifi()
 	tzset();
 
 	// Setup AP mode (may be used if no known wifi is found)
-	wifi_config_t wifi_ap_config = {
-		.ap = {
-			.channel = 6,
-			.max_connection = 3,
-			.authmode = WIFI_AUTH_OPEN,
-			.pmf_cfg = {
-				.required = false,
-			},
-		},
-	};
 	int l = strlen(hostname);
 	if (l > sizeof(wifi_ap_config.ap.ssid))
 		l = sizeof(wifi_ap_config.ap.ssid);
 	wifi_ap_config.ap.ssid_len = l;
 	memcpy(wifi_ap_config.ap.ssid, hostname, l);
-	E(esp_wifi_set_config(WIFI_IF_AP, &wifi_ap_config));
 
-	E(esp_wifi_set_mode(WIFI_MODE_NULL));
 	E(esp_wifi_start());
 
 	startWebServer();
@@ -287,7 +285,8 @@ void tryApMode()
 {
 	wifi_state = WIFI_AP_MODE;
 
-	E(esp_wifi_set_mode(WIFI_MODE_APSTA));
+	E(esp_wifi_set_mode(WIFI_MODE_AP));
+	E(esp_wifi_set_config(WIFI_IF_AP, &wifi_ap_config));
 	ESP_LOGI(T, "started AP mode. SSID: %s", WIFI_HOST_NAME);
 }
 

@@ -3,7 +3,6 @@
 #include <font_draw.h>
 
 extern const font_t f_arc;
-extern const font_t f_hershey_italiccs;
 extern const font_t f_hershey_romancs;
 extern const font_t f_hershey_romans;
 extern const font_t f_hershey_scriptc;

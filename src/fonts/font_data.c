@@ -2,7 +2,6 @@
 
 const font_t* f_all[] = {
 	&f_arc,
-	&f_hershey_italiccs,
 	&f_hershey_romancs,
 	&f_hershey_romans,
 	&f_hershey_scriptc,
