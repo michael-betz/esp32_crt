@@ -12,6 +12,7 @@
 #include "fast_sin.h"
 #include "dds.h"
 #include "demo_mode.h"
+#include "meteo_swiss.h"
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
 
@@ -29,39 +30,6 @@ unsigned n_samples = 0;
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
-
-static void demo_circles(unsigned frame)
-{
-	push_circle(
-		-800, -800,
-		100, 100,
-		frame * (MAX_ANGLE >> 8),  // 0
-		MAX_ANGLE / 4,  // MAX_ANGLE
-		100
-	);
-	push_circle(
-		-800, 800,
-		100, 100,
-		frame * (MAX_ANGLE >> 8),  // 0
-		2 * MAX_ANGLE / 4,  // MAX_ANGLE
-		100
-	);
-	push_circle(
-		800, -800,
-		100, 100,
-		frame * (MAX_ANGLE >> 8),  // 0
-		3 * MAX_ANGLE / 4,  // MAX_ANGLE
-		100
-	);
-	push_circle(
-		800, 800,
-		100, 100,
-		0,  // 0
-		(sin(frame / 50.0) + 1) * MAX_ANGLE / 2,  // MAX_ANGLE
-		100
-	);
-}
-
 static void demo_text(unsigned frame, unsigned font)
 {
 	char tmp_str[64];
@@ -69,7 +37,7 @@ static void demo_text(unsigned frame, unsigned font)
 		return;
 	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
-	set_font(0);
+	set_font_index(0);
 	push_str(
 		-1300, 1300,
 		tmp_str,
@@ -87,7 +55,7 @@ static void demo_text(unsigned frame, unsigned font)
 	strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
 
 	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 50;
-	set_font(font);
+	set_font_index(font);
 	push_str(
 		0, 500,
 		tmp_str,
@@ -141,7 +109,7 @@ static void test_image()
 	char tmp_str[16];
 	strftime(tmp_str, sizeof(tmp_str), "%H:%M:%S", &timeinfo);
 
-	set_font(0);
+	set_font_index(0);
 	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 200);
 }
 
@@ -287,38 +255,6 @@ int get_weather(unsigned postcode, cJSON **weather)
 	return *weather == NULL ? -1 : 0;
 }
 
-int draw_weather_icons(cJSON *weather)
-{
-	cJSON *graph = cJSON_GetObjectItemCaseSensitive(weather, "graph");
-	if (graph == NULL) {
-		printf("graph not found\n");
-		return -1;
-	}
-
-	cJSON *start = cJSON_GetObjectItemCaseSensitive(graph, "start");
-	if (!cJSON_IsNumber(start)) {
-		printf("start not found\n");
-		return -1;
-	}
-	// start time is from midnight of the current day
-	printf("start: %ld\n", (long)(start->valuedouble));
-
-	cJSON *icons = cJSON_GetObjectItemCaseSensitive(graph, "weatherIcon3h");
-	if (icons == NULL) {
-		printf("weatherIcon3h not found\n");
-		return -1;
-	}
-
-	cJSON *icon;
-	int h = 0;
-	cJSON_ArrayForEach(icon, icons) {
-		if (!cJSON_IsNumber(icon))
-			break;
-		printf("%3d h  icon: %3d\n", h % 24, icon->valueint);
-		h += 3;
-	}
-}
-
 int main(int argc, char* args[])
 {
 	init_lut();
@@ -332,14 +268,8 @@ int main(int argc, char* args[])
 		return ret;
 	}
 
-	draw_weather_icons(weather);
-
-	cJSON_Delete(weather);
-
-	return 0;
-
 	unsigned frame = 0;
-	int demo = 3;
+	int demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
@@ -370,7 +300,9 @@ int main(int argc, char* args[])
 		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(rr);
 
-		demo_mode();
+		draw_weather_icons(weather, demo);
+
+		// demo_mode();
 
 		// if (demo < 0)
 		// 	demo = N_FONTS + 3;
@@ -403,6 +335,8 @@ int main(int argc, char* args[])
 		SDL_Delay(20);
 		frame++;
 	}
+
+	cJSON_Delete(weather);
 
 	SDL_DestroyRenderer(rr);
 	SDL_DestroyWindow(window);

@@ -19,7 +19,7 @@ static void demo_text(unsigned font)
 		return;
 	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
-	set_font(0);
+	set_font_index(0);
 	push_str(
 		-1300, 1300,
 		tmp_str,
@@ -37,7 +37,7 @@ static void demo_text(unsigned font)
     strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
 
 	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 200;
-	set_font(font);
+	set_font_index(font);
 	push_str(
 		0, 500,
 		tmp_str,
@@ -91,7 +91,7 @@ static void test_image()
 	localtime_r(&now, &timeinfo);
     strftime(tmp_str, sizeof(tmp_str), "%k:%M:%S", &timeinfo);
 
-	set_font(0);
+	set_font_index(0);
 	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 400);
 }
 

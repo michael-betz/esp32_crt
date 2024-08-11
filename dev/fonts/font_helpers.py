@@ -164,7 +164,7 @@ class CrtPen(BasePen):
             plot(pts[:, 0], pts[:, 1], 'o')
 
             xs, ys = get_points_c(pt0, pt1, pt2, pt3)
-            plot(xs + self.cursor[0] + self.lsb, ys + self.cursor[1], 'k.-')
+            plot(xs + self.cursor[0] + self.lsb, ys + self.cursor[1], 'k-')
 
             print('    cCurve', pt1, pt2, pt3)
 
@@ -184,7 +184,7 @@ class CrtPen(BasePen):
             plot(pts[:, 0], pts[:, 1], 'o')
 
             xs, ys = get_points(pt0, pt1, pt2)
-            plot(xs + self.cursor[0] + self.lsb, ys + self.cursor[1], 'k.-')
+            plot(xs + self.cursor[0] + self.lsb, ys + self.cursor[1], 'k-')
 
             print('    qCurve', pt1, pt2)
 

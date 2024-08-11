@@ -123,10 +123,18 @@ static const glyph_dsc_t *find_glyph_dsc(unsigned dc)
 	return NULL;
 }
 
-void set_font(unsigned index)
+void set_font_index(unsigned index)
 {
 	if (index < N_FONTS)
 		current_font = f_all[index];
+}
+
+void set_font_name(const font_t *font)
+{
+	if (font == NULL)
+		current_font = &f_arc;
+	else
+		current_font = font;
 }
 
 static int get_char_width(unsigned dc, unsigned scale)
@@ -182,6 +190,13 @@ static void push_char(unsigned dc, unsigned scale, unsigned density)
 	x_c += glyph_dsc->adv_w * (int)scale / current_font->units_per_em;
 
 	// printf("push_char(%8x) %8x %8x\n", dc, data_start, data_end);
+}
+
+void push_char_at_pos(int x, int y, unsigned dc, unsigned scale, unsigned density)
+{
+	x_c = x - get_char_width(dc, scale) / 2;
+	y_c = y;
+	push_char(dc, scale, density);
 }
 
 static void set_x_cursor(int x_a, char *c, unsigned n, unsigned scale, unsigned align)

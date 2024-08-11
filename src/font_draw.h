@@ -7,11 +7,6 @@
 #define A_CENTER 1
 #define A_RIGHT 2
 
-// scale is font-size. 100 is for ants, 300 is readable, 1000 is pretty huge
-void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density);
-
-void set_font(unsigned index);
-
 /** This describes a glyph. */
 typedef struct {
     // uint16_t start_index;           /**< Start index of the vector */
@@ -35,5 +30,13 @@ typedef struct {
     const unsigned map_n;
     const unsigned *map_unicode_table;
 } font_t;
+
+// scale is font-size. 100 is for ants, 300 is readable, 1000 is pretty huge
+void push_str(int x_a, int y_a, char *c, unsigned n, unsigned align, unsigned scale, unsigned density);
+
+void set_font_index(unsigned index);
+void set_font_name(const font_t *font);
+
+void push_char_at_pos(int x, int y, unsigned dc, unsigned scale, unsigned density);
 
 #endif
