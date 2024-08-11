@@ -1,7 +1,7 @@
 vpath %.c ../src
 vpath %.c ../src/fonts
 
-LDLIBS = -lm -lSDL2 -lstdc++
+LDLIBS = -lm -lSDL2 -lstdc++ -lcurl -lcjson
 
 FLAGS = -Wall -I../src -I. -g
 CFLAGS += $(FLAGS)

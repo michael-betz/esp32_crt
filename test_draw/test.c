@@ -12,6 +12,8 @@
 #include "fast_sin.h"
 #include "dds.h"
 #include "demo_mode.h"
+#include <curl/curl.h>
+#include <cjson/cJSON.h>
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
@@ -82,7 +84,7 @@ static void demo_text(unsigned frame, unsigned font)
 
 	time(&now);
 	localtime_r(&now, &timeinfo);
-    strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
+	strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
 
 	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 50;
 	set_font(font);
@@ -137,7 +139,7 @@ static void test_image()
 	struct tm timeinfo;
 	localtime_r(&now, &timeinfo);
 	char tmp_str[16];
-    strftime(tmp_str, sizeof(tmp_str), "%H:%M:%S", &timeinfo);
+	strftime(tmp_str, sizeof(tmp_str), "%H:%M:%S", &timeinfo);
 
 	set_font(0);
 	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 200);
@@ -221,11 +223,120 @@ static void init_sdl()
 	SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
 }
 
+
+
+struct MemoryStruct {
+  char *memory;
+  size_t size;
+};
+
+static size_t
+WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+  size_t realsize = size * nmemb;
+  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+
+  char *ptr = realloc(mem->memory, mem->size + realsize + 1);
+  if(!ptr) {
+	/* out of memory! */
+	printf("not enough memory (realloc returned NULL)\n");
+	return 0;
+  }
+
+  mem->memory = ptr;
+  memcpy(&(mem->memory[mem->size]), contents, realsize);
+  mem->size += realsize;
+  mem->memory[mem->size] = 0;
+
+  return realsize;
+}
+
+int get_weather(unsigned postcode, cJSON **weather)
+{
+	char url[128];
+	snprintf(url, sizeof(url), "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=%d", postcode * 100);
+	printf("GET %s\n", url);
+
+	struct MemoryStruct chunk;
+	chunk.memory = malloc(1);  /* grown as needed by the realloc above */
+	chunk.size = 0;    /* no data at this point */
+
+	CURL *curl = curl_easy_init();
+	CURLcode res;
+
+	/* send all data to this function  */
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+	/* we pass our 'chunk' struct to the callback function */
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+
+	res = curl_easy_perform(curl);
+	if(res != CURLE_OK) {
+		printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+		return res;
+	}
+
+	printf("%lu bytes retrieved\n", (unsigned long)chunk.size);
+
+	*weather = cJSON_ParseWithLength(chunk.memory, chunk.size);
+
+	free(chunk.memory);
+	curl_easy_cleanup(curl);
+
+	return *weather == NULL ? -1 : 0;
+}
+
+int draw_weather_icons(cJSON *weather)
+{
+	cJSON *graph = cJSON_GetObjectItemCaseSensitive(weather, "graph");
+	if (graph == NULL) {
+		printf("graph not found\n");
+		return -1;
+	}
+
+	cJSON *start = cJSON_GetObjectItemCaseSensitive(graph, "start");
+	if (!cJSON_IsNumber(start)) {
+		printf("start not found\n");
+		return -1;
+	}
+	// start time is from midnight of the current day
+	printf("start: %ld\n", (long)(start->valuedouble));
+
+	cJSON *icons = cJSON_GetObjectItemCaseSensitive(graph, "weatherIcon3h");
+	if (icons == NULL) {
+		printf("weatherIcon3h not found\n");
+		return -1;
+	}
+
+	cJSON *icon;
+	int h = 0;
+	cJSON_ArrayForEach(icon, icons) {
+		if (!cJSON_IsNumber(icon))
+			break;
+		printf("%3d h  icon: %3d\n", h % 24, icon->valueint);
+		h += 3;
+	}
+}
+
 int main(int argc, char* args[])
 {
 	init_lut();
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
+
+	cJSON *weather = NULL;
+	int ret = get_weather(1202, &weather);
+	if (ret < 0) {
+		printf("get_weather() failed %d\n", ret);
+		return ret;
+	}
+
+	draw_weather_icons(weather);
+
+	cJSON_Delete(weather);
+
+	return 0;
 
 	unsigned frame = 0;
 	int demo = 3;
