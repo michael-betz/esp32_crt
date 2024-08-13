@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cjson/cJSON.h>
+#include <cJSON.h>
 
 void weather_set_json(cJSON *meteo);
 

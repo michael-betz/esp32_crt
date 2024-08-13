@@ -20,11 +20,11 @@
 #include "wifi.h"
 #include "static_ws.h"
 #include "json_settings.h"
+#include "encoder.h"
 #include "demo_mode.h"
 #include "main.h"
 
 static const char *T = "MAIN";
-
 
 static void i2s_stream_task(void *args)
 {
@@ -52,11 +52,18 @@ static void init_io()
 
 	gpio_set_direction(PIN_PD_BAD, GPIO_MODE_INPUT);
 	gpio_set_direction(PIN_BUTTON, GPIO_MODE_INPUT);
+	gpio_set_direction(PIN_KNOB_A, GPIO_MODE_INPUT);
+	gpio_set_direction(PIN_KNOB_B, GPIO_MODE_INPUT);
+
+	gpio_set_pull_mode(PIN_BUTTON, GPIO_PULLUP_ONLY);
+	gpio_set_pull_mode(PIN_KNOB_A, GPIO_PULLUP_ONLY);
+	gpio_set_pull_mode(PIN_KNOB_B, GPIO_PULLUP_ONLY);
 }
 
 void app_main(void)
 {
 	init_io();
+	init_encoder();
 
 	// Mount spiffs for *.html and defaults.json
 	esp_vfs_spiffs_conf_t conf = {
@@ -81,14 +88,16 @@ void app_main(void)
 
 	int i = 0;
 	while (1) {
-		// gpio_set_level(PIN_LED_R, !gpio_get_level(PIN_HVPS_DIS));
-		gpio_set_level(PIN_LED_G, (i % 10) == 0);
-		// gpio_set_level(PIN_LED_B, gpio_get_level(PIN_PD_BAD));
+		gpio_set_level(PIN_LED_B, (i % 20) == 0);
+		// gpio_set_level(PIN_LED_G, gpio_get_level(PIN_KNOB_A));
+		// gpio_set_level(PIN_LED_B, gpio_get_level(PIN_KNOB_B));
 
 		if ((i % 1200) == 0 && wifi_state == WIFI_NOT_CONNECTED)  // every 2 min
 			tryJsonConnect();
 
 		i++;
+
+		ESP_LOGI(T, "Encoder: %d", get_encoder());
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
