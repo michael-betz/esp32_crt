@@ -5,6 +5,8 @@
 #include "meteo_swiss.h"
 #include "fonts/font_data.h"
 
+cJSON *weather = NULL;
+
 // see dev/2022-02-14-Wetter-Icons-inkl-beschreibung-v1-an-website.xlsx
 static const uint8_t weather_icon_map_a[] = {
 	0x0d,  // 1
@@ -114,9 +116,23 @@ static unsigned cp_from_meteo_swiss_key(unsigned key)
 	return '?';
 }
 
-int draw_weather_icons(cJSON *weather, unsigned h)
+// meteo shall be the meteo-swiss .json data from
+// https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=xxx
+// This needs to be locked against the drawing functions I guess
+void weather_set_json(cJSON *meteo)
+{
+	weather = meteo;
+}
+
+int draw_weather_grid()
 {
 	char label[32];
+
+	if (weather == NULL) {
+		set_font_name(NULL);
+		push_str(0, 0, "Weather data\nnot available", 25, A_CENTER, 500, 100);
+		return -1;
+	}
 
 	cJSON *graph = cJSON_GetObjectItemCaseSensitive(weather, "graph");
 	if (graph == NULL) {
@@ -132,10 +148,7 @@ int draw_weather_icons(cJSON *weather, unsigned h)
 	// start time is from midnight of the current day
 	time_t ts_start;
 	struct tm timeinfo;
-	// time(&ts_start);
-	// printf("time: %ld\n", ts_start);
 	ts_start = (long)(start->valuedouble) / 1000;
-	printf("start: %ld\n", ts_start);
 
 	cJSON *icons = cJSON_GetObjectItemCaseSensitive(graph, "weatherIcon3h");
 	if (icons == NULL) {
@@ -143,7 +156,7 @@ int draw_weather_icons(cJSON *weather, unsigned h)
 		return -1;
 	}
 
-	// Draw 3 times x 3 hours of weather icons
+	// Draw 4 hours x 3 days weather forecast icons
 	set_font_name(&f_weather_icons);
 	for (int day_ind=0; day_ind<=2; day_ind++) {
 		int x_pos = (day_ind - 1) * 750 + 300;
@@ -176,17 +189,5 @@ int draw_weather_icons(cJSON *weather, unsigned h)
 
     	ts_start += 24 * 60 * 60;
 	}
-
-	// h *= 3;
-	// int d = h / 24;
-	// if (d > 0)
-	// 	snprintf(label, sizeof(label), "+%d d %2d h", d, h % 24);
-	// else
-	// 	snprintf(label, sizeof(label), "%2d h", h);
-
-	// printf("%s  icon: %3d, %04x\n", label, icon->valueint, cp);
-
-	// set_font_name(&f_weather_icons);
-	// push_char_at_pos(0, -500, cp, 1800, 100);
-	// push_str(0, -1500, label, sizeof(label), A_CENTER, 400, 100);
+	return 0;
 }

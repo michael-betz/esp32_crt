@@ -2,4 +2,6 @@
 
 #include <cjson/cJSON.h>
 
-int draw_weather_icons(cJSON *weather, unsigned h);
+void weather_set_json(cJSON *meteo);
+
+int draw_weather_grid();
