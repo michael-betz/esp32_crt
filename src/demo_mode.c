@@ -8,6 +8,7 @@
 #include "wireframe_draw.h"
 #include "fast_sin.h"
 #include "dds.h"
+#include "encoder.h"
 
 
 static void demo_text(unsigned font)
@@ -15,11 +16,10 @@ static void demo_text(unsigned font)
 	char tmp_str[64];
 	static int frame = 0;
 
-	if (font >= N_FONTS)
-		return;
+	font %= N_FONTS;
 	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
-	set_font_index(0);
+	set_font_name(NULL);
 	push_str(
 		-1300, 1300,
 		tmp_str,
@@ -99,6 +99,7 @@ void demo_mode()
 {
 	static int demo_text_font = 0, mode = 0;
 	static time_t ticks_ = 0;
+	static int enc_ = 0;
 
 	switch (mode) {
 		case 0:
@@ -119,15 +120,21 @@ void demo_mode()
 			break;
 
 		default:
-			mode = 0;
-			demo_text_font++;
-			if (demo_text_font > N_FONTS)
-				demo_text_font = 0;
+			if (mode < 0) {
+				mode = 3;
+				demo_text_font--;
+			} else {
+				mode = 0;
+				demo_text_font++;
+			}
 	}
 
-	time_t ticks = time(NULL);
+	int enc = get_encoder();
+	mode += enc - enc_;
+	enc_ = enc;
 
-	if ((ticks - ticks_) > 20) {
+	time_t ticks = time(NULL);
+	if ((ticks - ticks_) > 60) {
 		mode++;
 		ticks_ = ticks;
 	}
