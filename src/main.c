@@ -97,7 +97,7 @@ void app_main(void)
 
 		i++;
 
-		ESP_LOGI(T, "Encoder: %d", get_encoder());
+		// ESP_LOGI(T, "Encoder: %d", get_encoder());
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }

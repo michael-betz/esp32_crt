@@ -109,7 +109,7 @@ static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, 
 	// Go through all found APs, use ssid as key and try to get item from json
 	ESP_LOGI(T, "Wifis I can see:");
 	for (unsigned i = 0; i < n; i++) {
-		ESP_LOGI(T, "    %s (%d dBm)", ap_info[i].ssid, ap_info[i].rssi);
+		ESP_LOGI(T, "    %s (%d, %d dBm)", ap_info[i].ssid, ap_info[i].primary, ap_info[i].rssi);
 	}
 
 	for (unsigned i = 0; i < n; i++) {
