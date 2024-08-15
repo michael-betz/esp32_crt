@@ -1,6 +1,10 @@
 #pragma once
 
-#include <cJSON.h>
+#if defined(ESP_PLATFORM)
+    #include <cJSON.h>
+#else
+    #include <cjson/cJSON.h>
+#endif
 
 void weather_set_json(cJSON *meteo);
 

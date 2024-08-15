@@ -30,99 +30,6 @@ unsigned n_samples = 0;
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
-static void demo_text(unsigned frame, unsigned font)
-{
-	char tmp_str[64];
-	if (font >= N_FONTS)
-		return;
-	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
-
-	set_font_index(0);
-	push_str(
-		-1300, 1300,
-		tmp_str,
-		sizeof(tmp_str),
-		A_LEFT,
-		300,
-		200
-	);
-
-	time_t now;
-	struct tm timeinfo;
-
-	time(&now);
-	localtime_r(&now, &timeinfo);
-	strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
-
-	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 50;
-	set_font_index(font);
-	push_str(
-		0, 500,
-		tmp_str,
-		sizeof(tmp_str),
-		A_CENTER,
-		font_size,
-		300
-	);
-	// exit(0);
-}
-
-static void test_image()
-{
-	// a square around the screen
-	push_goto(-2000, -2000);
-	push_line(-2000, 2000, 10);
-	push_line(2000, 2000, 10);
-	push_line(2000, -2000, 10);
-	push_line(-2000, -2000, 10);
-
-	// // inner cross
-	push_goto(-200, -200);
-	push_line(200, 200, 100);
-	push_goto(-200, 200);
-	push_line(200, -200, 100);
-
-	// // inner +
-	push_goto(-500, 0);
-	push_line(500, 0, 50);
-	push_goto(0, 500);
-	push_line(0, -500, 50);
-
-	// concentric circles
-	for (unsigned i=3; i<=10; i++) {
-		push_circle(
-			0,
-			0,
-			i * 200,
-			i * 200,
-			i <= 5 ? i * 256 : -280,
-			i <= 5 ? MAX_ANGLE : MAX_ANGLE - 1500,
-			10
-		);
-	}
-
-	time_t now;
-	time(&now);
-
-	struct tm timeinfo;
-	localtime_r(&now, &timeinfo);
-	char tmp_str[16];
-	strftime(tmp_str, sizeof(tmp_str), "%H:%M:%S", &timeinfo);
-
-	set_font_index(0);
-	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 200);
-}
-
-static void demo_dds(unsigned frame)
-{
-	// DAC \Delta t is 1.6 us
-	// SDL frame is 50 ms
-	// Need to draw 31k samples per frame
-	draw_dds(8000);
-	if ((frame % 10) == 0)
-		nudge_dds();
-}
-
 // Visualize a sample, emulate the phosphor with additive blending
 void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t val_foc)
 {
@@ -253,6 +160,13 @@ int get_weather(unsigned postcode, cJSON **weather)
 	return *weather == NULL ? -1 : 0;
 }
 
+int encoder_value = 0;
+
+int get_encoder()
+{
+	return encoder_value;
+}
+
 int main(int argc, char* args[])
 {
 	init_lut();
@@ -268,7 +182,6 @@ int main(int argc, char* args[])
 	weather_set_json(weather);
 
 	unsigned frame = 0;
-	int demo = 0;
 	while (1) {
 		SDL_Event e;
 		bool isExit = false;
@@ -280,10 +193,10 @@ int main(int argc, char* args[])
 				case SDL_KEYDOWN:
 					switch(e.key.keysym.sym) {
 						case SDLK_LEFT:
-							demo--;
+							encoder_value--;
 							break;
 						case SDLK_RIGHT:
-							demo++;
+							encoder_value++;
 							break;
 						case SDLK_DOWN:
 							break;
@@ -299,31 +212,7 @@ int main(int argc, char* args[])
 		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(rr);
 
-		// demo_mode();
-
-		if (demo < 0)
-			demo = N_FONTS + 3;
-
-		if (demo > N_FONTS + 3)
-			demo = 0;
-
-		switch (demo) {
-		case 0:
-			test_image();
-			break;
-		case 1:
-			draw_weather_grid();
-			break;
-		case 2:
-			demo_dds(frame);
-			break;
-		case 3:
-			wf_test();
-			break;
-		default:
-			demo_text(frame, demo - 4);
-			break;
-		}
+		demo_mode();
 
 		// printf("%d\n", n_samples);
 		n_samples = 0;

@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
-#include <cJSON.h>
 #include "meteo_swiss.h"
 #include "fonts/font_data.h"
 

@@ -6,6 +6,7 @@
 #include "fonts/font_data.h"
 #include "draw.h"
 #include "wireframe_draw.h"
+#include "meteo_swiss.h"
 #include "fast_sin.h"
 #include "dds.h"
 #include "encoder.h"
@@ -119,9 +120,13 @@ void demo_mode()
 			nudge_dds();
 			break;
 
+		case 4:
+			draw_weather_grid();
+			break;
+
 		default:
 			if (mode < 0) {
-				mode = 3;
+				mode = 4;
 				demo_text_font--;
 			} else {
 				mode = 0;
