@@ -1,7 +1,9 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
 #include "meteo_swiss.h"
+#include "draw.h"
 #include "fonts/font_data.h"
 
 cJSON *weather = NULL;
@@ -121,6 +123,79 @@ static unsigned cp_from_meteo_swiss_key(unsigned key)
 void weather_set_json(cJSON *meteo)
 {
 	weather = meteo;
+}
+
+int draw_plot(int dx, int dy, char *key, int max_x, bool do_axes, bool is_limit)
+{
+	char label[32];
+
+	if (weather == NULL)
+		return -1;
+
+	if (weather == NULL) {
+		set_font_name(NULL);
+		push_str(0, 0, "Weather data\nnot available", 25, A_CENTER, 500, 100);
+		return -1;
+	}
+
+	cJSON *graph = cJSON_GetObjectItemCaseSensitive(weather, "graph");
+	if (graph == NULL) {
+		printf("graph not found\n");
+		return -1;
+	}
+
+	cJSON *array = cJSON_GetObjectItemCaseSensitive(graph, key);
+	if (array == NULL) {
+		printf("%s not found\n", key);
+		return -1;
+	}
+
+	int N = cJSON_GetArraySize(array);
+	if (N > max_x)
+		N = max_x;
+
+	int i = 0, x_val = 0;
+	cJSON *y_val;
+
+	cJSON_ArrayForEach(y_val, array) {
+		if (!cJSON_IsNumber(y_val))
+				return -1;
+
+		if (i > N)
+			break;
+
+		x_val = (i - N / 2) * dx;
+
+		if (is_limit) {
+			push_goto(x_val - 1, y_val->valueint * dy);
+			push_line(x_val + 1, y_val->valueint * dy, 100);
+		} else {
+			if (i == 0)
+				push_goto(x_val, y_val->valueint * dy);
+			else
+				push_line(x_val, y_val->valueint * dy, 100);
+		}
+
+		i++;
+	}
+
+	if (do_axes) {
+		set_font_name(NULL);
+		int x_adv = 6;
+		int n = N / x_adv;
+		int x_offs = N * dx / 2;
+
+		for (i=0; i <= n; i++) {
+			x_val = i * x_adv * dx - x_offs;
+			push_goto(x_val, 0);
+			push_line(x_val, -75, 100);
+
+			snprintf(label, sizeof(label), "%2dh", (i * x_adv) % 24);
+			push_str(x_val, -300, label, sizeof(label), A_CENTER, 200, 100);
+		}
+	}
+
+	return 0;
 }
 
 int draw_weather_grid()
