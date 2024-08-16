@@ -5,6 +5,7 @@
 #include <time.h>
 #include <math.h>
 #include <limits.h>
+#include <cjson/cJSON.h>
 #include "draw.h"
 #include "font_draw.h"
 #include "wireframe_draw.h"
@@ -13,8 +14,7 @@
 #include "dds.h"
 #include "demo_mode.h"
 #include "meteo_swiss.h"
-#include <curl/curl.h>
-#include <cjson/cJSON.h>
+#include "json_settings.h"
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
@@ -96,70 +96,6 @@ static void init_sdl()
 	SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
 }
 
-
-
-struct MemoryStruct {
-  char *memory;
-  size_t size;
-};
-
-static size_t
-WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-  size_t realsize = size * nmemb;
-  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
-
-  char *ptr = realloc(mem->memory, mem->size + realsize + 1);
-  if(!ptr) {
-	/* out of memory! */
-	printf("not enough memory (realloc returned NULL)\n");
-	return 0;
-  }
-
-  mem->memory = ptr;
-  memcpy(&(mem->memory[mem->size]), contents, realsize);
-  mem->size += realsize;
-  mem->memory[mem->size] = 0;
-
-  return realsize;
-}
-
-int get_weather(unsigned postcode, cJSON **weather)
-{
-	char url[128];
-	snprintf(url, sizeof(url), "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=%d", postcode * 100);
-	printf("GET %s\n", url);
-
-	struct MemoryStruct chunk;
-	chunk.memory = malloc(1);  /* grown as needed by the realloc above */
-	chunk.size = 0;    /* no data at this point */
-
-	CURL *curl = curl_easy_init();
-	CURLcode res;
-
-	/* send all data to this function  */
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-	/* we pass our 'chunk' struct to the callback function */
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-
-	curl_easy_setopt(curl, CURLOPT_URL, url);
-
-	res = curl_easy_perform(curl);
-	if(res != CURLE_OK) {
-		printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-		return res;
-	}
-
-	printf("%lu bytes retrieved\n", (unsigned long)chunk.size);
-
-	*weather = cJSON_ParseWithLength(chunk.memory, chunk.size);
-
-	free(chunk.memory);
-	curl_easy_cleanup(curl);
-
-	return *weather == NULL ? -1 : 0;
-}
-
 int encoder_value = 0;
 
 int get_encoder()
@@ -173,11 +109,10 @@ int main(int argc, char* args[])
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
-	cJSON *weather = NULL;
-	int ret = get_weather(1202, &weather);
-	if (ret < 0) {
-		printf("get_weather() failed %d\n", ret);
-		return ret;
+	cJSON *weather = readJsonDyn("meteo_data.json");
+	if (weather == NULL) {
+		printf("reading meteo_data.json failed\n");
+		return -1;
 	}
 	weather_set_json(weather);
 

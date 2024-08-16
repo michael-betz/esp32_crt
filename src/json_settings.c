@@ -1,10 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
 #include "esp_log.h"
-#include "cJSON.h"
 #include "json_settings.h"
 
 static const char *T = "JSON_S";
@@ -41,7 +41,7 @@ char *readFileDyn(const char* file_name, int *file_size) {
 	return string;
 }
 
-static cJSON *readJsonDyn(const char* file_name) {
+cJSON *readJsonDyn(const char* file_name) {
 	// opens the json file `file_name` and returns it as cJSON*
 	// don't forget to call cJSON_Delete() on it
 	cJSON *root;
