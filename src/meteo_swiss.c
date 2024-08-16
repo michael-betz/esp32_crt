@@ -117,24 +117,10 @@ static unsigned cp_from_meteo_swiss_key(unsigned key)
 	return '?';
 }
 
-// meteo shall be the meteo-swiss .json data from
-// https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=xxx
-// This needs to be locked against the drawing functions I guess
-void weather_set_json(cJSON *meteo)
+static int get_array_helper(char *key, cJSON **array, time_t *ts_start)
 {
-	weather = meteo;
-}
-
-int draw_plot(int dx, int dy, char *key, int max_x, bool do_axes, bool is_limit)
-{
-	char label[32];
-
-	if (weather == NULL)
-		return -1;
-
 	if (weather == NULL) {
-		set_font_name(NULL);
-		push_str(0, 0, "Weather data\nnot available", 25, A_CENTER, 500, 100);
+		printf("weather data not available\n");
 		return -1;
 	}
 
@@ -144,99 +130,203 @@ int draw_plot(int dx, int dy, char *key, int max_x, bool do_axes, bool is_limit)
 		return -1;
 	}
 
-	cJSON *array = cJSON_GetObjectItemCaseSensitive(graph, key);
-	if (array == NULL) {
+	// extract POSIX timestamp in [s] from when the array data is valid
+	if (ts_start != NULL) {
+		cJSON *start_val = cJSON_GetObjectItemCaseSensitive(graph, "start");
+		if (!cJSON_IsNumber(start_val)) {
+			printf("start not found\n");
+			return -1;
+		}
+		// start time is from midnight of the current day
+		*ts_start = (long)(start_val->valuedouble) / 1000;
+	}
+
+	cJSON *array_ = cJSON_GetObjectItemCaseSensitive(graph, key);
+	if (array_ == NULL) {
 		printf("%s not found\n", key);
 		return -1;
 	}
+	int N = cJSON_GetArraySize(array_);
 
-	int N = cJSON_GetArraySize(array);
-	if (N > max_x)
-		N = max_x;
+	if (array != NULL) {
+		*array = array_;
+	}
 
-	int i = 0, x_val = 0;
-	cJSON *y_val;
+	return N;
+}
+
+static int get_min_max(float *min, float *max, char *key, int max_points)
+{
+	int i = 0;
+	float min_val = 0, max_val = 0;
+
+	cJSON *y_val, *array;
+	int N = get_array_helper(key, &array, NULL);
+	if (N < 0)
+		return N;
 
 	cJSON_ArrayForEach(y_val, array) {
 		if (!cJSON_IsNumber(y_val))
 				return -1;
 
+		if (i == 0 || y_val->valuedouble > max_val)
+			max_val = y_val->valuedouble;
+
+		if (i == 0 || y_val->valuedouble < min_val)
+			min_val = y_val->valuedouble;
+
+		if (i > max_points)
+			break;
+
+		i++;
+	}
+
+	if (min != NULL)
+		*min = min_val;
+
+	if (max != NULL)
+		*max = max_val;
+
+	return i;
+}
+
+// Plot scaling
+float rain_min = 0, rain_max = 0, temp_min = 0, temp_max = 0;
+
+// meteo shall be the meteo-swiss .json data from
+// https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=xxx
+// This needs to be locked against the drawing functions I guess
+void weather_set_json(cJSON *meteo)
+{
+	if (weather != NULL)
+		cJSON_Delete(weather);
+
+	weather = meteo;
+
+	// rescale plots
+	get_min_max(&rain_min, NULL, "precipitationMin1h", 48);
+	get_min_max(NULL, &rain_max, "precipitationMax1h", 48);
+	printf("rain min/max: %.1f / %.1f mm\n", rain_min, rain_max);
+
+	get_min_max(&temp_min, NULL, "temperatureMin1h", 48);
+	get_min_max(NULL, &temp_max, "temperatureMax1h", 48);
+	printf("temp min/max: %.1f / %.1f degC\n", temp_min, temp_max);
+}
+
+static int draw_plot(int y_offset, float dy, char *key, int max_points, float min_val, float max_val, bool is_limit)
+{
+	cJSON *array;
+	int N = get_array_helper(key, &array, NULL);
+	if (N < 0)
+		return N;
+
+	if (N > max_points)
+		N = max_points;
+
+	int i = 0;
+	float x_val = 0;
+	cJSON *y_val;
+
+	float dx = 3500.0f / N;
+
+	cJSON_ArrayForEach(y_val, array) {
+		if (!cJSON_IsNumber(y_val))
+				return -1;
+
+		int y = ((float)(y_val->valuedouble) - min_val) * dy + y_offset;
+
 		if (i > N)
 			break;
 
-		x_val = (i - N / 2) * dx;
+		x_val = (i - (float)(N) / 2) * dx + 200;
 
 		if (is_limit) {
-			push_goto(x_val - 1, y_val->valueint * dy);
-			push_line(x_val + 1, y_val->valueint * dy, 100);
+			push_goto(x_val - 1, y);
+			push_line(x_val + 1, y, 100);
 		} else {
 			if (i == 0)
-				push_goto(x_val, y_val->valueint * dy);
+				push_goto(x_val, y);
 			else
-				push_line(x_val, y_val->valueint * dy, 100);
+				push_line(x_val, y, 100);
 		}
 
 		i++;
 	}
 
-	if (do_axes) {
-		set_font_name(NULL);
-		int x_adv = 6;
-		int n = N / x_adv;
-		int x_offs = N * dx / 2;
-
-		for (i=0; i <= n; i++) {
-			x_val = i * x_adv * dx - x_offs;
-			push_goto(x_val, 0);
-			push_line(x_val, -75, 100);
-
-			snprintf(label, sizeof(label), "%2dh", (i * x_adv) % 24);
-			push_str(x_val, -300, label, sizeof(label), A_CENTER, 200, 100);
-		}
-	}
-
 	return 0;
+}
+
+static void draw_plot_x_axis(int y_offset, int N, int x_tick)
+{
+	char label[32];
+
+	float dx = 3500.0f / N;
+	int n = N / x_tick;
+	int x_offs = N * dx / 2;
+
+	set_font_name(NULL);
+
+	for (int i=0; i <= n; i++) {
+		int x_val = i * x_tick * dx - x_offs + 200;
+		push_goto(x_val, y_offset);
+		push_line(x_val, y_offset - 75, 100);
+
+		snprintf(label, sizeof(label), "%2dh", (i * x_tick) % 24);
+		push_str(x_val, y_offset - 300, label, sizeof(label), A_CENTER, 200, 100);
+	}
+}
+
+static void draw_plot_y_axis(int x_offset, int y_offset, float dy, float min_val, float max_val)
+{
+	char label[32];
+	float ticks[] = {min_val, max_val};
+
+	for (int i=0; i<2; i++) {
+		float val = ticks[i];
+		float y = (y_offset + val) * dy;
+
+		push_goto(x_offset + 75, y);
+		push_line(x_offset, y, 100);
+
+		set_font_name(NULL);
+		snprintf(label, sizeof(label), "%.1f", val);
+		push_str(x_offset, y, label, sizeof(label), A_RIGHT, 200, 100);
+	}
+}
+
+void rain_temp_plot()
+{
+	int hours_to_plot = 48;
+	draw_plot(0, 60, "precipitation1h", hours_to_plot, rain_min, rain_max, false);
+	draw_plot(0, 60, "precipitationMax1h", hours_to_plot, rain_min, rain_max, true);
+	draw_plot_y_axis(-1650, 0, 60, rain_min, rain_max);
+
+	draw_plot(-1000, 70, "temperatureMin1h", hours_to_plot, temp_min, temp_max, true);
+	draw_plot(-1000, 70, "temperatureMean1h", hours_to_plot, temp_min, temp_max, false);
+	draw_plot(-1000, 70, "temperatureMax1h", hours_to_plot, temp_min, temp_max, true);
+	draw_plot_y_axis(-1650, -1000, 70, temp_min, temp_max);
+
+	draw_plot_x_axis(-1100, hours_to_plot, 6);
 }
 
 int draw_weather_grid()
 {
 	char label[32];
-
-	if (weather == NULL) {
-		set_font_name(NULL);
-		push_str(0, 0, "Weather data\nnot available", 25, A_CENTER, 500, 100);
-		return -1;
-	}
-
-	cJSON *graph = cJSON_GetObjectItemCaseSensitive(weather, "graph");
-	if (graph == NULL) {
-		printf("graph not found\n");
-		return -1;
-	}
-
-	cJSON *start = cJSON_GetObjectItemCaseSensitive(graph, "start");
-	if (!cJSON_IsNumber(start)) {
-		printf("start not found\n");
-		return -1;
-	}
-	// start time is from midnight of the current day
+	cJSON *icons;
 	time_t ts_start;
 	struct tm timeinfo;
-	ts_start = (long)(start->valuedouble) / 1000;
 
-	cJSON *icons = cJSON_GetObjectItemCaseSensitive(graph, "weatherIcon3h");
-	if (icons == NULL) {
-		printf("weatherIcon3h not found\n");
-		return -1;
-	}
+	int N = get_array_helper("weatherIcon3h", &icons, &ts_start);
+	if (N < 0)
+		return N;
 
 	// Draw 4 hours x 3 days weather forecast icons
 	set_font_name(&f_weather_icons);
 	for (int day_ind=0; day_ind<=2; day_ind++) {
-		int x_pos = (day_ind - 1) * 750 + 300;
+		int x_pos = (day_ind - 1) * 800 + 200;
 
 		for (int h_ind=0; h_ind<=3; h_ind++) {
-			int y_pos = -((h_ind - 2) * 750 + 300);
+			int y_pos = -((h_ind - 2) * 800 + 400);
 
 			// Draw hour labels
 			if (day_ind == 0) {

@@ -102,7 +102,6 @@ void demo_mode()
 	static time_t ticks_ = 0;
 	static int enc_ = 0;
 
-
 	switch (mode) {
 		case 0:
 			test_image();
@@ -126,20 +125,12 @@ void demo_mode()
 			break;
 
 		case 5:
-			// draw_plot(60, 60, "precipitationMin1h", 48, false, true);
-			draw_plot(60, 60, "precipitation1h", 48, true, false);
-			draw_plot(60, 60, "precipitationMax1h", 48, false, true);
-			break;
-
-		case 6:
-			draw_plot(60, 60, "temperatureMin1h", 48, false, true);
-			draw_plot(60, 60, "temperatureMean1h", 48, true, false);
-			draw_plot(60, 60, "temperatureMax1h", 48, false, true);
+			rain_temp_plot();
 			break;
 
 		default:
 			if (mode < 0) {
-				mode = 6;
+				mode = 5;
 				demo_text_font--;
 			} else {
 				mode = 0;
