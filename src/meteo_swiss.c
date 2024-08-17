@@ -6,6 +6,8 @@
 #include "draw.h"
 #include "fonts/font_data.h"
 
+#define PLOT_WIDTH 3000
+
 cJSON *weather = NULL;
 
 // see dev/2022-02-14-Wetter-Icons-inkl-beschreibung-v1-an-website.xlsx
@@ -213,7 +215,7 @@ void weather_set_json(cJSON *meteo)
 	printf("temp min/max: %.1f / %.1f degC\n", temp_min, temp_max);
 }
 
-static int draw_plot(int y_offset, float dy, char *key, int max_points, float min_val, float max_val, bool is_limit)
+static int draw_plot(int y_offset, float dy, char *key, int max_points, float min_val, float max_val, int density)
 {
 	cJSON *array;
 	int N = get_array_helper(key, &array, NULL);
@@ -227,7 +229,7 @@ static int draw_plot(int y_offset, float dy, char *key, int max_points, float mi
 	float x_val = 0;
 	cJSON *y_val;
 
-	float dx = 3500.0f / N;
+	float dx = (float)(PLOT_WIDTH) / N;
 
 	cJSON_ArrayForEach(y_val, array) {
 		if (!cJSON_IsNumber(y_val))
@@ -240,15 +242,10 @@ static int draw_plot(int y_offset, float dy, char *key, int max_points, float mi
 
 		x_val = (i - (float)(N) / 2) * dx + 200;
 
-		if (is_limit) {
-			push_goto(x_val - 1, y);
-			push_line(x_val + 1, y, 100);
-		} else {
-			if (i == 0)
-				push_goto(x_val, y);
-			else
-				push_line(x_val, y, 100);
-		}
+		if (i == 0)
+			push_goto(x_val, y);
+		else
+			push_line(x_val, y, density);
 
 		i++;
 	}
@@ -260,7 +257,7 @@ static void draw_plot_x_axis(int y_offset, int N, int x_tick)
 {
 	char label[32];
 
-	float dx = 3500.0f / N;
+	float dx = (float)(PLOT_WIDTH) / N;
 	int n = N / x_tick;
 	int x_offs = N * dx / 2;
 
@@ -283,13 +280,18 @@ static void draw_plot_y_axis(int x_offset, int y_offset, float dy, float min_val
 
 	for (int i=0; i<2; i++) {
 		float val = ticks[i];
-		float y = (y_offset + val) * dy;
+		float y = y_offset + (val - min_val) * dy;
 
 		push_goto(x_offset + 75, y);
 		push_line(x_offset, y, 100);
 
+		// Avoid overlapping digits in the axis ticks
+		if (i > 0 && y < (y_offset + 180))
+			y = y_offset + 180;
+
 		set_font_name(NULL);
 		snprintf(label, sizeof(label), "%.1f", val);
+
 		push_str(x_offset, y, label, sizeof(label), A_RIGHT, 200, 100);
 	}
 }
@@ -297,16 +299,17 @@ static void draw_plot_y_axis(int x_offset, int y_offset, float dy, float min_val
 void rain_temp_plot()
 {
 	int hours_to_plot = 48;
-	draw_plot(0, 60, "precipitation1h", hours_to_plot, rain_min, rain_max, false);
-	draw_plot(0, 60, "precipitationMax1h", hours_to_plot, rain_min, rain_max, true);
-	draw_plot_y_axis(-1650, 0, 60, rain_min, rain_max);
+	draw_plot(300, 60, "precipitationMin1h", hours_to_plot, rain_min, rain_max, 50);
+	draw_plot(300, 60, "precipitation1h", hours_to_plot, rain_min, rain_max, 200);
+	draw_plot(300, 60, "precipitationMax1h", hours_to_plot, rain_min, rain_max, 50);
+	draw_plot_y_axis(-1450, 300, 60, rain_min, rain_max);
 
-	draw_plot(-1000, 70, "temperatureMin1h", hours_to_plot, temp_min, temp_max, true);
-	draw_plot(-1000, 70, "temperatureMean1h", hours_to_plot, temp_min, temp_max, false);
-	draw_plot(-1000, 70, "temperatureMax1h", hours_to_plot, temp_min, temp_max, true);
-	draw_plot_y_axis(-1650, -1000, 70, temp_min, temp_max);
+	draw_plot(-1000, 70, "temperatureMin1h", hours_to_plot, temp_min, temp_max, 50);
+	draw_plot(-1000, 70, "temperatureMean1h", hours_to_plot, temp_min, temp_max, 200);
+	draw_plot(-1000, 70, "temperatureMax1h", hours_to_plot, temp_min, temp_max, 50);
+	draw_plot_y_axis(-1450, -1000, 70, temp_min, temp_max);
 
-	draw_plot_x_axis(-1100, hours_to_plot, 6);
+	draw_plot_x_axis(-1000, hours_to_plot, 6);
 }
 
 int draw_weather_grid()
@@ -323,16 +326,16 @@ int draw_weather_grid()
 	// Draw 4 hours x 3 days weather forecast icons
 	set_font_name(&f_weather_icons);
 	for (int day_ind=0; day_ind<=2; day_ind++) {
-		int x_pos = (day_ind - 1) * 800 + 200;
+		int y_pos = -((day_ind - 1) * 900);
 
 		for (int h_ind=0; h_ind<=3; h_ind++) {
-			int y_pos = -((h_ind - 2) * 800 + 400);
+			int x_pos = (h_ind - 1) * 800 - 100;
 
 			// Draw hour labels
 			if (day_ind == 0) {
 				snprintf(label, sizeof(label), "%2d h", h_ind * 2 * 3);
 				set_font_name(NULL);
-				push_str(-1100, y_pos + 100, label, sizeof(label), A_CENTER, 300, 100);
+				push_str(x_pos, -1400, label, sizeof(label), A_CENTER, 300, 75);
 			}
 
 			int ind = day_ind * (24 / 3) + h_ind * 2;
@@ -342,14 +345,14 @@ int draw_weather_grid()
 
 			set_font_name(&f_weather_icons);
 			unsigned cp = cp_from_meteo_swiss_key(icon->valueint);
-			push_char_at_pos(x_pos, y_pos, cp, 500, 100);
+			push_char_at_pos(x_pos, y_pos, cp, 500, 75);
 		}
 
 		// Draw weekday label
 		localtime_r(&ts_start, &timeinfo);
     	strftime(label, sizeof(label), "%a", &timeinfo);
 		set_font_name(NULL);
-		push_str(x_pos, -1500, label, sizeof(label), A_CENTER, 300, 100);
+		push_str(-1500, y_pos + 75, label, sizeof(label), A_CENTER, 300, 75);
 
     	ts_start += 24 * 60 * 60;
 	}
