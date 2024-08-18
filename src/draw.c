@@ -16,6 +16,23 @@
 static int x_last = 0;
 static int y_last = 0;
 
+// Draw a QR-code pixel
+void draw_filled_box(int x, int y, int w, int density)
+{
+	int step = 4096 / density;
+	if (step < 0)
+		step = 1;
+
+	push_goto(x - w / 2, y + w / 2);
+	while (w > step / 2) {
+		push_line(x + w / 2, y + w / 2, density);
+		push_line(x + w / 2, y - w / 2, density);
+		push_line(x - w / 2, y - w / 2, density);
+		push_line(x - w / 2, y + (w - step) / 2, density);
+		w -= step;
+	}
+	push_line(x, y, density);
+}
 
 // https://stackoverflow.com/questions/34187171/fast-integer-square-root-approximation
 static unsigned usqrt4(unsigned val) {

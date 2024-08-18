@@ -52,38 +52,6 @@ static void demo_text(unsigned font)
 
 static void test_image()
 {
-	// a square around the screen
-	push_goto(-2000, -2000);
-	push_line(-2000, 2000, 30);
-	push_line(2000, 2000, 30);
-	push_line(2000, -2000, 30);
-	push_line(-2000, -2000, 30);
-
-	// inner cross
-	push_goto(-200, -200);
-	push_line(200, 200, 255);
-	push_goto(-200, 200);
-	push_line(200, -200, 255);
-
-	// inner +
-	push_goto(-500, 0);
-	push_line(500, 0, 50);
-	push_goto(0, 500);
-	push_line(0, -500, 50);
-
-	// concentric circles
-	for (unsigned i=1; i<=10; i++) {
-		push_circle(
-			0,
-			0,
-			i * 200,
-			i * 200,
-			i <= 5 ? 0 : -280,
-			i <= 5 ? MAX_ANGLE : MAX_ANGLE - 1500,
-			100
-		);
-	}
-
 	time_t now;
 	struct tm timeinfo;
 	char tmp_str[16];
@@ -92,8 +60,56 @@ static void test_image()
 	localtime_r(&now, &timeinfo);
     strftime(tmp_str, sizeof(tmp_str), "%k:%M:%S", &timeinfo);
 
+	// a square around the screen
+	push_goto(-2000, -2000);
+	push_line(-2000, 2000, 30);
+	push_line(2000, 2000, 30);
+	push_line(2000, -2000, 30);
+	push_line(-2000, -2000, 30);
+
+	// inner cross
+	// push_goto(-200, -200);
+	// push_line(200, 200, 255);
+	// push_goto(-200, 200);
+	// push_line(200, -200, 255);
+
+	// inner +
+	// push_goto(-500, 0);
+	// push_line(500, 0, 50);
+	// push_goto(0, 500);
+	// push_line(0, -500, 50);
+
+	// Draw some filled boxes to simulate a QR code
+	const int N = 33;
+	int x = 0;
+	for (int i=0; i<N; i++) {
+		for (int j=0; j<N; j++) {
+			if ((i * j * now) & 32)
+				draw_filled_box((x - N / 2) * 70, (-i + N / 2 + 6) * 70, 50, 100);
+			if (j < N - 1) {
+				if (i & 1)
+					x--;
+				else
+					x++;
+			}
+		}
+	}
+
+	// concentric circles
+	// for (unsigned i=1; i<=10; i++) {
+	// 	push_circle(
+	// 		0,
+	// 		0,
+	// 		i * 200,
+	// 		i * 200,
+	// 		i <= 5 ? 0 : -280,
+	// 		i <= 5 ? MAX_ANGLE : MAX_ANGLE - 1500,
+	// 		100
+	// 	);
+	// }
+
 	set_font_index(0);
-	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 400);
+	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 200);
 }
 
 void demo_mode()

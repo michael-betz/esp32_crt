@@ -76,5 +76,7 @@ void push_circle(
 // Output a single set of samples. Returns true when clipped.
 bool output_sample(int x, int y, bool beam_on, int focus);
 
+// Draw a QR-code pixel
+void draw_filled_box(int x, int y, int w, int density);
 
 #endif
