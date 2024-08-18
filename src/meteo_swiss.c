@@ -223,7 +223,7 @@ void weather_set_json(cJSON *meteo)
 	printf("temp min/max: %.1f / %.1f degC\n", temp_min, temp_max);
 }
 
-static int draw_plot(float x_offset, float dx, float max_x, float y_offset, float dy, char *key, float min_val, int density)
+static int draw_plot(float x_offset, float dx, float max_x, int y_offset, float dy, char *key, float min_val, int density)
 {
 	cJSON *array;
 	int N = get_array_helper(key, &array, NULL);
@@ -263,11 +263,13 @@ static void draw_plot_x_axis(int x_offset, float dx, float dHours, float max_x, 
 
 	float hours = 0;
 
+	push_str(x_offset + dx / 2, y_offset - 300, "[h]", 3, A_CENTER, 150, 100);
+
 	for (float x = x_offset; x <= max_x; x += dx) {
 		push_goto(x, y_offset);
 		push_line(x, y_offset - 75, 100);
 
-		snprintf(label, sizeof(label), "%2dh", ((int)(hours + 0.5)) % 24);
+		snprintf(label, sizeof(label), "%2d", ((int)(hours + 0.5)) % 24);
 		push_str(x, y_offset - 300, label, sizeof(label), A_CENTER, 200, 100);
 		hours += dHours;
 	}
@@ -296,33 +298,40 @@ static void draw_plot_y_axis(int x_offset, int y_offset, float dy, float min_val
 	}
 }
 
-void rain_temp_plot()
+void rain_temp_plot(unsigned zoom)
 {
 	int x_end = 0;
-	// draw_plot(300, 60, "precipitationMin10m", hours_to_plot, rain_min, rain_max, 50);
 
-// static int draw_plot(float x_offset, float dx, float max_x, float y_offset, float dy, char *key, float min_val, int density)
-	const float x_scale = 10.0; // 10.0 pixels per sample, 10 minutes / pixel
+	zoom++;
+	if (zoom > 6)
+		zoom = 6;
+
+	const float x_scale = 5.0 * zoom; // 10.0 pixels per sample, 10 minutes / pixel
+	const float y_scale = 60.0;
 	const float x_min = -1500.0;  // pixels
 	const float x_max = 1900.0;  // pixels
 
 	// Rain plot
-	draw_plot_y_axis(x_min - 25.0, 300, 60.0, rain_min, rain_max);
+	const int y_offset_a = 300;
+	push_str(0, y_offset_a + 1000, "[mm/h]", 6, A_CENTER, 250, 150);
+	draw_plot_y_axis(x_min - 25.0, y_offset_a, y_scale, rain_min, rain_max);
 
-	x_end = draw_plot(x_min, x_scale, x_max, 300.0, 60.0, "precipitation10m", rain_min, 200);
-	draw_plot(x_end, x_scale * 6.0, x_max, 300.0, 60.0, "precipitation1h", rain_min, 200);
+	x_end = draw_plot(x_min, x_scale, x_max, y_offset_a, y_scale, "precipitation10m", rain_min, 200);
+	draw_plot(x_end, x_scale * 6.0, x_max, y_offset_a, y_scale, "precipitation1h", rain_min, 200);
 
-	x_end = draw_plot(x_min, x_scale, x_max, 300.0, 60.0, "precipitationMax10m", rain_min, 50);
-	draw_plot(x_end, x_scale * 6.0, x_max, 300.0, 60.0, "precipitationMax1h", rain_min, 50);
+	x_end = draw_plot(x_min, x_scale, x_max, y_offset_a, y_scale, "precipitationMax10m", rain_min, 50);
+	draw_plot(x_end, x_scale * 6.0, x_max, y_offset_a, y_scale, "precipitationMax1h", rain_min, 50);
 
 	// Temperature plot
-	draw_plot_y_axis(x_min - 25.0, -1000.0, 60.0, temp_min, temp_max);
-	draw_plot(x_min, x_scale * 6.0, x_max, -1000.0, 60.0, "temperatureMax1h", temp_min, 50);
-	draw_plot(x_min, x_scale * 6.0, x_max, -1000.0, 60.0, "temperatureMean1h", temp_min, 200);
-	draw_plot(x_min, x_scale * 6.0, x_max, -1000.0, 60.0, "temperatureMin1h", temp_min, 50);
+	const int y_offset_b = -1200;
+	push_str(0, y_offset_b + 1000, "[C]", 3, A_CENTER, 250, 150);
+	draw_plot_y_axis(x_min - 25.0, y_offset_b, y_scale, temp_min, temp_max);
+	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMax1h", temp_min, 50);
+	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMean1h", temp_min, 200);
+	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMin1h", temp_min, 50);
 
 	// x-axis: Draw a tick every 6 h
-	draw_plot_x_axis(x_min, x_scale * 6.0 * 6.0, 6.0, x_max, -1025);
+	draw_plot_x_axis(x_min, x_scale * 6.0 * 12.0 / zoom, 12.0 / zoom, x_max, y_offset_b - 25);
 }
 
 int draw_weather_grid()

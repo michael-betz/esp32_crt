@@ -125,12 +125,17 @@ void demo_mode()
 			break;
 
 		case 5:
-			rain_temp_plot();
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+			rain_temp_plot(mode - 5);
 			break;
 
 		default:
 			if (mode < 0) {
-				mode = 5;
+				mode = 10;
 				demo_text_font--;
 			} else {
 				mode = 0;
