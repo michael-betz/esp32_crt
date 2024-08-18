@@ -8,7 +8,7 @@
 // Originally appeared in the scope clock from nixiebunny.
 // https://github.com/nixiebunny/SCTVcode/blob/main/SCTVcode/b_font.ino
 
-static const uint8_t glyphs_arc[1167] = {
+static const uint8_t glyphs_arc[1173] = {
  15,  1,  6, 26, 14, 66, 19,  2,  2,109, 10, 12, 26,  8,  7,  6,  8, 26,  8, 15,  2,  4, 31,  2,
  16,  7,  3, 16, 31,  2, 16,  3,  9, 11, 21, 10, 11,  9,  6, 21, 10, 79,  5,  8, 10,  8, 73, 74,
   8, 10,  8,  5,  2, 16, 26, 24, 79,  3, 17,  6,  6,109, 71,  6, 14,  6,  6,109,  3,  9,  3, 31,
@@ -57,11 +57,11 @@ static const uint8_t glyphs_arc[1167] = {
  21,  8, 11,  8, 12, 21,  8,  3,  8, 12, 31,  8, 12, 79,  8,  6,  8, 12, 69, 65,  8,  8,  8,  1,
  74,  8,  8,  8,103, 69,  8,  8, 12, 35, 15,  1,  1, 26, 20, 74,  6,  8, 12,103, 69,  8,  8,  8,
  35, 74,  8,  8,  8, 69, 65,  8,  8, 12,  1, 79,  3, 12,  6,  4,  3, 69,  6,  6,  4, 71, 10, 10,
- 31,  6, 10,  3,  6, 20, 31, 12, 20,  3,  6, 20, 31,  6, 10
+ 31,  6, 10,  3,  6, 20, 31, 12, 20,  3,  6, 20, 31,  6, 10, 79,  3, 17,  6,  6,109
 };
 
 // GLYPH DESCRIPTION
-static const glyph_dsc_t glyph_dsc_arc[96] = {
+static const glyph_dsc_t glyph_dsc_arc[97] = {
     {.end_index =    0, .adv_w =    9},
     {.end_index =   10, .adv_w =    5},
     {.end_index =   19, .adv_w =    9},
@@ -158,15 +158,18 @@ static const glyph_dsc_t glyph_dsc_arc[96] = {
     {.end_index = 1139, .adv_w =   11},
     {.end_index = 1150, .adv_w =   15},
     {.end_index = 1167, .adv_w =   15},
+    {.end_index = 1173, .adv_w =    9},
 };
+
+static const unsigned code_points_arc[1] = {0xB0};  // add the degree sign
 
 const font_t f_arc = {
     .units_per_em = 28,
-    .n_glyphs = 96,
+    .n_glyphs = 97,
     .glyphs = glyphs_arc,
     .glyph_dsc = glyph_dsc_arc,
     .map_start = 32,
     .map_n = 96,
-    .map_unicode_table = NULL
+    .map_unicode_table = code_points_arc
 };
 

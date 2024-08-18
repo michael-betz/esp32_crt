@@ -312,7 +312,7 @@ void rain_temp_plot(unsigned zoom)
 	const float x_max = 1900.0;  // pixels
 
 	// Rain plot
-	const int y_offset_a = 300;
+	const int y_offset_a = 400;
 	push_str(0, y_offset_a + 1000, "[mm/h]", 6, A_CENTER, 250, 150);
 	draw_plot_y_axis(x_min - 25.0, y_offset_a, y_scale, rain_min, rain_max);
 
@@ -323,8 +323,8 @@ void rain_temp_plot(unsigned zoom)
 	draw_plot(x_end, x_scale * 6.0, x_max, y_offset_a, y_scale, "precipitationMax1h", rain_min, 50);
 
 	// Temperature plot
-	const int y_offset_b = -1200;
-	push_str(0, y_offset_b + 1000, "[C]", 3, A_CENTER, 250, 150);
+	const int y_offset_b = -1100;
+	push_str(0, y_offset_b + 1000, "[°C]", 5, A_CENTER, 250, 150);
 	draw_plot_y_axis(x_min - 25.0, y_offset_b, y_scale, temp_min, temp_max);
 	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMax1h", temp_min, 50);
 	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMean1h", temp_min, 200);
