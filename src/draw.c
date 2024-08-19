@@ -483,7 +483,7 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_center, int y_center, i
 				);
 				break;
 
-			case F_ARC:
+			case F_ARC: {
 				unsigned r_x = *p++;
 				unsigned r_y = *p++;
 				int fo = (*p >> 4) & 0xF;  // Start angle 0..7 is 0 deg .. 315 deg 0 = E, 90 = N, 180 = W, 270 = S
@@ -502,6 +502,7 @@ void draw_blob(const uint8_t *p, unsigned n_bytes, int x_center, int y_center, i
 					density
 				);
 				break;
+			}
 
 			default:
 				// not implemented

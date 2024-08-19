@@ -1,7 +1,9 @@
 vpath %.c ../src
 vpath %.c ../src/fonts
 
-LDLIBS = -lm -lSDL2 -lcjson
+CC = emcc -s USE_SDL=2
+
+LDLIBS = -lm -lSDL2
 
 FLAGS = -Wall -I../src -I. -g
 CFLAGS += $(FLAGS)
@@ -10,7 +12,7 @@ CPPFLAGS += $(FLAGS)
 FNT_OBJS = $(patsubst %.c,%.o,$(wildcard ../src/fonts/*.c))
 
 OBJS = draw.o fast_sin.o font_draw.o wireframe_draw.o dds.o demo_mode.o \
-	json_settings.o meteo_swiss.o $(FNT_OBJS)
+	json_settings.o meteo_swiss.o cJSON.o $(FNT_OBJS)
 
 all: meteo_data.json test
 

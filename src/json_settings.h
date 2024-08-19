@@ -2,11 +2,11 @@
 #define JSON_SETTINGS_H
 
 #include <stdbool.h>
-#if defined(ESP_PLATFORM)
+// #if defined(ESP_PLATFORM)
     #include <cJSON.h>
-#else
-    #include <cjson/cJSON.h>
-#endif
+// #else
+//     #include <cjson/cJSON.h>
+// #endif
 
 // Reads a .json file into heap and parses it. Returns NULL on error
 cJSON *readJsonDyn(const char* file_name);

@@ -1,11 +1,13 @@
 // demo the drawing engine on a PC using SDL2
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <SDL2/SDL.h>
 #include <time.h>
 #include <math.h>
 #include <limits.h>
-#include <cjson/cJSON.h>
+#include <cJSON.h>
 #include "draw.h"
 #include "font_draw.h"
 #include "wireframe_draw.h"
@@ -15,6 +17,10 @@
 #include "demo_mode.h"
 #include "meteo_swiss.h"
 #include "json_settings.h"
+
+#ifdef __EMSCRIPTEN__
+	#include "emscripten.h"
+#endif
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT DISPLAY_WIDTH
@@ -103,6 +109,43 @@ int get_encoder()
 	return encoder_value;
 }
 
+void one_iter()
+{
+	SDL_Event e;
+	bool isExit = false;
+
+	while (SDL_PollEvent(&e)) {
+		switch (e.type) {
+			case SDL_QUIT:
+				isExit = true;
+				break;
+			case SDL_KEYDOWN:
+				switch(e.key.keysym.sym) {
+					case SDLK_LEFT:
+						encoder_value--;
+						break;
+					case SDLK_RIGHT:
+						encoder_value++;
+						break;
+					case SDLK_DOWN:
+						break;
+					case SDLK_UP:
+						break;
+				}
+				break;
+		}
+	}
+
+	SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
+	SDL_RenderClear(rr);
+
+	demo_mode();
+	SDL_RenderPresent(rr);
+
+	// Return true to keep the loop running.
+	// return !isExit;
+}
+
 int main(int argc, char* args[])
 {
 	init_lut();
@@ -116,52 +159,23 @@ int main(int argc, char* args[])
 	}
 	weather_set_json(weather);
 
-	unsigned frame = 0;
-	while (1) {
-		SDL_Event e;
-		bool isExit = false;
-		while (SDL_PollEvent(&e)) {
-			switch (e.type) {
-				case SDL_QUIT:
-					isExit = true;
-					break;
-				case SDL_KEYDOWN:
-					switch(e.key.keysym.sym) {
-						case SDLK_LEFT:
-							encoder_value--;
-							break;
-						case SDLK_RIGHT:
-							encoder_value++;
-							break;
-						case SDLK_DOWN:
-							break;
-						case SDLK_UP:
-							break;
-					}
-					break;
-			}
+	#ifdef __EMSCRIPTEN__
+		// Receives a function to call and some user data to provide it.
+		emscripten_set_main_loop(one_iter, 0, 1);
+	#else
+		while (1) {
+			one_iter();
+			// Delay to keep frame rate constant (using SDL).
+			SDL_Delay(20);
 		}
-		if (isExit)
-			break;
 
-		SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
-		SDL_RenderClear(rr);
+		cJSON_Delete(weather);
 
-		demo_mode();
+		SDL_DestroyRenderer(rr);
+		SDL_DestroyWindow(window);
+		SDL_Quit();
+	#endif
 
-		// printf("%d\n", n_samples);
-		n_samples = 0;
-
-		SDL_RenderPresent(rr);
-		SDL_Delay(20);
-		frame++;
-	}
-
-	cJSON_Delete(weather);
-
-	SDL_DestroyRenderer(rr);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
 	return 0;
 }
 
