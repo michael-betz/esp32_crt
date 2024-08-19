@@ -35,7 +35,7 @@ static void demo_text(unsigned font)
 
 	time(&now);
 	localtime_r(&now, &timeinfo);
-    strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%k:%M:%S", &timeinfo);
+    strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%H:%M:%S", &timeinfo);
 
 	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 200;
 	set_font_index(font);
@@ -58,7 +58,7 @@ static void test_image()
 
 	time(&now);
 	localtime_r(&now, &timeinfo);
-    strftime(tmp_str, sizeof(tmp_str), "%k:%M:%S", &timeinfo);
+    strftime(tmp_str, sizeof(tmp_str), "%H:%M:%S", &timeinfo);
 
 	// a square around the screen
 	push_goto(-2000, -2000);
@@ -108,7 +108,7 @@ static void test_image()
 	// 	);
 	// }
 
-	set_font_index(0);
+	set_font_name(NULL);
 	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 200);
 }
 

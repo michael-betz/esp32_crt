@@ -10,4 +10,4 @@ void weather_set_json(cJSON *meteo);
 
 int draw_weather_grid();
 
-void rain_temp_plot();
+void rain_temp_plot(unsigned zoom);
