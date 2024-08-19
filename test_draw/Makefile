@@ -9,15 +9,15 @@ FNT_SRCS = $(wildcard ../src/fonts/*.c)
 SRCS = test.c draw.c fast_sin.c font_draw.c wireframe_draw.c dds.c demo_mode.c \
 	json_settings.c meteo_swiss.c cJSON.c $(FNT_SRCS)
 
-all: meteo_data.json test
+all: test
 
 # Native build using CLANG
-test: $(SRCS)
-	clang $(CFLAGS) $^ $(LDLIBS) -o $@
+test: meteo_data.json $(SRCS)
+	clang $(CFLAGS) $(filter-out meteo_data.json,$^) $(LDLIBS) -o $@
 
-# Web-assembly build
-test.html: $(SRCS)
-	emcc -s USE_SDL=2 -s TOTAL_MEMORY=32MB --preload-file meteo_data.json $(CFLAGS) $^ $(LDLIBS) -o $@
+# Web-assembly build. Run it locally with `emrun test.html`
+test.html: meteo_data.json $(SRCS)
+	emcc -s USE_SDL=2 -s TOTAL_MEMORY=32MB --preload-file $< $(CFLAGS) $(filter-out meteo_data.json,$^) $(LDLIBS) -o $@
 
 meteo_data.json:
 	curl -o $@ "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200"
