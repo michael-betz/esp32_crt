@@ -109,15 +109,19 @@ int get_encoder()
 	return encoder_value;
 }
 
+bool is_running = true;
+
 void one_iter()
 {
 	SDL_Event e;
-	bool isExit = false;
 
 	while (SDL_PollEvent(&e)) {
 		switch (e.type) {
 			case SDL_QUIT:
-				isExit = true;
+				is_running = false;
+				#ifdef __EMSCRIPTEN__
+					emscripten_cancel_main_loop();
+				#endif
 				break;
 			case SDL_KEYDOWN:
 				switch(e.key.keysym.sym) {
@@ -141,9 +145,6 @@ void one_iter()
 
 	demo_mode();
 	SDL_RenderPresent(rr);
-
-	// Return true to keep the loop running.
-	// return !isExit;
 }
 
 int main(int argc, char* args[])
@@ -160,12 +161,10 @@ int main(int argc, char* args[])
 	weather_set_json(weather);
 
 	#ifdef __EMSCRIPTEN__
-		// Receives a function to call and some user data to provide it.
 		emscripten_set_main_loop(one_iter, 0, 1);
 	#else
-		while (1) {
+		while (is_running) {
 			one_iter();
-			// Delay to keep frame rate constant (using SDL).
 			SDL_Delay(20);
 		}
 
