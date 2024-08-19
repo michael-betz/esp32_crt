@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include "meteo_swiss.h"
 #include "draw.h"
 #include "fonts/font_data.h"
@@ -207,15 +208,15 @@ void weather_set_json(cJSON *meteo)
 	weather = meteo;
 
 	// get min / max values to get the plot scaling right
-	float tmp_a, tmp_b, tmp_c, tmp_d;
+	float tmp_a, tmp_b;
 
 	get_min_max(&tmp_a, NULL, "precipitationMin10m", 100);
 	get_min_max(&tmp_b, NULL, "precipitationMin1h", 43);
 	rain_min = tmp_a < tmp_b ? tmp_a : tmp_b;
 
-	get_min_max(NULL, &tmp_c, "precipitationMax10m", 100);
-	get_min_max(NULL, &tmp_d, "precipitationMax1h", 43);
-	rain_max = tmp_c > tmp_d ? tmp_c : tmp_d;
+	get_min_max(NULL, &tmp_a, "precipitationMax10m", 100);
+	get_min_max(NULL, &tmp_b, "precipitationMax1h", 43);
+	rain_max = tmp_a > tmp_b ? tmp_a : tmp_b;
 	printf("rain min/max: %.1f / %.1f mm\n", rain_min, rain_max);
 
 	get_min_max(&temp_min, NULL, "temperatureMin1h", 58);
@@ -256,25 +257,59 @@ static int draw_plot(float x_offset, float dx, float max_x, int y_offset, float 
 	return x;
 }
 
-static void draw_plot_x_axis(int x_offset, float dx, float dHours, float max_x, int y_offset)
+// We fit the max. number of ticks with a min. distance between them from x_offset to max_x
+static void draw_plot_x_axis(int x_offset, float x_scale, float max_x, int y_offset)
 {
+	// Scale needs to go from x_min to x_max in [pixels]
+	// time-value in [h] at any position is sample_number / x_scale / 6.0
+	// the distance from x_min to x_max shall be divided in a number of N ticks
+	// the increment between ticks in [h] shall be an integer number
+
+	x_scale *= 6.0;
+
+	int actual_increment = ceilf(200.0 / x_scale);  // min increment, rounded up to the nearest integer [h]
+
+	// tick increments shall be divisible by 24 g. Stupid solution but works
+	switch (actual_increment) {
+	case 5:
+		actual_increment = 6;
+		break;
+	case 7:
+		actual_increment = 8;
+		break;
+	case 9:
+	case 10:
+	case 11:
+		actual_increment = 12;
+		break;
+	}
+
+	float actual_dist = actual_increment * x_scale;  // distance between ticks [pixels]
+
 	char label[32];
 	set_font_name(NULL);
 
-	float hours = 0;
+	int hours = 0;
 
-	push_str(x_offset + dx / 2, y_offset - 300, "[h]", 3, A_CENTER, 150, 100);
+	// push_str(x_offset + actual_dist / 2, y_offset, "[h]", 3, A_CENTER, 150, 100);
 
-	for (float x = x_offset; x <= max_x; x += dx) {
+	for (float x = x_offset; x < max_x; x += actual_dist) {
 		push_goto(x, y_offset);
 		push_line(x, y_offset - 75, 100);
 
-		snprintf(label, sizeof(label), "%2d", ((int)(hours + 0.5)) % 24);
+		snprintf(label, sizeof(label), "%d", hours % 24);
 		push_str(x, y_offset - 300, label, sizeof(label), A_CENTER, 200, 100);
-		hours += dHours;
+		hours += actual_increment;
+	}
+
+	// Mark the 24 h with longer lines
+	for (float x = x_offset + 24.0 * x_scale; x < max_x; x += 24.0 * x_scale) {
+		push_goto(x, y_offset);
+		push_line(x, y_offset + 2500, 20);
 	}
 }
 
+// We put a tick and label at min_val and max_val only
 static void draw_plot_y_axis(int x_offset, int y_offset, float dy, float min_val, float max_val)
 {
 	char label[32];
@@ -302,18 +337,19 @@ void rain_temp_plot(unsigned zoom)
 {
 	int x_end = 0;
 
-	zoom++;
-	if (zoom > 6)
-		zoom = 6;
+	zoom++;  // lowest zoom level shall be 1.0
 
-	const float x_scale = 5.0 * zoom; // 10.0 pixels per sample, 10 minutes / pixel
+	// distance between 10m samples [pixel / sample]
+	// for x_scale = 1.0  a sample of 10 min corresponds to one 1 pixel
+	// for x_scale = 10.0  a sample of 10 min corresponds to 10 pixels
+	const float x_scale = 4.0 * zoom;
 	const float y_scale = 60.0;
 	const float x_min = -1500.0;  // pixels
 	const float x_max = 1900.0;  // pixels
 
 	// Rain plot
 	const int y_offset_a = 400;
-	push_str(0, y_offset_a + 1000, "[mm/h]", 6, A_CENTER, 250, 150);
+	push_str(-1500, y_offset_a + 1000, "[mm/h]", 6, A_LEFT, 250, 150);
 	draw_plot_y_axis(x_min - 25.0, y_offset_a, y_scale, rain_min, rain_max);
 
 	x_end = draw_plot(x_min, x_scale, x_max, y_offset_a, y_scale, "precipitation10m", rain_min, 200);
@@ -324,14 +360,14 @@ void rain_temp_plot(unsigned zoom)
 
 	// Temperature plot
 	const int y_offset_b = -1100;
-	push_str(0, y_offset_b + 1000, "[°C]", 5, A_CENTER, 250, 150);
+	push_str(-1500, y_offset_b + 1000, "[°C]", 5, A_LEFT, 250, 150);
 	draw_plot_y_axis(x_min - 25.0, y_offset_b, y_scale, temp_min, temp_max);
 	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMax1h", temp_min, 50);
 	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMean1h", temp_min, 200);
 	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMin1h", temp_min, 50);
 
-	// x-axis: Draw a tick every 6 h
-	draw_plot_x_axis(x_min, x_scale * 6.0 * 12.0 / zoom, 12.0 / zoom, x_max, y_offset_b - 25);
+	// x-axis: Try to fit a good number of ticks
+	draw_plot_x_axis(x_min, x_scale, x_max, y_offset_b - 50);
 }
 
 int draw_weather_grid()
