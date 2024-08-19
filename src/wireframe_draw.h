@@ -4,8 +4,9 @@
 // We use fixed point integers with 12 bit fractional part: 1.0 = 0x1000 = 4096
 #define WF_ONE 0x1000
 
-// Normalize +- int_max to +- WF_ONE
-#define WF_INT_DIV ((1L << 31) / WF_ONE)
+// Normalize +- int_max to +- WF_ONE by dividing by WF_INT_DIV
+// #define WF_INT_DIV ((1U << 31) / WF_ONE)
+#define WF_INT_DIV 0x80000
 
 // transformation matrixes (m_ prefix) are of dimension int[4][4]
 typedef int t_m4[3][4];
