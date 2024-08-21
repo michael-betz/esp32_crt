@@ -11,7 +11,6 @@
 
 #define BLANK_OFF_TIME 8  // How long it takes to enable / disable the beam [n_samples]
 
-
 // current beam position. Use push_goto() to modify these values.
 static int x_last = 0;
 static int y_last = 0;

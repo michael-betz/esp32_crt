@@ -4,9 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// The higher this, the slower we draw
-#define DENSITY_MULTIPLIER 4
-
 // Coordinate values are clipped tp +- C_MAX
 #define C_MAX 0x800
 

@@ -85,7 +85,7 @@ static void test_image()
 	for (int i=0; i<N; i++) {
 		for (int j=0; j<N; j++) {
 			if ((i * j * now) & 32)
-				draw_filled_box((x - N / 2) * 70, (-i + N / 2 + 6) * 70, 50, 100);
+				draw_filled_box((x - N / 2) * 70, (-i + N / 2 + 6) * 70, 50, 50);
 			if (j < N - 1) {
 				if (i & 1)
 					x--;
@@ -114,7 +114,7 @@ static void test_image()
 
 void demo_mode()
 {
-	static int demo_text_font = 0, mode = 0;
+	static int demo_text_font = 0, mode = 8;
 	static time_t ticks_ = 0;
 	static int enc_ = 0;
 
@@ -163,9 +163,9 @@ void demo_mode()
 	mode += enc - enc_;
 	enc_ = enc;
 
-	time_t ticks = time(NULL);
-	if ((ticks - ticks_) > 60) {
-		mode++;
-		ticks_ = ticks;
-	}
+	// time_t ticks = time(NULL);
+	// if ((ticks - ticks_) > 60) {
+	// 	mode++;
+	// 	ticks_ = ticks;
+	// }
 }

@@ -123,7 +123,7 @@ static unsigned cp_from_meteo_swiss_key(unsigned key)
 static int get_array_helper(char *key, cJSON **array, time_t *ts_start)
 {
 	if (weather == NULL) {
-		printf("weather data not available\n");
+		// printf("weather data not available\n");
 		return -1;
 	}
 
@@ -298,7 +298,7 @@ static void draw_plot_x_axis(int x_offset, float x_scale, float max_x, int y_off
 		push_line(x, y_offset - 75, 100);
 
 		snprintf(label, sizeof(label), "%d", hours % 24);
-		push_str(x, y_offset - 300, label, sizeof(label), A_CENTER, 200, 100);
+		push_str(x, y_offset - 300, label, sizeof(label), A_CENTER, 200, 300);
 		hours += actual_increment;
 	}
 
@@ -329,7 +329,7 @@ static void draw_plot_y_axis(int x_offset, int y_offset, float dy, float min_val
 		set_font_name(NULL);
 		snprintf(label, sizeof(label), "%.1f", val);
 
-		push_str(x_offset - 75, y, label, sizeof(label), A_RIGHT, 200, 100);
+		push_str(x_offset - 75, y, label, sizeof(label), A_RIGHT, 200, 200);
 	}
 }
 
@@ -360,7 +360,7 @@ void rain_temp_plot(unsigned zoom)
 
 	// Temperature plot
 	const int y_offset_b = -1100;
-	push_str(-1500, y_offset_b + 1000, "[°C]", 5, A_LEFT, 250, 150);
+	push_str(-1500, y_offset_b + 1000, "[°C]", 5, A_LEFT, 250, 200);
 	draw_plot_y_axis(x_min - 25.0, y_offset_b, y_scale, temp_min, temp_max);
 	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMax1h", temp_min, 50);
 	draw_plot(x_min, x_scale * 6.0, x_max, y_offset_b, y_scale, "temperatureMean1h", temp_min, 200);
