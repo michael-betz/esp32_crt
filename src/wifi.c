@@ -144,7 +144,7 @@ static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, 
 
 static void got_ip(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
-	udp_debug_init();
+	// udp_debug_init();
 
 	ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 	ESP_LOGI(T, "Got ip " IPSTR, IP2STR(&event->ip_info.ip));

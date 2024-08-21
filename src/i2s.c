@@ -19,7 +19,7 @@
 #define GA_N 13
 #define SHDN_N 12
 
-#define CHUNK_SIZE 4096 * 4
+#define CHUNK_SIZE 4096
 
 static const char *T = "I2C";
 
@@ -40,7 +40,7 @@ void i2s_init(void)
 		.id = I2S_NUM_1,
 		.role = I2S_ROLE_MASTER,
 		// Allocate N kB of DMA memory
-		.dma_desc_num = 32,  // Number of DMA buffers
+		.dma_desc_num = 16,  // Number of DMA buffers
 		.dma_frame_num = 1023,  // Size of one DMA buffer in 4 byte frames
 		.auto_clear = true,
 	};

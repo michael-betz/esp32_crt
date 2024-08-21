@@ -16,9 +16,7 @@ static httpd_handle_t server = NULL;
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
 #define BASE_PATH "/spiffs"
-#define SCRATCH_BUFSIZE  8192
-
-char scratch[SCRATCH_BUFSIZE];
+#define SCRATCH_BUFSIZE  4096  // Dynamically allocated
 
 #define IS_FILE_EXT(filename, ext) \
 	(strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
@@ -131,7 +129,9 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
     ESP_LOGI(T, "Receiving file : %s...", filename);
 
     /* Retrieve the pointer to scratch buffer for temporary storage */
-    char *buf = scratch;
+    char *buf = malloc(SCRATCH_BUFSIZE);
+    if (!buf)
+    	return ESP_FAIL;
     int received;
 
     /* Content length of the request gives
@@ -152,6 +152,7 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
              * close and delete the unfinished file*/
             fclose(fd);
             unlink(filepath);
+            free(buf);
 
             ESP_LOGE(T, "File reception failed!");
             /* Respond with 500 Internal Server Error */
@@ -165,6 +166,7 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
              * Storage may be full? */
             fclose(fd);
             unlink(filepath);
+            free(buf);
 
             ESP_LOGE(T, "File write failed!");
             /* Respond with 500 Internal Server Error */
@@ -179,6 +181,7 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
 
     /* Close file upon upload completion */
     fclose(fd);
+    free(buf);
     ESP_LOGI(T, "File reception complete");
     httpd_resp_set_status(req, HTTPD_200);
 	httpd_resp_send(req, NULL, 0);  // Response body can be empty
@@ -225,7 +228,10 @@ static esp_err_t download_get_handler(httpd_req_t *req)
 	set_content_type_from_file(req, filename);
 
 	/* Retrieve the pointer to scratch buffer for temporary storage */
-	char *chunk = scratch;
+	char *chunk = malloc(SCRATCH_BUFSIZE);
+	if (!chunk)
+		return ESP_FAIL;
+
 	size_t chunksize;
 	do {
 		/* Read file in chunks into the scratch buffer */
@@ -240,6 +246,7 @@ static esp_err_t download_get_handler(httpd_req_t *req)
 				httpd_resp_sendstr_chunk(req, NULL);
 				/* Respond with 500 Internal Server Error */
 				httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
+				free(chunk);
 			   return ESP_FAIL;
 		   }
 		}
@@ -249,6 +256,7 @@ static esp_err_t download_get_handler(httpd_req_t *req)
 
 	/* Close file after sending complete */
 	fclose(fd);
+	free(chunk);
 	// ESP_LOGI(T, "File sending complete");
 
 	/* Respond with an empty chunk to signal HTTP response completion */

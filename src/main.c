@@ -9,6 +9,7 @@
 #include "freertos/task.h"
 #include "esp_spiffs.h"
 #include "esp_log.h"
+#include "esp_tls.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
 #include "driver/gpio.h"
@@ -24,73 +25,125 @@
 #include "json_settings.h"
 #include "encoder.h"
 #include "demo_mode.h"
+#include "meteo_swiss.h"
 #include "main.h"
 
 static const char *T = "MAIN";
 
+#define MAX_HTTP_RECV_BUFFER 20000
+
+esp_err_t _http_event_handler(esp_http_client_event_t *evt)
+{
+	static int n_received = 0;
+	static char *buff = NULL;
+
+	switch(evt->event_id) {
+		case HTTP_EVENT_ERROR:
+			ESP_LOGE(T, "HTTP_EVENT_ERROR");
+        	free(buff);
+	    	buff = NULL;
+        	n_received = 0;
+			break;
+
+		case HTTP_EVENT_ON_CONNECTED:
+			ESP_LOGI(T, "HTTP_EVENT_ON_CONNECTED");
+			n_received = 0;
+			if (buff != NULL)
+				free(buff);
+			buff = malloc(MAX_HTTP_RECV_BUFFER);
+			memset(buff, 0, MAX_HTTP_RECV_BUFFER);
+			if (buff == NULL) {
+				ESP_LOGE(T, "Couldn't allocate buff");
+				return ESP_FAIL;
+			}
+			break;
+
+		case HTTP_EVENT_HEADER_SENT:
+			ESP_LOGI(T, "HTTP_EVENT_HEADER_SENT");
+			break;
+
+		case HTTP_EVENT_ON_HEADER:
+			ESP_LOGI(T, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
+			break;
+
+		case HTTP_EVENT_ON_DATA:
+			ESP_LOGI(T, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+			if (n_received == 0) {
+				bool is_chunked = esp_http_client_is_chunked_response(evt->client);
+				int content_len = esp_http_client_get_content_length(evt->client);
+				printf("is_chunked: %d, content_len: %d\n", is_chunked, content_len);
+			}
+			if (n_received + evt->data_len > MAX_HTTP_RECV_BUFFER) {
+				ESP_LOGE(T, "HTTP_EVENT_ON_DATA buff overflow");
+				free(buff);
+				buff = NULL;
+				n_received = 0;
+				return ESP_FAIL;
+			}
+			memcpy(buff + n_received, evt->data, evt->data_len);
+			n_received += evt->data_len;
+			break;
+
+		case HTTP_EVENT_ON_FINISH:
+			ESP_LOGI(T, "HTTP_EVENT_ON_FINISH, n_received = %d", n_received);
+			// fwrite(buff, n_received, 1, stdout);
+
+			// parse the json response
+			cJSON *j = cJSON_ParseWithLength(buff, n_received);
+			if (j == NULL) {
+				const char *p = cJSON_GetErrorPtr();
+				ESP_LOGE(T, "get_weather(): HTTP_EVENT_ON_FINISH, JSON Error at char %d", p - buff);
+			} else {
+				weather_set_json(j);
+			}
+
+			free(buff);
+			buff = NULL;
+			n_received = 0;
+			break;
+
+		case HTTP_EVENT_DISCONNECTED:
+			ESP_LOGI(T, "HTTP_EVENT_DISCONNECTED");
+			int mbedtls_err = 0;
+			esp_err_t err = esp_tls_get_and_clear_last_error((esp_tls_error_handle_t)evt->data, &mbedtls_err, NULL);
+			if (err != 0) {
+				ESP_LOGI(T, "Last esp error code: 0x%x", err);
+				ESP_LOGI(T, "Last mbedtls failure: 0x%x", mbedtls_err);
+			}
+        	free(buff);
+	    	buff = NULL;
+        	n_received = 0;
+			break;
+
+		case HTTP_EVENT_REDIRECT:
+			ESP_LOGI(T, "HTTP_EVENT_REDIRECT");
+			break;
+
+	}
+	return ESP_OK;
+}
+
+
 static void get_weather()
 {
-    esp_err_t err;
-
-	size_t n_heap = heap_caps_get_largest_free_block(0);
-	printf("n_heap = %d\n", n_heap);
-
-	#define MAX_HTTP_RECV_BUFFER 20000
-    char *buffer = malloc(MAX_HTTP_RECV_BUFFER);
-    if (buffer == NULL) {
-        ESP_LOGE(T, "Cannot malloc http receive buffer");
-        return;
-    }
+	esp_err_t err;
+	const char url[] = "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200";
 
 	esp_http_client_config_t config = {
-		.url = "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200",
-
+		.url = url,
 		// if needed root cert  is not in the bundle:
 		// `openssl s_client -showcerts -connect <host>:443`
 		// take the last one and add it to the bundle with menuconfig
-	    .crt_bundle_attach = esp_crt_bundle_attach,
-	    .buffer_size = 512,
-	    .buffer_size_tx = 512,
-		// .user_data = buffer,
+		.crt_bundle_attach = esp_crt_bundle_attach,
+		.event_handler = _http_event_handler
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 
-    if ((err = esp_http_client_open(client, 0)) != ESP_OK) {
-        ESP_LOGE(T, "Failed to open HTTP connection: %s", esp_err_to_name(err));
-        free(buffer);
-        return;
-    }
-
-    int content_length =  esp_http_client_fetch_headers(client);
-    int total_read_len = 0, read_len;
-    if (total_read_len < content_length && content_length <= MAX_HTTP_RECV_BUFFER) {
-        read_len = esp_http_client_read(client, buffer, content_length);
-        if (read_len <= 0) {
-            ESP_LOGE(T, "Error read data");
-        }
-        buffer[read_len] = 0;
-        ESP_LOGD(T, "read_len = %d", read_len);
-    }
-    ESP_LOGI(T, "HTTP Stream reader Status = %d, content_length = %"PRId64,
-                    esp_http_client_get_status_code(client),
-                    esp_http_client_get_content_length(client));
-    esp_http_client_close(client);
-    esp_http_client_cleanup(client);
-    free(buffer);
-
-
 	// GET
-	// esp_err_t err = esp_http_client_perform(client);
-	// if (err == ESP_OK) {
-	// 	ESP_LOGI(T, "HTTP GET Status = %d, content_length = %"PRId64,
-	// 			esp_http_client_get_status_code(client),
-	// 			esp_http_client_get_content_length(client));
-	// } else {
-	// 	ESP_LOGE(T, "HTTP GET request failed: %s", esp_err_to_name(err));
-	// }
-	// ESP_LOG_BUFFER_HEX(T, buffer, strlen(buffer));
-
-	// free(buffer);
+	err = esp_http_client_perform(client);
+	if (err != ESP_OK) {
+		ESP_LOGE(T, "HTTP GET request failed: %s", esp_err_to_name(err));
+	}
 }
 
 static void i2s_stream_task(void *args)
@@ -129,9 +182,6 @@ static void init_io()
 
 void app_main(void)
 {
-	size_t n_heap = heap_caps_get_largest_free_block(0);
-	printf("n_heap = %d\n", n_heap);
-
 	init_io();
 	init_encoder();
 
@@ -149,13 +199,7 @@ void app_main(void)
 
 	ESP_LOGI(T, "Hello, this is %s, I2S version!", jGetS(getSettings(), "hostname", WIFI_HOST_NAME));
 
-	n_heap = heap_caps_get_largest_free_block(0);
-	printf("n_heap = %d\n", n_heap);
-
 	initWifi();
-
-	n_heap = heap_caps_get_largest_free_block(0);
-	printf("n_heap = %d\n", n_heap);
 
 	// Using priority 19 or higher guarantees that an application task
 	// can run on Core 1 without being preempted by any built-in task.
