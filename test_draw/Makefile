@@ -7,7 +7,7 @@ CFLAGS += -Wall -I../src -I. -g
 FNT_SRCS = $(wildcard ../src/fonts/*.c)
 
 SRCS = test.c draw.c fast_sin.c font_draw.c wireframe_draw.c dds.c demo_mode.c \
-	json_settings.c meteo_swiss.c cJSON.c $(FNT_SRCS)
+	meteo_swiss.c pdjson.c $(FNT_SRCS)
 
 all: test
 

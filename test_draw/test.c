@@ -7,7 +7,6 @@
 #include <time.h>
 #include <math.h>
 #include <limits.h>
-#include <cJSON.h>
 #include "draw.h"
 #include "font_draw.h"
 #include "wireframe_draw.h"
@@ -16,7 +15,6 @@
 #include "dds.h"
 #include "demo_mode.h"
 #include "meteo_swiss.h"
-#include "json_settings.h"
 
 #ifdef __EMSCRIPTEN__
 	#include "emscripten.h"
@@ -147,18 +145,58 @@ void one_iter()
 	SDL_RenderPresent(rr);
 }
 
+void fake_get_plz()
+{
+	FILE *fp = fopen("meteo_data.json", "r");
+	if (fp == NULL) {
+		printf("failed to open meteo_data.json\n");
+		return;
+	}
+
+	esp_http_client_event_t evt;
+
+	evt.event_id = HTTP_EVENT_ON_CONNECTED;
+	http_event_handler_plz(&evt);
+
+	char buff[512];
+	while (true) {
+		size_t N = fread(buff, 1, sizeof(buff), fp);
+		if (N <= 0)
+			break;
+
+		evt.event_id = HTTP_EVENT_ON_DATA;
+		evt.data = buff;
+		evt.data_len = N;
+		esp_err_t err = http_event_handler_plz(&evt);
+
+		if (err != ESP_OK) {
+			printf("Event handler aborted %d\n", err);
+			evt.event_id = HTTP_EVENT_DISCONNECTED;
+			http_event_handler_plz(&evt);
+			return;
+		}
+	}
+
+	evt.event_id = HTTP_EVENT_ON_FINISH;
+	http_event_handler_plz(&evt);
+}
+
 int main(int argc, char* args[])
 {
+
+	fake_get_plz();
+	exit(0);
+
 	init_lut();
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
-	cJSON *weather = readJsonDyn("meteo_data.json");
-	if (weather == NULL) {
-		printf("reading meteo_data.json failed\n");
-		return -1;
-	}
-	weather_set_json(weather);
+	// cJSON *weather = readJsonDyn("meteo_data.json");
+	// if (weather == NULL) {
+	// 	printf("reading meteo_data.json failed\n");
+	// 	return -1;
+	// }
+	// weather_set_json(weather);
 
 	#ifdef __EMSCRIPTEN__
 		emscripten_set_main_loop(one_iter, 0, 1);
@@ -167,8 +205,6 @@ int main(int argc, char* args[])
 			one_iter();
 			SDL_Delay(20);
 		}
-
-		cJSON_Delete(weather);
 
 		SDL_DestroyRenderer(rr);
 		SDL_DestroyWindow(window);
