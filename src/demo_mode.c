@@ -85,7 +85,7 @@ static void test_image()
 	for (int i=0; i<N; i++) {
 		for (int j=0; j<N; j++) {
 			if ((i * j * now) & 32)
-				draw_filled_box((x - N / 2) * 70, (-i + N / 2 + 6) * 70, 50, 50);
+				draw_filled_box((x - N / 2) * 70, (-i + N / 2 + 6) * 70, 60, 80);
 			if (j < N - 1) {
 				if (i & 1)
 					x--;

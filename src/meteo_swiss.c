@@ -29,8 +29,8 @@ typedef struct {
 } graph_array_t;
 
 typedef struct {
-	unsigned graph_start;
-	unsigned graph_start_low;
+	long unsigned graph_start;
+	long unsigned graph_start_low;
 	graph_array_t graphs[GRAPHS_N];
 	int16_t weather_data[WEATHER_DATA_N];
 } meteo_graph_t;
@@ -237,19 +237,19 @@ void rain_temp_plot(unsigned zoom)
 	push_str(-1500, y_offset_a + 1000, "[mm/h]", 6, A_LEFT, 250, 150);
 	draw_plot_y_axis(x_min - 25.0f, y_offset_a, y_scale, rain_min, rain_max);
 
-	x_end = draw_plot(x_min, x_scale, x_max, y_offset_a, y_scale, precipitation10m, rain_min, 200);
-	draw_plot(x_end, x_scale * 6.0f, x_max, y_offset_a, y_scale, precipitation1h, rain_min, 200);
+	x_end = draw_plot(x_min, x_scale, x_max, y_offset_a, y_scale, precipitation10m, rain_min, 300);
+	draw_plot(x_end, x_scale * 6.0f, x_max, y_offset_a, y_scale, precipitation1h, rain_min, 300);
 
-	x_end = draw_plot(x_min, x_scale, x_max, y_offset_a, y_scale, precipitationMax10m, rain_min, 50);
-	draw_plot(x_end, x_scale * 6.0f, x_max, y_offset_a, y_scale, precipitationMax1h, rain_min, 50);
+	x_end = draw_plot(x_min, x_scale, x_max, y_offset_a, y_scale, precipitationMax10m, rain_min, 100);
+	draw_plot(x_end, x_scale * 6.0f, x_max, y_offset_a, y_scale, precipitationMax1h, rain_min, 100);
 
 	// Temperature plot
 	const int y_offset_b = -1100;
 	push_str(-1500, y_offset_b + 1000, "[°C]", 5, A_LEFT, 250, 200);
 	draw_plot_y_axis(x_min - 25.0f, y_offset_b, y_scale, temp_min, temp_max);
-	draw_plot(x_min, x_scale * 6.0f, x_max, y_offset_b, y_scale, temperatureMax1h, temp_min, 50);
-	draw_plot(x_min, x_scale * 6.0f, x_max, y_offset_b, y_scale, temperatureMean1h, temp_min, 200);
-	draw_plot(x_min, x_scale * 6.0f, x_max, y_offset_b, y_scale, temperatureMin1h, temp_min, 50);
+	draw_plot(x_min, x_scale * 6.0f, x_max, y_offset_b, y_scale, temperatureMax1h, temp_min, 100);
+	draw_plot(x_min, x_scale * 6.0f, x_max, y_offset_b, y_scale, temperatureMean1h, temp_min, 300);
+	draw_plot(x_min, x_scale * 6.0f, x_max, y_offset_b, y_scale, temperatureMin1h, temp_min, 100);
 
 	// x-axis: Try to fit a good number of ticks
 	draw_plot_x_axis(x_min, x_scale, x_max, y_offset_b - 50);
@@ -272,10 +272,10 @@ int draw_weather_grid()
 	// Draw 4 hours x 3 days weather forecast icons
 	set_font_name(&f_weather_icons);
 	for (int day_ind=0; day_ind<=2; day_ind++) {
-		int y_pos = -((day_ind - 1) * 900);
+		int y_pos = -((day_ind - 1) * 700);
 
 		for (int h_ind=0; h_ind<=3; h_ind++) {
-			int x_pos = (h_ind - 1) * 800 - 100;
+			int x_pos = (h_ind - 1) * 800 - 300;
 
 			// Draw hour labels
 			if (day_ind == 0) {
@@ -299,7 +299,7 @@ int draw_weather_grid()
 		localtime_r(&ts_start, &timeinfo);
 		strftime(label, sizeof(label), "%a", &timeinfo);
 		set_font_name(NULL);
-		push_str(-1500, y_pos + 75, label, sizeof(label), A_CENTER, 300, 200);
+		push_str(-1700, y_pos + 75, label, sizeof(label), A_CENTER, 300, 200);
 
 		ts_start += 24 * 60 * 60;
 	}
@@ -309,7 +309,7 @@ int draw_weather_grid()
 // dump the content of all arrays to stdout
 void dump_graph(meteo_graph_t *mg)
 {
-	printf("graph_start: %d   graph_start_low: %d\n", mg->graph_start, mg->graph_start_low);
+	printf("graph_start: %ld   graph_start_low: %ld\n", mg->graph_start, mg->graph_start_low);
 	for (unsigned i = 0; i < GRAPHS_N; i++) {
 		graph_array_t *g = &mg->graphs[i];
 		printf("%s  (%.1f, %.1f)", g->key, g->min / 100.0f, g->max / 100.0f);

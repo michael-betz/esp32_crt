@@ -21,7 +21,7 @@
 
 #define CHUNK_SIZE 4096
 
-static const char *T = "I2C";
+static const char *T = "I2S";
 
 unsigned n_samples = 0;
 unsigned n_underflows = 0;
