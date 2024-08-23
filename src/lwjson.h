@@ -217,6 +217,8 @@ typedef struct {
     } flags;                /*!< List of flags */
 } lwjson_t;
 
+extern const char* const lwjson_type_strings[];
+
 lwjsonr_t lwjson_init(lwjson_t* lwobj, lwjson_token_t* tokens, size_t tokens_len);
 lwjsonr_t lwjson_parse_ex(lwjson_t* lwobj, const void* json_data, size_t len);
 lwjsonr_t lwjson_parse(lwjson_t* lwobj, const char* json_str);

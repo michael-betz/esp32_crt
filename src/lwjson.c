@@ -42,19 +42,8 @@ typedef struct {
     size_t indent; /*!< Indent level for token print */
 } lwjson_token_print_t;
 
-#if defined(LWJSON_DEV)
-#define DEBUG_STRING_PREFIX_SPACES                                                                                     \
-    "                                                                                                "
-#define LWJSON_DEBUG(jsp, ...)                                                                                         \
-    do {                                                                                                               \
-        if ((jsp) != NULL) {                                                                                           \
-            printf("%.*s", (int)(4 * (jsp)->stack_pos), DEBUG_STRING_PREFIX_SPACES);                                   \
-        }                                                                                                              \
-        printf(__VA_ARGS__);                                                                                           \
-    } while (0)
-
 /* Strings for debug */
-static const char* const type_strings[] = {
+const char* const lwjson_type_strings[] = {
     [LWJSON_STREAM_TYPE_NONE] = "none",
     [LWJSON_STREAM_TYPE_OBJECT] = "object",
     [LWJSON_STREAM_TYPE_OBJECT_END] = "object_end",
@@ -67,6 +56,18 @@ static const char* const type_strings[] = {
     [LWJSON_STREAM_TYPE_NULL] = "null",
     [LWJSON_STREAM_TYPE_NUMBER] = "number",
 };
+
+#if defined(LWJSON_DEV)
+#define DEBUG_STRING_PREFIX_SPACES                                                                                     \
+    "                                                                                                "
+#define LWJSON_DEBUG(jsp, ...)                                                                                         \
+    do {                                                                                                               \
+        if ((jsp) != NULL) {                                                                                           \
+            printf("%.*s", (int)(4 * (jsp)->stack_pos), DEBUG_STRING_PREFIX_SPACES);                                   \
+        }                                                                                                              \
+        printf(__VA_ARGS__);                                                                                           \
+    } while (0)
+
 #else
 #define LWJSON_DEBUG(jsp, ...)
 #endif /* defined(LWJSON_DEV) */
@@ -895,7 +896,7 @@ prv_stack_push(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) {
     if (jsp->stack_pos < LWJSON_ARRAYSIZE(jsp->stack)) {
         jsp->stack[jsp->stack_pos].type = type;
         jsp->stack[jsp->stack_pos].meta.index = 0;
-        LWJSON_DEBUG(jsp, "Pushed to stack: %s\r\n", type_strings[type]);
+        LWJSON_DEBUG(jsp, "Pushed to stack: %s\r\n", lwjson_type_strings[type]);
         jsp->stack_pos++;
         return 1;
     }
@@ -913,7 +914,7 @@ prv_stack_pop(lwjson_stream_parser_t* jsp) {
         lwjson_stream_type_t type = jsp->stack[--jsp->stack_pos].type;
 
         jsp->stack[jsp->stack_pos].type = LWJSON_STREAM_TYPE_NONE;
-        LWJSON_DEBUG(jsp, "Popped from stack: %s\r\n", type_strings[type]);
+        LWJSON_DEBUG(jsp, "Popped from stack: %s\r\n", lwjson_type_strings[type]);
 
         /* Take care of array to indicate number of entries */
         if (jsp->stack_pos > 0 && jsp->stack[jsp->stack_pos - 1].type == LWJSON_STREAM_TYPE_ARRAY) {
@@ -1048,7 +1049,7 @@ start_over:
                 if ((chr == '}' && type != LWJSON_STREAM_TYPE_OBJECT)
                     || (chr == ']' && type != LWJSON_STREAM_TYPE_ARRAY)) {
                     LWJSON_DEBUG(jsp, "ERROR - closing character '%c' does not match stack element \"%s\"\r\n", chr,
-                                 type_strings[type]);
+                                 lwjson_type_strings[type]);
                     return lwjsonERRJSON;
                 }
 

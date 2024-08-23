@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <time.h>
 #include <math.h>
 #include "meteo_swiss.h"
@@ -422,112 +423,135 @@ int draw_weather_grid()
 	return 0;
 }
 
-static const char *type_str[] = {
-    "NONE",       /*!< No entry - not used */
-    "OBJECT",     /*!< Object indication */
-    "OBJECT_END", /*!< Object end indication */
-    "ARRAY",      /*!< Array indication */
-    "ARRAY_END",  /*!< Array end indication */
-    "KEY",        /*!< Key string */
-    "STRING",     /*!< Strin type */
-    "TRUE",       /*!< True primitive */
-    "FALSE",      /*!< False primitive */
-    "NULL",       /*!< Null primitive */
-    "NUMBER",     /*!< Generic number */
+#define WEATHER_DATA_N 1024
+#define GRAPHS_N 8
+
+typedef struct {
+	const char *key;
+	uint16_t len;
+	int16_t *data;
+} graph_array_t;
+
+typedef struct {
+	time_t graph_start;
+	time_t graph_start_low;
+	graph_array_t graphs[GRAPHS_N];
+	int16_t weather_data[WEATHER_DATA_N];
+} meteo_graph_t;
+
+static meteo_graph_t meteo_graphs = {
+	.graphs = {
+		{.key = "weatherIcon3h"},
+		{.key = "precipitation10m"},
+		{.key = "precipitationMax10m"},
+		{.key = "precipitation1h"},
+		{.key = "precipitationMax1h"},
+		{.key = "temperatureMin1h"},
+		{.key = "temperatureMean1h"},
+		{.key = "temperatureMax1h"},
+	}
 };
 
-static uint8_t weatherIcon3h[50];
-static uint8_t weatherIcon3h_n = 0;
+static int16_t *weather_data_wp = NULL;
+static uint16_t weather_data_written = 0;
 
-static float precipitation10m[40];
-static uint8_t precipitation10m_n = 0;
-
-static float precipitationMax10m[40];
-static uint8_t precipitationMax10m_n = 0;
-
-static float precipitation1h[140];
-static uint8_t precipitation1h_n = 0;
-
-static float precipitationMax1h[140];
-static uint8_t precipitationMax1h_n = 0;
-
-static float temperatureMin1h[150];
-static uint8_t temperatureMin1h_n = 0;
-
-static float temperatureMean1h[150];
-static uint8_t temperatureMean1h_n = 0;
-
-static float temperatureMax1h[150];
-static uint8_t temperatureMax1h_n = 0;
-
-
-static bool capture(lwjson_stream_parser_t* jsp, const char *key, float *array, uint8_t max_size, uint8_t *actual_size)
+void dump_graph(meteo_graph_t *mg)
 {
-	int sp = jsp->stack_pos;
+	printf("graph_start: %ld   graph_start_low: %ld\n", mg->graph_start, mg->graph_start_low);
+	for (unsigned i = 0; i < GRAPHS_N; i++) {
+		graph_array_t *g = &mg->graphs[i];
+		printf("%s", g->key);
 
-	if (strcmp(jsp->stack[sp - 2].meta.name, key) != 0)
-		return false;
-
-	if (*actual_size >= max_size)
-		return false;
-
-	array[*actual_size] = strtof(jsp->data.str.buff, NULL);
-	printf("%s[%d] = %f\n", key, *actual_size, array[*actual_size]);
-	(*actual_size)++;
-	return true;
+		uint16_t len = g->len;
+		int16_t *p = g->data;
+		for (unsigned i=0; i<len; i++) {
+			if ((i % 8) == 0)
+				printf("\n");
+			printf("%6.1f ", *p / 100.0);
+			p++;
+		}
+		printf("\n");
+	}
 }
 
-
 static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) {
-	static int state = PLZ_IDLE;
-	static int *copy_dest;
-	static int copy_dest_space;
+	// printf("Got key '%s' with value '%s'\n", jsp->stack[sp - 1].meta.name, jsp->data.str.buff);
+	// for (unsigned i=0; i < sp; i++)
+	// 	printf("%10s ", lwjson_type_strings[jsp->stack[i].type]);
+	// printf("\n");
+	// return;
+
+	static graph_array_t *current_copy_dest = NULL;
+	static unsigned n_copied = 0;
 
 	int sp = jsp->stack_pos;
 
-	// if (state == PLZ_IDLE &&
-	// 	sp == 4 &&
-	// 	type == LWJSON_STREAM_TYPE_NUMBER &&
-	// 	strcmp(jsp->stack[sp - 1].meta.name, "time") == 0
-	// ) {
-	// 	printf("Got key '%s' with value '%s'\r\n", jsp->stack[sp - 1].meta.name, jsp->data.str.buff);
-	// 	for (unsigned i=0; i < sp; i++)
-	// 		printf("%10s ", type_str[jsp->stack[i].type]);
-	// 	printf("\n");
-	// 	return;
-	// }
-
-	// All arrays have this in common
-	if (!(
-		sp == 5 &&
-		type == LWJSON_STREAM_TYPE_NUMBER &&
-		lwjson_stack_seq_5(jsp, 0,  OBJECT, KEY, OBJECT, KEY, ARRAY)
-	))
-		return;
-
-	if (strcmp(jsp->stack[sp - 2].meta.name, "weatherIcon3h") == 0) {
-		if (weatherIcon3h_n < sizeof(weatherIcon3h)) {
-			weatherIcon3h[weatherIcon3h_n] = atoi(jsp->data.str.buff);
-			// printf("icon[%d] = %d\n", weatherIcon3h_n, weatherIcon3h[weatherIcon3h_n]);
-			weatherIcon3h_n++;
-		}
+	if (sp == 0) {
+		printf("end of .json\n");
 		return;
 	}
 
-	if (capture(jsp, "precipitation10m", precipitation10m, sizeof(precipitation10m) / sizeof(precipitation10m[0]), &precipitation10m_n))
-		return;
-	if (capture(jsp, "precipitationMax10m", precipitationMax10m, sizeof(precipitationMax10m) / sizeof(precipitationMax10m[0]), &precipitationMax10m_n))
-		return;
-	if (capture(jsp, "precipitation1h", precipitation1h, sizeof(precipitation1h) / sizeof(precipitation1h[0]), &precipitation1h_n))
-		return;
-	if (capture(jsp, "precipitationMax1h", precipitationMax1h, sizeof(precipitationMax1h) / sizeof(precipitationMax1h[0]), &precipitationMax1h_n))
-		return;
-	if (capture(jsp, "temperatureMin1h", temperatureMin1h, sizeof(temperatureMin1h) / sizeof(temperatureMin1h[0]), &temperatureMin1h_n))
-		return;
-	if (capture(jsp, "temperatureMean1h", temperatureMean1h, sizeof(temperatureMean1h) / sizeof(temperatureMean1h[0]), &temperatureMean1h_n))
-		return;
-	if (capture(jsp, "temperatureMax1h", temperatureMax1h, sizeof(temperatureMax1h) / sizeof(temperatureMax1h[0]), &temperatureMax1h_n))
-		return;
+	// The graph header with timestamps
+	if (sp == 4 && type == LWJSON_STREAM_TYPE_NUMBER && lwjson_stack_seq_4(jsp, 0,  OBJECT, KEY, OBJECT, KEY)) {
+		if (strcmp(jsp->stack[sp - 1].meta.name, "start") == 0) {
+			meteo_graphs.graph_start = atol(jsp->data.str.buff) / 1000;
+			// printf("graph_start = %ld\n", meteo_graphs.graph_start);
+			return;
+		}
+		if (strcmp(jsp->stack[sp - 1].meta.name, "startLowResolution") == 0) {
+			meteo_graphs.graph_start_low = atol(jsp->data.str.buff) / 1000;
+			// printf("graph_start_low = %ld\n", meteo_graphs.graph_start_low);
+			return;
+		}
+	}
+
+	// Little state machine to copy all the arrays into meteo_graphs.graphs
+	if (current_copy_dest == NULL) {
+		// Search for the beginning of the next graph array to copy
+		if (!(
+			// sp == 4 &&
+			type == LWJSON_STREAM_TYPE_ARRAY &&
+			lwjson_stack_seq_4(jsp, 0,  OBJECT, KEY, OBJECT, KEY)
+		))
+			return;  // not an array
+
+		// Check if the json-key matches any of the keys from meteo_graphs
+		for (unsigned i = 0; i < GRAPHS_N; i++) {
+			graph_array_t *g = &meteo_graphs.graphs[i];
+
+			if (strcmp(jsp->data.str.buff, g->key) != 0)
+				continue;
+
+			// The key does match, setup copy operation
+			assert(weather_data_wp);
+			current_copy_dest = g;
+			current_copy_dest->data = weather_data_wp;
+			current_copy_dest->len = 0;
+			n_copied = 0;
+			printf("    copy_start %p  %s\n", current_copy_dest->data, current_copy_dest->key);
+			return;
+		}
+	} else {
+		if (type == LWJSON_STREAM_TYPE_ARRAY_END) {
+			current_copy_dest->len = n_copied;
+			printf("    %d items\n", current_copy_dest->len);
+
+			current_copy_dest = NULL;
+			return;
+		}
+		if (type == LWJSON_STREAM_TYPE_NUMBER) {
+			if (weather_data_written >= WEATHER_DATA_N) {
+				printf("    !!! weather_data overflow (%s)\n", current_copy_dest->key);
+				current_copy_dest->len = n_copied;
+				current_copy_dest = NULL;
+				return;
+			}
+			float val = strtof(jsp->data.str.buff, NULL);
+			*weather_data_wp++ = (int16_t)(val * 100);
+			n_copied++;
+			weather_data_written++;
+		}
+	}
 }
 
 // This is the esp_http_client event handler for streaming the GET response
@@ -541,6 +565,8 @@ esp_err_t http_event_handler_plz(esp_http_client_event_t *evt)
 		case HTTP_EVENT_ON_CONNECTED:
 			ESP_LOGI(T, "HTTP_EVENT_ON_CONNECTED");
 			lwjson_stream_init(&stream_parser, json_cb_plz);
+			weather_data_written = 0;
+			weather_data_wp = meteo_graphs.weather_data;
 			break;
 
 		case HTTP_EVENT_ON_DATA: {
@@ -553,13 +579,17 @@ esp_err_t http_event_handler_plz(esp_http_client_event_t *evt)
 				if (res == lwjsonSTREAMINPROG) {
 
 				} else if (res == lwjsonSTREAMWAITFIRSTCHAR) {
-					printf("Waiting first character\r\n");
+					printf("Waiting first character\n");
 				} else if (res == lwjsonSTREAMDONE) {
-					printf("Done\r\n");
+					printf("Done\n");
+					dump_graph(&meteo_graphs);
 				} else {
-					printf("Error\r\n");
+					printf("Error\n");
 				}
 			}
+			break;
+
+		default:
 			break;
 		}
 	}
