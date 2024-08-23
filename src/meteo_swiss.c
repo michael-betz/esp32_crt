@@ -10,6 +10,7 @@
 #include "fonts/font_data.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
+#include "lwjson.h"
 
 #define PLOT_WIDTH 3000
 
@@ -421,87 +422,146 @@ int draw_weather_grid()
 	return 0;
 }
 
-#define MAX_HTTP_RECV_BUFFER 20000
+static const char *type_str[] = {
+    "NONE",       /*!< No entry - not used */
+    "OBJECT",     /*!< Object indication */
+    "OBJECT_END", /*!< Object end indication */
+    "ARRAY",      /*!< Array indication */
+    "ARRAY_END",  /*!< Array end indication */
+    "KEY",        /*!< Key string */
+    "STRING",     /*!< Strin type */
+    "TRUE",       /*!< True primitive */
+    "FALSE",      /*!< False primitive */
+    "NULL",       /*!< Null primitive */
+    "NUMBER",     /*!< Generic number */
+};
+
+static uint8_t weatherIcon3h[50];
+static uint8_t weatherIcon3h_n = 0;
+
+static float precipitation10m[40];
+static uint8_t precipitation10m_n = 0;
+
+static float precipitationMax10m[40];
+static uint8_t precipitationMax10m_n = 0;
+
+static float precipitation1h[140];
+static uint8_t precipitation1h_n = 0;
+
+static float precipitationMax1h[140];
+static uint8_t precipitationMax1h_n = 0;
+
+static float temperatureMin1h[150];
+static uint8_t temperatureMin1h_n = 0;
+
+static float temperatureMean1h[150];
+static uint8_t temperatureMean1h_n = 0;
+
+static float temperatureMax1h[150];
+static uint8_t temperatureMax1h_n = 0;
+
+
+static bool capture(lwjson_stream_parser_t* jsp, const char *key, float *array, uint8_t max_size, uint8_t *actual_size)
+{
+	int sp = jsp->stack_pos;
+
+	if (strcmp(jsp->stack[sp - 2].meta.name, key) != 0)
+		return false;
+
+	if (*actual_size >= max_size)
+		return false;
+
+	array[*actual_size] = strtof(jsp->data.str.buff, NULL);
+	printf("%s[%d] = %f\n", key, *actual_size, array[*actual_size]);
+	(*actual_size)++;
+	return true;
+}
+
+
+static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) {
+	static int state = PLZ_IDLE;
+	static int *copy_dest;
+	static int copy_dest_space;
+
+	int sp = jsp->stack_pos;
+
+	// if (state == PLZ_IDLE &&
+	// 	sp == 4 &&
+	// 	type == LWJSON_STREAM_TYPE_NUMBER &&
+	// 	strcmp(jsp->stack[sp - 1].meta.name, "time") == 0
+	// ) {
+	// 	printf("Got key '%s' with value '%s'\r\n", jsp->stack[sp - 1].meta.name, jsp->data.str.buff);
+	// 	for (unsigned i=0; i < sp; i++)
+	// 		printf("%10s ", type_str[jsp->stack[i].type]);
+	// 	printf("\n");
+	// 	return;
+	// }
+
+	// All arrays have this in common
+	if (!(
+		sp == 5 &&
+		type == LWJSON_STREAM_TYPE_NUMBER &&
+		lwjson_stack_seq_5(jsp, 0,  OBJECT, KEY, OBJECT, KEY, ARRAY)
+	))
+		return;
+
+	if (strcmp(jsp->stack[sp - 2].meta.name, "weatherIcon3h") == 0) {
+		if (weatherIcon3h_n < sizeof(weatherIcon3h)) {
+			weatherIcon3h[weatherIcon3h_n] = atoi(jsp->data.str.buff);
+			// printf("icon[%d] = %d\n", weatherIcon3h_n, weatherIcon3h[weatherIcon3h_n]);
+			weatherIcon3h_n++;
+		}
+		return;
+	}
+
+	if (capture(jsp, "precipitation10m", precipitation10m, sizeof(precipitation10m) / sizeof(precipitation10m[0]), &precipitation10m_n))
+		return;
+	if (capture(jsp, "precipitationMax10m", precipitationMax10m, sizeof(precipitationMax10m) / sizeof(precipitationMax10m[0]), &precipitationMax10m_n))
+		return;
+	if (capture(jsp, "precipitation1h", precipitation1h, sizeof(precipitation1h) / sizeof(precipitation1h[0]), &precipitation1h_n))
+		return;
+	if (capture(jsp, "precipitationMax1h", precipitationMax1h, sizeof(precipitationMax1h) / sizeof(precipitationMax1h[0]), &precipitationMax1h_n))
+		return;
+	if (capture(jsp, "temperatureMin1h", temperatureMin1h, sizeof(temperatureMin1h) / sizeof(temperatureMin1h[0]), &temperatureMin1h_n))
+		return;
+	if (capture(jsp, "temperatureMean1h", temperatureMean1h, sizeof(temperatureMean1h) / sizeof(temperatureMean1h[0]), &temperatureMean1h_n))
+		return;
+	if (capture(jsp, "temperatureMax1h", temperatureMax1h, sizeof(temperatureMax1h) / sizeof(temperatureMax1h[0]), &temperatureMax1h_n))
+		return;
+}
 
 // This is the esp_http_client event handler for streaming the GET response
 // and decoding the .json on the fly (to minimize ram usage)
 // "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200";
 esp_err_t http_event_handler_plz(esp_http_client_event_t *evt)
 {
-	static int n_received = 0;
-	static char *buff = NULL;
+	static lwjson_stream_parser_t stream_parser;
 
 	switch(evt->event_id) {
-		case HTTP_EVENT_ERROR:
-			ESP_LOGE(T, "HTTP_EVENT_ERROR");
-        	free(buff);
-	    	buff = NULL;
-        	n_received = 0;
-			break;
-
 		case HTTP_EVENT_ON_CONNECTED:
 			ESP_LOGI(T, "HTTP_EVENT_ON_CONNECTED");
-			n_received = 0;
-			if (buff != NULL)
-				free(buff);
-			buff = malloc(MAX_HTTP_RECV_BUFFER);
-			memset(buff, 0, MAX_HTTP_RECV_BUFFER);
-			if (buff == NULL) {
-				ESP_LOGE(T, "Couldn't allocate buff");
-				return ESP_FAIL;
+			lwjson_stream_init(&stream_parser, json_cb_plz);
+			break;
+
+		case HTTP_EVENT_ON_DATA: {
+			int N = evt->data_len;
+			char *p = evt->data;
+			ESP_LOGI(T, "HTTP_EVENT_ON_DATA, len=%d", N);
+
+			while (N--) {
+				lwjsonr_t res = lwjson_stream_parse(&stream_parser, *p++);
+				if (res == lwjsonSTREAMINPROG) {
+
+				} else if (res == lwjsonSTREAMWAITFIRSTCHAR) {
+					printf("Waiting first character\r\n");
+				} else if (res == lwjsonSTREAMDONE) {
+					printf("Done\r\n");
+				} else {
+					printf("Error\r\n");
+				}
 			}
 			break;
-
-		case HTTP_EVENT_HEADER_SENT:
-			ESP_LOGI(T, "HTTP_EVENT_HEADER_SENT");
-			break;
-
-		case HTTP_EVENT_ON_HEADER:
-			ESP_LOGI(T, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
-			break;
-
-		case HTTP_EVENT_ON_DATA:
-			ESP_LOGI(T, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
-			if (n_received + evt->data_len > MAX_HTTP_RECV_BUFFER) {
-				ESP_LOGE(T, "HTTP_EVENT_ON_DATA buff overflow");
-				free(buff);
-				buff = NULL;
-				n_received = 0;
-				return ESP_FAIL;
-			}
-			memcpy(buff + n_received, evt->data, evt->data_len);
-			n_received += evt->data_len;
-			break;
-
-		case HTTP_EVENT_ON_FINISH:
-			ESP_LOGI(T, "HTTP_EVENT_ON_FINISH, n_received = %d", n_received);
-			// fwrite(buff, n_received, 1, stdout);
-
-			// parse the json response
-			// cJSON *j = cJSON_ParseWithLength(buff, n_received);
-			// if (j == NULL) {
-			// 	const char *p = cJSON_GetErrorPtr();
-			// 	ESP_LOGE(T, "get_weather(): HTTP_EVENT_ON_FINISH, JSON Error at char %ld", p - buff);
-			// } else {
-			// 	weather_set_json(j);
-			// }
-
-			free(buff);
-			buff = NULL;
-			n_received = 0;
-			break;
-
-		case HTTP_EVENT_DISCONNECTED:
-			ESP_LOGI(T, "HTTP_EVENT_DISCONNECTED");
-        	free(buff);
-	    	buff = NULL;
-        	n_received = 0;
-			break;
-
-		case HTTP_EVENT_REDIRECT:
-			ESP_LOGI(T, "HTTP_EVENT_REDIRECT");
-			break;
-
+		}
 	}
 	return ESP_OK;
 }

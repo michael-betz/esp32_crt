@@ -3,11 +3,12 @@ vpath %.c ../src/fonts
 
 LDLIBS = -lm -lSDL2
 CFLAGS += -Wall -I../src -I. -g
+# -DLWJSON_DEV
 
 FNT_SRCS = $(wildcard ../src/fonts/*.c)
 
 SRCS = test.c draw.c fast_sin.c font_draw.c wireframe_draw.c dds.c demo_mode.c \
-	meteo_swiss.c pdjson.c $(FNT_SRCS)
+	meteo_swiss.c lwjson.c $(FNT_SRCS)
 
 all: test
 
