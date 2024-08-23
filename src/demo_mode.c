@@ -114,7 +114,7 @@ static void test_image()
 
 void demo_mode()
 {
-	static int demo_text_font = 0, mode = 8;
+	static int demo_text_font = 0, mode = 4;
 	static time_t ticks_ = 0;
 	static int enc_ = 0;
 

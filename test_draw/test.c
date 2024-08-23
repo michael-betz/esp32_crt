@@ -184,19 +184,12 @@ void fake_get_plz()
 int main(int argc, char* args[])
 {
 
-	fake_get_plz();
-	exit(0);
 
 	init_lut();
 	init_sdl();
 	setup_dds(0x070F0300, 0x070F0400, 0x07000000, 0x07000700, 0x1012);
 
-	// cJSON *weather = readJsonDyn("meteo_data.json");
-	// if (weather == NULL) {
-	// 	printf("reading meteo_data.json failed\n");
-	// 	return -1;
-	// }
-	// weather_set_json(weather);
+	fake_get_plz();
 
 	#ifdef __EMSCRIPTEN__
 		emscripten_set_main_loop(one_iter, 0, 1);
