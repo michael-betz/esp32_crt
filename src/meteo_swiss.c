@@ -14,6 +14,8 @@
 #include "esp_log.h"
 #include "lwjson.h"
 
+static const char *T = "MSWISS";
+
 #define WEATHER_DATA_N 1024
 #define GRAPHS_N 8
 #define PLOT_WIDTH 3000
@@ -27,8 +29,8 @@ typedef struct {
 } graph_array_t;
 
 typedef struct {
-	time_t graph_start;
-	time_t graph_start_low;
+	unsigned graph_start;
+	unsigned graph_start_low;
 	graph_array_t graphs[GRAPHS_N];
 	int16_t weather_data[WEATHER_DATA_N];
 } meteo_graph_t;
@@ -218,6 +220,12 @@ void rain_temp_plot(unsigned zoom)
 	const float x_min = -1500.0f;  // pixels
 	const float x_max = 1900.0f;  // pixels
 
+	if (meteo_graphs.graphs[temperatureMean1h].len <= 0) {
+		set_font_name(NULL);
+		push_str(0, 0, "No\nweather\ndata", 17, A_CENTER, 600, 200);
+		return;
+	}
+
 	int16_t rain_min = MIN(meteo_graphs.graphs[precipitation10m].min, meteo_graphs.graphs[precipitation1h].min);
 	int16_t rain_max = MAX(meteo_graphs.graphs[precipitationMax10m].max, meteo_graphs.graphs[precipitationMax1h].max);
 
@@ -256,7 +264,8 @@ int draw_weather_grid()
 	graph_array_t *g = &meteo_graphs.graphs[weatherIcon3h];
 
 	if (g->len <= 0) {
-		// TODO draw `data not available` screen
+		set_font_name(NULL);
+		push_str(0, 0, "No\nweather\ndata", 17, A_CENTER, 600, 200);
 		return -1;
 	}
 
@@ -272,7 +281,7 @@ int draw_weather_grid()
 			if (day_ind == 0) {
 				snprintf(label, sizeof(label), "%2d h", h_ind * 2 * 3);
 				set_font_name(NULL);
-				push_str(x_pos, -1400, label, sizeof(label), A_CENTER, 300, 75);
+				push_str(x_pos, -1400, label, sizeof(label), A_CENTER, 300, 200);
 			}
 
 			int ind = day_ind * (24 / 3) + h_ind * 2;
@@ -283,14 +292,14 @@ int draw_weather_grid()
 			unsigned cp = cp_from_meteo_swiss_key(icon);
 
 			set_font_name(&f_weather_icons);
-			push_char_at_pos(x_pos, y_pos, cp, 500, 75);
+			push_char_at_pos(x_pos, y_pos, cp, 500, 200);
 		}
 
 		// Draw weekday label
 		localtime_r(&ts_start, &timeinfo);
 		strftime(label, sizeof(label), "%a", &timeinfo);
 		set_font_name(NULL);
-		push_str(-1500, y_pos + 75, label, sizeof(label), A_CENTER, 300, 75);
+		push_str(-1500, y_pos + 75, label, sizeof(label), A_CENTER, 300, 200);
 
 		ts_start += 24 * 60 * 60;
 	}
@@ -300,7 +309,7 @@ int draw_weather_grid()
 // dump the content of all arrays to stdout
 void dump_graph(meteo_graph_t *mg)
 {
-	printf("graph_start: %ld   graph_start_low: %ld\n", mg->graph_start, mg->graph_start_low);
+	printf("graph_start: %d   graph_start_low: %d\n", mg->graph_start, mg->graph_start_low);
 	for (unsigned i = 0; i < GRAPHS_N; i++) {
 		graph_array_t *g = &mg->graphs[i];
 		printf("%s  (%.1f, %.1f)", g->key, g->min / 100.0f, g->max / 100.0f);
@@ -335,12 +344,12 @@ static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) 
 	if (sp == 1 && type == LWJSON_STREAM_TYPE_OBJECT) {
 		weather_data_written = 0;
 		weather_data_wp = meteo_graphs.weather_data;
-		printf("    START of .json\n");
+		// printf("    START of .json\n");
 		return;
 	}
 
 	if (sp == 0) {
-		printf("    END of .json\n");
+		// printf("    END of .json\n");
 		return;
 	}
 
@@ -384,20 +393,20 @@ static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) 
 			current_copy_dest->data = weather_data_wp;
 			current_copy_dest->len = 0;
 			n_copied = 0;
-			printf("    COPY %s\n", current_copy_dest->key);
+			// printf("    COPY %s\n", current_copy_dest->key);
 			return;
 		}
 	} else {
 		if (type == LWJSON_STREAM_TYPE_ARRAY_END) {
 			current_copy_dest->len = n_copied;
-			printf("    DONE %d items\n", current_copy_dest->len);
+			// printf("    DONE %d items\n", current_copy_dest->len);
 
 			current_copy_dest = NULL;
 			return;
 		}
 		if (type == LWJSON_STREAM_TYPE_NUMBER) {
 			if (weather_data_written >= WEATHER_DATA_N) {
-				printf("    !!! weather_data overflow !!! (%s)\n", current_copy_dest->key);
+				ESP_LOGE(T, "!!! weather_data overflow !!! (%s)\n", current_copy_dest->key);
 				current_copy_dest->len = n_copied;
 				current_copy_dest = NULL;
 				return;
@@ -433,19 +442,18 @@ esp_err_t http_event_handler_plz(esp_http_client_event_t *evt)
 		case HTTP_EVENT_ON_DATA: {
 			int N = evt->data_len;
 			char *p = evt->data;
-			ESP_LOGI(T, "HTTP_DATA, len=%d", N);
+			ESP_LOGD(T, "HTTP_DATA, len=%d", N);
 
 			while (N--) {
 				lwjsonr_t res = lwjson_stream_parse(&stream_parser, *p++);
 				if (res == lwjsonSTREAMINPROG) {
-
 				} else if (res == lwjsonSTREAMWAITFIRSTCHAR) {
-					printf("Waiting first character\n");
+					ESP_LOGI(T, "lwjson_stream_parse waiting for first character\n");
 				} else if (res == lwjsonSTREAMDONE) {
-					printf("Done\n");
+					ESP_LOGI(T, "lwjson_stream_parse done\n");
 					dump_graph(&meteo_graphs);
 				} else {
-					printf("Error\n");
+					ESP_LOGE(T, "lwjson_stream_parse error: %d\n", res);
 				}
 			}
 			break;

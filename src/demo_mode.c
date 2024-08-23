@@ -114,7 +114,7 @@ static void test_image()
 
 void demo_mode()
 {
-	static int demo_text_font = 0, mode = 4;
+	static int demo_text_font = 0, mode = 0;
 	static time_t ticks_ = 0;
 	static int enc_ = 0;
 
@@ -163,9 +163,9 @@ void demo_mode()
 	mode += enc - enc_;
 	enc_ = enc;
 
-	// time_t ticks = time(NULL);
-	// if ((ticks - ticks_) > 60) {
-	// 	mode++;
-	// 	ticks_ = ticks;
-	// }
+	time_t ticks = time(NULL);
+	if ((ticks - ticks_) > 60) {
+		mode++;
+		ticks_ = ticks;
+	}
 }
