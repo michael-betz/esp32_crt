@@ -12,6 +12,8 @@ enum e_wifi {
 };
 
 extern int wifi_state;
+// extern char *qr_code;
+// extern unsigned qr_code_w;
 
 void initWifi();
 

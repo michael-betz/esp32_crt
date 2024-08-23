@@ -12,6 +12,7 @@
 #include "esp_tls.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
+#include "qrcode.h"
 #include "driver/gpio.h"
 #include "fonts/font_data.h"
 
@@ -29,6 +30,47 @@
 #include "main.h"
 
 static const char *T = "MAIN";
+
+char qr_code_str[32];
+char *qr_code = NULL;
+unsigned qr_code_w = 0;
+
+// callback function to store qr-code in char *qr_code
+void esp_qrcode_store(esp_qrcode_handle_t qrcode)
+{
+	int size = esp_qrcode_get_size(qrcode);
+	qr_code_w = size;
+
+	free(qr_code);
+	qr_code = malloc(size * size / 8);
+
+	if (qr_code == NULL) {
+		printf("!!! esp_qrcode_store malloc failed\n");
+		return;
+	}
+
+	char *p = qr_code;
+	int n_bits = 0;
+	unsigned tmp = 0;
+
+	printf("qr code, width = %d\n\n", size);
+	for (int y = 0; y < size; y++) {
+		for (int x = 0; x < size; x++) {
+			if (esp_qrcode_get_module(qrcode, x, y)) {
+				tmp |= 1 << n_bits;
+				// printf("O");
+			} else {
+				// printf(" ");
+			}
+			if (n_bits++ >= 7) {
+				*p++ = tmp;
+				tmp = 0;
+				n_bits = 0;
+			}
+		}
+		// printf("\n");
+	}
+}
 
 static void get_weather()
 {
@@ -87,6 +129,28 @@ static void init_io()
 	gpio_set_pull_mode(PIN_KNOB_B, GPIO_PULLUP_ONLY);
 }
 
+void every_second()
+{
+	static time_t now_ = 0;
+	time_t now = 0;
+	struct tm timeinfo;
+
+	time(&now);
+
+	if (now != now_) {
+		localtime_r(&now, &timeinfo);
+		strftime(qr_code_str, sizeof(qr_code_str), "%H:%M:%S", &timeinfo);
+
+		esp_qrcode_config_t cfg;
+		cfg.qrcode_ecc_level = ESP_QRCODE_ECC_MED;
+		cfg.max_qrcode_version = 40;
+		cfg.display_func = esp_qrcode_store;
+		esp_qrcode_generate(&cfg, qr_code_str);
+
+		now_ = now;
+	}
+}
+
 void app_main(void)
 {
 	init_io();
@@ -132,6 +196,8 @@ void app_main(void)
 		if (wifi_state_ != WIFI_CONNECTED && wifi_state == WIFI_CONNECTED) {  // On new connection
 			get_weather();
 		}
+
+		every_second();
 
 		i++;
 		wifi_state_ = wifi_state;

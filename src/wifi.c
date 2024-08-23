@@ -62,7 +62,7 @@ static void udp_debug_init()
 {
 	cJSON *s = getSettings();
 
-	if (dbgSock >= 0 || jGetB(s, "log_disable", false))
+	if (dbgSock >= 0 || jGetB(s, "log_disable", true))
 		return;
 
 	// put the host's address / port into the server address structure
@@ -144,7 +144,7 @@ static void scan_done(void* arg, esp_event_base_t event_base, int32_t event_id, 
 
 static void got_ip(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
-	// udp_debug_init();
+	udp_debug_init();
 
 	ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 	ESP_LOGI(T, "Got ip " IPSTR, IP2STR(&event->ip_info.ip));
@@ -171,7 +171,6 @@ static void got_discon(void* arg, esp_event_base_t event_base, int32_t event_id,
 	sntp_stop();
 	wifi_state = WIFI_NOT_CONNECTED;
 }
-
 
 static void dpp_enrollee_event_cb(esp_supp_dpp_event_t event, void *data)
 {

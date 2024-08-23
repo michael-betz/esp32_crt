@@ -34,6 +34,45 @@ unsigned n_samples = 0;
 SDL_Renderer *rr = NULL;
 SDL_Window* window = NULL;
 
+char qr_code_str[32];
+char *qr_code = NULL;
+unsigned qr_code_w = 16;
+
+void every_second()
+{
+	if (qr_code == NULL)
+		qr_code = malloc(qr_code_w * qr_code_w / 8);
+
+	char *p = qr_code;
+	int n_bits = 0;
+	unsigned tmp = 0;
+	time_t now = 0;
+	static time_t now_ = 0;
+	struct tm timeinfo;
+
+	time(&now);
+
+	if (now == now_)
+		return;
+
+	localtime_r(&now, &timeinfo);
+	strftime(qr_code_str, sizeof(qr_code_str), "%H:%M:%S", &timeinfo);
+
+	for (int y = 0; y < qr_code_w; y++) {
+		for (int x = 0; x < qr_code_w; x++) {
+			if ((x * y * now) & 32)
+				tmp |= 1 << n_bits;
+			if (n_bits++ >= 7) {
+				*p++ = tmp;
+				tmp = 0;
+				n_bits = 0;
+			}
+		}
+	}
+	now_ = now;
+}
+
+
 // Visualize a sample, emulate the phosphor with additive blending
 void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t val_foc)
 {
@@ -71,7 +110,7 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 	if (val_blank >= 0x800) {
 		SDL_SetRenderDrawColor(rr, 0xFF, 0x00, 0x00, 0x40);
 	} else {
-		SDL_SetRenderDrawColor(rr, 0xFF, 0xFF, 0xFF, 0x40);
+		SDL_SetRenderDrawColor(rr, 0xFF, 0xFF, 0xFF, 0x20);
 	}
 	SDL_Rect rect = {x - 2, y - 2, 5, 5};
 	SDL_RenderFillRect(rr, &rect);
@@ -141,6 +180,7 @@ void one_iter()
 	SDL_SetRenderDrawColor(rr, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(rr);
 
+	every_second();
 	demo_mode();
 	SDL_RenderPresent(rr);
 }

@@ -23,3 +23,8 @@
 // Power
 #define PIN_PD_BAD 26  // High when 12 V is likely not present from USB-PD
 #define PIN_HVPS_DIS 25
+
+
+extern char qr_code_str[32];
+extern char *qr_code;
+extern unsigned qr_code_w;

@@ -451,7 +451,7 @@ esp_err_t http_event_handler_plz(esp_http_client_event_t *evt)
 					ESP_LOGI(T, "lwjson_stream_parse waiting for first character\n");
 				} else if (res == lwjsonSTREAMDONE) {
 					ESP_LOGI(T, "lwjson_stream_parse done\n");
-					dump_graph(&meteo_graphs);
+					// dump_graph(&meteo_graphs);
 				} else {
 					ESP_LOGE(T, "lwjson_stream_parse error: %d\n", res);
 				}

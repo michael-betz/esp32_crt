@@ -10,6 +10,7 @@
 #include "fast_sin.h"
 #include "dds.h"
 #include "encoder.h"
+#include "main.h"
 
 
 static void demo_text(unsigned font)
@@ -35,7 +36,7 @@ static void demo_text(unsigned font)
 
 	time(&now);
 	localtime_r(&now, &timeinfo);
-    strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%H:%M:%S", &timeinfo);
+	strftime(tmp_str, sizeof(tmp_str), "%A\n%d.%m.%y\n%H:%M:%S", &timeinfo);
 
 	int font_size = ((get_sin(frame++ * MAX_ANGLE / 5000) >> 16) + (1 << 15)) * 1000 / (1 << 16) + 200;
 	set_font_index(font);
@@ -49,17 +50,8 @@ static void demo_text(unsigned font)
 	);
 }
 
-
 static void test_image()
 {
-	time_t now;
-	struct tm timeinfo;
-	char tmp_str[16];
-
-	time(&now);
-	localtime_r(&now, &timeinfo);
-    strftime(tmp_str, sizeof(tmp_str), "%H:%M:%S", &timeinfo);
-
 	// a square around the screen
 	push_goto(-2000, -2000);
 	push_line(-2000, 2000, 30);
@@ -79,18 +71,24 @@ static void test_image()
 	// push_goto(0, 500);
 	// push_line(0, -500, 50);
 
-	// Draw some filled boxes to simulate a QR code
-	const int N = 33;
-	int x = 0;
-	for (int i=0; i<N; i++) {
-		for (int j=0; j<N; j++) {
-			if ((i * j * now) & 32)
-				draw_filled_box((x - N / 2) * 70, (-i + N / 2 + 6) * 70, 60, 80);
-			if (j < N - 1) {
-				if (i & 1)
-					x--;
-				else
-					x++;
+	// Draw a QR code
+	if (qr_code_w > 0 && qr_code != NULL) {
+		int size = qr_code_w, n_bits = 0;
+		char *p = qr_code;
+		unsigned tmp = *p++;
+		for (int y = -1; y < size + 1; y++) {
+			for (int x = -1; x < size + 1; x++) {
+				if (x < 0 || y < 0 || x > (size - 1) || y > (size - 1)) {
+					draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 50, 20);
+				} else {
+					if (!(tmp & (1 << n_bits))) {
+						draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 50, 20);
+					}
+					if (n_bits++ >= 7) {
+						tmp = *p++;
+						n_bits = 0;
+					}
+				}
 			}
 		}
 	}
@@ -109,7 +107,7 @@ static void test_image()
 	// }
 
 	set_font_name(NULL);
-	push_str(0, -1800, tmp_str, sizeof(tmp_str), A_CENTER, 900, 200);
+	push_str(0, -1800, qr_code_str, sizeof(qr_code_str), A_CENTER, 700, 200);
 }
 
 void demo_mode()
