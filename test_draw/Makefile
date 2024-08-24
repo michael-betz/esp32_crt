@@ -3,7 +3,6 @@ vpath %.c ../src/fonts
 
 LDLIBS = -lm -lSDL2
 CFLAGS += -Wall -I../src -I. -g
-# -DLWJSON_DEV
 
 FNT_SRCS = $(wildcard ../src/fonts/*.c)
 

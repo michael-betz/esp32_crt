@@ -8,26 +8,21 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: mymindstorm/setup-emsdk@v14
 
-    - name: Verify emcc
-      run: emcc -v
-
-    - name: Checkout
+    - name: clone
       uses: actions/checkout@v3
 
     - name: make
       working-directory: test_draw
       run: make wasm
 
-    - name: Configure Pages
+    - name: configure-pages
       uses: actions/configure-pages@v5
 
-    - name: Upload artifacts
+    - name: upload-pages-artifact
       uses: actions/upload-pages-artifact@v3
       with:
         path: test_draw/dist
@@ -43,6 +38,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy to GitHub Pages
+      - name: deploy-pages
         id: deployment
         uses: actions/deploy-pages@v4
