@@ -16,21 +16,21 @@ jobs:
 
     - name: Verify emcc
       run: emcc -v
-      
+
     - name: Checkout
       uses: actions/checkout@v3
-    
+
     - name: make
       working-directory: test_draw
-      run: make test.html
-   
+      run: make wasm
+
     - name: Configure Pages
       uses: actions/configure-pages@v5
 
     - name: Upload artifacts
       uses: actions/upload-pages-artifact@v3
       with:
-        path: test_draw/
+        path: test_draw/dist
 
   deploy:
     environment:
