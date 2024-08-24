@@ -30,12 +30,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-pages-artifact@v3
       with:
-        name: test
-        path: |
-          test_draw/test.html
-          test_draw/test.wasm
-          test_draw/test.js
-          test_draw/test.data
+        path: test_draw/
 
   deploy:
     environment:
