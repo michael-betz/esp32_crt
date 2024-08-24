@@ -1,8 +1,13 @@
 # ESP32 CRT clock
 A scope-clock and general purpose CRT driver for the ESP32.
 
-Implemented features:
+![test-pattern on the CRT simulator](pics/ksnip_20231103-115351.png)
 
+[Web-browser demo](https://michael-betz.github.io/esp32_crt)
+
+Use the left and right arrow keys to switch screens.
+
+## Implemented features
   * 4 DAC channels (X, Y, blanking, focus) driven at a fixed sample rate (625 kHz) by the ESP32 DMA
   * One core is dedicated to drawing and generating the sample stream. The other core handles communication
   * Drawing functions for lines, ellipses, filled rectangles, quadratic bezier curves and cubic bezier curves
@@ -17,19 +22,12 @@ Implemented features:
   * User interface over a single rotary encoder
   * Code can run in a simulator on PC or webbrowser
 
-Not yet implemented features / ideas:
-
+## Not yet implemented features / ideas
   * User interface over a rotary encoder and a toggle-switch for mode dependent adjustments. Or maybe a second rotary encoder
   * Airplane tracking based on the OpenSky API
   * 3D engine with hidden surface removal
   * Support for user-provided applications
   * A marketplace with live-preview to share user-provided applications
-
-![test-pattern on the CRT simulator](pics/ksnip_20231103-115351.png)
-
-[Web-browser demo](https://michael-betz.github.io/esp32_crt)
-
-Use the left and right arrow keys to switch screens.
 
 ## DACs
   * The I2S peripheral generates a continuous bit-stream at 40 MHz
