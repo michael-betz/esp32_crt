@@ -17,11 +17,13 @@ test: meteo_data.json $(SRCS)
 	clang $(CFLAGS) $(filter-out meteo_data.json,$^) $(LDLIBS) -o $@
 
 # Web-assembly build. Run it locally with `emrun test.html`
-test.html: meteo_data.json $(SRCS)
-	emcc -s USE_SDL=2 -s TOTAL_MEMORY=32MB --preload-file $< $(CFLAGS) $(filter-out meteo_data.json,$^) $(LDLIBS) -o $@
+wasm: meteo_data.json $(SRCS)
+	mkdir dist && \
+	emcc -s USE_SDL=2 -s TOTAL_MEMORY=32MB --preload-file $< $(CFLAGS) $(filter-out meteo_data.json,$^) $(LDLIBS) -o dist/index.html
+
 
 meteo_data.json:
 	curl -o $@ "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200"
 
 clean:
-	rm -rf test $(OBJS) meteo_data.json test.js test.html test.wasm test.data
+	rm -rf dist/ test $(OBJS) meteo_data.json test.js test.html test.wasm test.data
