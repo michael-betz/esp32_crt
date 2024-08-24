@@ -13,10 +13,13 @@ jobs:
 
     steps:
     - uses: mymindstorm/setup-emsdk@v14
-    
-    - name: Verify
+
+    - name: Verify emcc
       run: emcc -v
       
+    - name: Checkout
+    - uses: actions/checkout@v3
+    
     - name: make
-      working-directory: ./test_draw
+      working-directory: test_draw
       run: make test.html
