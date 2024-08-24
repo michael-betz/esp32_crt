@@ -79,10 +79,10 @@ static void test_image()
 		for (int y = -1; y < size + 1; y++) {
 			for (int x = -1; x < size + 1; x++) {
 				if (x < 0 || y < 0 || x > (size - 1) || y > (size - 1)) {
-					draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 50, 20);
+					draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
 				} else {
 					if (!(tmp & (1 << n_bits))) {
-						draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 50, 20);
+						draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
 					}
 					if (n_bits++ >= 7) {
 						tmp = *p++;

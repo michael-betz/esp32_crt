@@ -36,7 +36,7 @@ SDL_Window* window = NULL;
 
 char qr_code_str[32];
 char *qr_code = NULL;
-unsigned qr_code_w = 16;
+unsigned qr_code_w = 24;
 
 void every_second()
 {
@@ -60,7 +60,7 @@ void every_second()
 
 	for (int y = 0; y < qr_code_w; y++) {
 		for (int x = 0; x < qr_code_w; x++) {
-			if ((x * y * now) & 32)
+			if ((1 + x * y * now) & 64)
 				tmp |= 1 << n_bits;
 			if (n_bits++ >= 7) {
 				*p++ = tmp;
