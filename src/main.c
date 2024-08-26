@@ -189,12 +189,12 @@ void app_main(void)
 
 		if (wifi_state == WIFI_CONNECTED) {
 			if ((i % (10 * 60 * 60)) == 0) {  // every hour
-				get_weather();
+				request_weather_data();
 			}
 		}
 
 		if (wifi_state_ != WIFI_CONNECTED && wifi_state == WIFI_CONNECTED) {  // On new connection
-			get_weather();
+			request_weather_data();
 		}
 
 		every_second();

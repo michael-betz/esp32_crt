@@ -61,3 +61,8 @@ int get_encoder()
     ESP_ERROR_CHECK(pcnt_unit_get_count(pcnt_unit, &pulse_count));
     return pulse_count >> 2;
 }
+
+void get_toggle_button_state()
+{
+
+}

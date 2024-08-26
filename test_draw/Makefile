@@ -7,13 +7,13 @@ CFLAGS += -Wall -I../src -I. -g
 FNT_SRCS = $(wildcard ../src/fonts/*.c)
 
 SRCS = test.c draw.c fast_sin.c font_draw.c wireframe_draw.c dds.c demo_mode.c \
-	meteo_swiss.c lwjson.c $(FNT_SRCS)
+	meteo_swiss.c lwjson.c http_client.c http_client_extra.c $(FNT_SRCS)
 
 all: test
 
 # Native build using CLANG
-test: meteo_data.json $(SRCS)
-	clang $(CFLAGS) $(filter-out meteo_data.json,$^) $(LDLIBS) -o $@
+test: $(SRCS)
+	clang $(CFLAGS) $^ $(LDLIBS) -lcurl -o $@
 
 # Web-assembly build. Run it locally with `emrun index.html`
 wasm: meteo_data.json $(SRCS)

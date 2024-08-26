@@ -10,7 +10,7 @@
 #include "meteo_swiss.h"
 #include "draw.h"
 #include "fonts/font_data.h"
-#include "esp_http_client.h"
+#include "http_client.h"
 #include "esp_log.h"
 #include "lwjson.h"
 
@@ -29,8 +29,8 @@ typedef struct {
 } graph_array_t;
 
 typedef struct {
-	long unsigned graph_start;
-	long unsigned graph_start_low;
+	time_t graph_start;
+	time_t graph_start_low;
 	graph_array_t graphs[GRAPHS_N];
 	int16_t weather_data[WEATHER_DATA_N];
 } meteo_graph_t;
@@ -309,7 +309,7 @@ int draw_weather_grid()
 // dump the content of all arrays to stdout
 void dump_graph(meteo_graph_t *mg)
 {
-	printf("graph_start: %ld   graph_start_low: %ld\n", mg->graph_start, mg->graph_start_low);
+	printf("graph_start: %ld   graph_start_low: %ld\n", (long)mg->graph_start, (long)mg->graph_start_low);
 	for (unsigned i = 0; i < GRAPHS_N; i++) {
 		graph_array_t *g = &mg->graphs[i];
 		printf("%s  (%.1f, %.1f)", g->key, g->min / 100.0f, g->max / 100.0f);
@@ -349,19 +349,23 @@ static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) 
 	}
 
 	if (sp == 0) {
-		// printf("    END of .json\n");
+		char tmp_str[32];
+		struct tm timeinfo;
+		localtime_r(&meteo_graphs.graph_start, &timeinfo);
+		strftime(tmp_str, sizeof(tmp_str), "%FT%T", &timeinfo);
+		ESP_LOGI(T, "Received weather forecast valid from %s", tmp_str);
 		return;
 	}
 
 	// The graph header with timestamps
 	if (sp == 4 && type == LWJSON_STREAM_TYPE_NUMBER && lwjson_stack_seq_4(jsp, 0,  OBJECT, KEY, OBJECT, KEY)) {
 		if (strcmp(jsp->stack[sp - 1].meta.name, "start") == 0) {
-			meteo_graphs.graph_start = atol(jsp->data.str.buff) / 1000;
+			meteo_graphs.graph_start = atoll(jsp->data.str.buff) / 1000;
 			// printf("graph_start = %ld\n", meteo_graphs.graph_start);
 			return;
 		}
 		if (strcmp(jsp->stack[sp - 1].meta.name, "startLowResolution") == 0) {
-			meteo_graphs.graph_start_low = atol(jsp->data.str.buff) / 1000;
+			meteo_graphs.graph_start_low = atoll(jsp->data.str.buff) / 1000;
 			// printf("graph_start_low = %ld\n", meteo_graphs.graph_start_low);
 			return;
 		}
@@ -426,42 +430,44 @@ static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) 
 	}
 }
 
-// This is the esp_http_client event handler for streaming the GET response
-// and decoding the .json on the fly (to minimize ram usage)
-// "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200";
-esp_err_t http_event_handler_plz(esp_http_client_event_t *evt)
+#if defined(__EMSCRIPTEN__)
+void request_weather_data()
 {
+	// GET to another domain is not allowed (CORS)
+	// so keep weather data in a file for demonstration purposes
+	FILE *fp = fopen("meteo_data.json", "r");
+	if (fp == NULL) {
+		printf("failed to open meteo_data.json\n");
+		return;
+	}
+
 	static lwjson_stream_parser_t stream_parser;
+	lwjson_stream_init(&stream_parser, json_cb_plz);
 
-	switch(evt->event_id) {
-		case HTTP_EVENT_ON_CONNECTED:
-			ESP_LOGI(T, "HTTP_CONNECTED");
-			lwjson_stream_init(&stream_parser, json_cb_plz);
-			break;
+	char c = '\0';
+	while (true) {
+		size_t N = fread(&c, 1, 1, fp);
+		if (N < 1)
+			return;
 
-		case HTTP_EVENT_ON_DATA: {
-			int N = evt->data_len;
-			char *p = evt->data;
-			ESP_LOGD(T, "HTTP_DATA, len=%d", N);
-
-			while (N--) {
-				lwjsonr_t res = lwjson_stream_parse(&stream_parser, *p++);
-				if (res == lwjsonSTREAMINPROG) {
-				} else if (res == lwjsonSTREAMWAITFIRSTCHAR) {
-					ESP_LOGI(T, "lwjson_stream_parse waiting for first character\n");
-				} else if (res == lwjsonSTREAMDONE) {
-					ESP_LOGI(T, "lwjson_stream_parse done\n");
-					// dump_graph(&meteo_graphs);
-				} else {
-					ESP_LOGE(T, "lwjson_stream_parse error: %d\n", res);
-				}
-			}
-			break;
-
-		default:
-			break;
+		lwjsonr_t res = lwjson_stream_parse(&stream_parser, c);
+		if (res == lwjsonSTREAMINPROG) {
+		} else if (res == lwjsonSTREAMWAITFIRSTCHAR) {
+			printf("lwjson_stream_parse waiting for first character\n");
+		} else if (res == lwjsonSTREAMDONE) {
+			printf("lwjson_stream_parse done\n");
+			return;
+		} else {
+			printf("lwjson_stream_parse error: %d\n", res);
+			return;
 		}
 	}
-	return ESP_OK;
 }
-
+#else
+void request_weather_data()
+{
+	const char url[] = "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200";
+	ESP_LOGI(T, "HTTP GET %s", url);
+	http_request_parse_json(url, json_cb_plz);
+}
+#endif
