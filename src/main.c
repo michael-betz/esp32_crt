@@ -5,13 +5,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_spiffs.h"
 #include "esp_log.h"
-#include "esp_tls.h"
-#include "esp_http_client.h"
-#include "esp_crt_bundle.h"
 #include "qrcode.h"
 #include "driver/gpio.h"
 #include "fonts/font_data.h"
@@ -69,29 +67,6 @@ void esp_qrcode_store(esp_qrcode_handle_t qrcode)
 			}
 		}
 		// printf("\n");
-	}
-}
-
-static void get_weather()
-{
-	esp_err_t err;
-	const char url[] = "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200";
-	ESP_LOGI(T, "HTTP GET %s", url);
-
-	esp_http_client_config_t config = {
-		.url = url,
-		// if needed root cert  is not in the bundle:
-		// `openssl s_client -showcerts -connect <host>:443`
-		// take the last one and add it to the bundle with menuconfig
-		.crt_bundle_attach = esp_crt_bundle_attach,
-		.event_handler = http_event_handler_plz
-	};
-	esp_http_client_handle_t client = esp_http_client_init(&config);
-
-	// GET
-	err = esp_http_client_perform(client);
-	if (err != ESP_OK) {
-		ESP_LOGE(T, "HTTP GET request failed: %s", esp_err_to_name(err));
 	}
 }
 

@@ -6,9 +6,12 @@
 
 #include "http_client.h"
 
+static const char *T = "HTTPC";
+
 // using esp_http_client
 #if defined(ESP_PLATFORM)
 	#include "esp_http_client.h"
+	#include "esp_crt_bundle.h"
 
 	static esp_err_t esp_http_cb(esp_http_client_event_t *evt)
 	{
@@ -20,7 +23,7 @@
 		return ESP_OK;
 	}
 
-	void http_request(const char *url, http_on_data_cb on_data);
+	void http_request(const char *url, http_on_data_cb on_data)
 	{
 		esp_http_client_config_t config = {
 			.url = url,
@@ -34,7 +37,7 @@
 		esp_http_client_handle_t client = esp_http_client_init(&config);
 
 		// GET
-		err = esp_http_client_perform(client);
+		esp_err_t err = esp_http_client_perform(client);
 		if (err != ESP_OK) {
 			ESP_LOGE(T, "HTTP GET request failed: %s", esp_err_to_name(err));
 		}
