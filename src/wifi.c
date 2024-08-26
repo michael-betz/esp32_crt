@@ -77,6 +77,10 @@ static void udp_debug_init()
 		return;
 	}
 
+	ESP_LOGI(T, "Enabling UDP broadcast option");
+	int enabled = 1;
+	setsockopt(dbgSock, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
+
 	if (!log_original) {
 		ESP_LOGW(T, "Installed UDP logger");
 		vprintf_like_t tmp = esp_log_set_vprintf(udpDebugPrintf);
