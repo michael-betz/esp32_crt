@@ -16,7 +16,7 @@
 
 static const char *T = "MSWISS";
 
-#define WEATHER_DATA_N 1024
+#define WEATHER_DATA_N 1500
 #define GRAPHS_N 8
 #define PLOT_WIDTH 3000
 
@@ -410,7 +410,7 @@ static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) 
 		}
 		if (type == LWJSON_STREAM_TYPE_NUMBER) {
 			if (weather_data_written >= WEATHER_DATA_N) {
-				ESP_LOGE(T, "!!! weather_data overflow !!! (%s)\n", current_copy_dest->key);
+				ESP_LOGE(T, "!!! weather_data overflow !!! (%s)", current_copy_dest->key);
 				current_copy_dest->len = n_copied;
 				current_copy_dest = NULL;
 				return;

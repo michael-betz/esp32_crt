@@ -51,7 +51,7 @@ void esp_qrcode_store(esp_qrcode_handle_t qrcode)
 	int n_bits = 0;
 	unsigned tmp = 0;
 
-	printf("qr code, width = %d\n\n", size);
+	// printf("qr code, width = %d\n\n", size);
 	for (int y = 0; y < size; y++) {
 		for (int x = 0; x < size; x++) {
 			if (esp_qrcode_get_module(qrcode, x, y)) {
