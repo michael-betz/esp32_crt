@@ -157,7 +157,7 @@ void demo_mode()
 			}
 	}
 
-	int enc = get_encoder();
+	int enc = get_encoder(NULL, NULL);
 	mode += enc - enc_;
 	enc_ = enc;
 

@@ -55,11 +55,40 @@ void clear_encoder()
     ESP_ERROR_CHECK(pcnt_unit_clear_count(pcnt_unit));
 }
 
-int get_encoder()
+// Returns difference in encoder ticks since last call
+//
+// if btns is given, gives the state of up to 8 buttons
+// the lowest 8 bits are high (and stay high) when the corresponding button is pressed
+// the next 8 bits are set for one cycle on the rising edge (on pushed)
+// the next 8 bits are set for one cycle on the falling edge (on released)
+//
+// If encoder_absolute is given, the raw, absolute, full resolution encoder value is written there
+int get_encoder(unsigned *btns, int *encoder_absolute)
 {
+    static int pulse_count_ = 0;
+    static unsigned btn_state_ = 0;
     int pulse_count = 0;
+
+    if (btns != NULL) {
+        unsigned btn_state = gpio_get_level(PIN_BUTTON);
+        unsigned rising = (~btn_state_) & btn_state;
+        unsigned falling = btn_state_ & (~btn_state);
+        btns = (falling << 16) | (rising << 8) | btn_state;
+        btn_state_ = btn_state;
+    }
+
     ESP_ERROR_CHECK(pcnt_unit_get_count(pcnt_unit, &pulse_count));
-    return pulse_count >> 2;
+
+    if (encoder_absolute != NULL) {
+        encoder_absolute = pulse_count;
+    }
+
+    pulse_count >>= 2;
+
+    int diff = pulse_count - pulse_count_;
+    pulse_count_ = pulse_count;
+
+    return diff;
 }
 
 void get_toggle_button_state()
