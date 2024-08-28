@@ -139,10 +139,22 @@ static void init_sdl()
 	SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
 }
 
-int encoder_value = 0;
+static int encoder_value = 0;
 
-int get_encoder()
+int get_encoder(unsigned *btns, int *encoder_absolute)
 {
+    static unsigned btn_state_ = 0;
+	const uint8_t *keys = SDL_GetKeyboardState(NULL);
+
+    if (btns != NULL) {
+		unsigned btn_state = (keys[SDL_SCANCODE_DOWN] << 1) | keys[SDL_SCANCODE_UP];
+
+        unsigned rising = (~btn_state_) & btn_state;
+        unsigned falling = btn_state_ & (~btn_state);
+        *btns = (falling << 16) | (rising << 8) | btn_state;
+        btn_state_ = btn_state;
+    }
+
 	return encoder_value;
 }
 
@@ -151,6 +163,7 @@ bool is_running = true;
 void one_iter()
 {
 	SDL_Event e;
+	encoder_value = 0;
 
 	while (SDL_PollEvent(&e)) {
 		switch (e.type) {
@@ -163,14 +176,10 @@ void one_iter()
 			case SDL_KEYDOWN:
 				switch(e.key.keysym.sym) {
 					case SDLK_LEFT:
-						encoder_value--;
+						encoder_value = -1;
 						break;
 					case SDLK_RIGHT:
-						encoder_value++;
-						break;
-					case SDLK_DOWN:
-						break;
-					case SDLK_UP:
+						encoder_value = 1;
 						break;
 				}
 				break;
@@ -208,4 +217,3 @@ int main(int argc, char* args[])
 
 	return 0;
 }
-

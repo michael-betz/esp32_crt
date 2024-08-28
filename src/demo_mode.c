@@ -114,7 +114,6 @@ void demo_mode()
 {
 	static int demo_text_font = 0, mode = 0;
 	static time_t ticks_ = 0;
-	static int enc_ = 0;
 
 	switch (mode) {
 		case 0:
@@ -157,9 +156,9 @@ void demo_mode()
 			}
 	}
 
-	int enc = get_encoder(NULL, NULL);
-	mode += enc - enc_;
-	enc_ = enc;
+	unsigned btns = 0;
+	mode += get_encoder(&btns, NULL);
+	printf("%08x\n", btns);
 
 	time_t ticks = time(NULL);
 	if ((ticks - ticks_) > 60) {

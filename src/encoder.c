@@ -3,7 +3,7 @@
 #include "driver/gpio.h"
 #include "main.h"
 
-static const char *TAG = "encoder";
+static const char *TAG = "ENC";
 
 static pcnt_unit_handle_t pcnt_unit = NULL;
 
@@ -73,15 +73,14 @@ int get_encoder(unsigned *btns, int *encoder_absolute)
         unsigned btn_state = gpio_get_level(PIN_BUTTON);
         unsigned rising = (~btn_state_) & btn_state;
         unsigned falling = btn_state_ & (~btn_state);
-        btns = (falling << 16) | (rising << 8) | btn_state;
+        *btns = (falling << 16) | (rising << 8) | btn_state;
         btn_state_ = btn_state;
     }
 
     ESP_ERROR_CHECK(pcnt_unit_get_count(pcnt_unit, &pulse_count));
 
-    if (encoder_absolute != NULL) {
-        encoder_absolute = pulse_count;
-    }
+    if (encoder_absolute != NULL)
+        *encoder_absolute = pulse_count;
 
     pulse_count >>= 2;
 
@@ -89,9 +88,4 @@ int get_encoder(unsigned *btns, int *encoder_absolute)
     pulse_count_ = pulse_count;
 
     return diff;
-}
-
-void get_toggle_button_state()
-{
-
 }
