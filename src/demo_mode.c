@@ -158,7 +158,7 @@ void demo_mode()
 
 	unsigned btns = 0;
 	mode += get_encoder(&btns, NULL);
-	printf("%08x\n", btns);
+	// printf("%08x\n", btns);
 
 	time_t ticks = time(NULL);
 	if ((ticks - ticks_) > 60) {
