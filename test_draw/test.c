@@ -100,7 +100,7 @@ void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t va
 
 	// Draw lines connecting the samples. Red for blanked moves
 	if (val_blank >= 0x800) {
-		SDL_SetRenderDrawColor(rr, 0xFF, 0x00, 0x00, 0x40);
+		SDL_SetRenderDrawColor(rr, 0xFF, 0x00, 0x00, 0x60);
 	} else {
 		SDL_SetRenderDrawColor(rr, 0x00, intens, 0x00, 0xFF);
 	}
