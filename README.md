@@ -1,7 +1,7 @@
 # ESP32 CRT clock
 A scope-clock and general purpose CRT driver for the ESP32.
 
-![test-pattern on the CRT simulator](pics/ksnip_20231103-115351.png)
+![Simple text on 2 different CRTs](pics/ksnip_20240831-003236.jpg)
 
 [Web-browser demo](https://michael-betz.github.io/esp32_crt)
 
