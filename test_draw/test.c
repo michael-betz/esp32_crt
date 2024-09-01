@@ -139,19 +139,19 @@ static void init_sdl()
 	SDL_SetRenderDrawBlendMode(rr, SDL_BLENDMODE_ADD);
 }
 
-static int encoder_value = 0;
+static int8_t encoder_value = 0;
 
-int get_encoder(unsigned *btns, int *encoder_absolute)
+int8_t get_encoder(unsigned *state)
 {
     static unsigned btn_state_ = 0;
 	const uint8_t *keys = SDL_GetKeyboardState(NULL);
 
-    if (btns != NULL) {
+    if (state != NULL) {
 		unsigned btn_state = (keys[SDL_SCANCODE_DOWN] << 1) | keys[SDL_SCANCODE_UP];
 
         unsigned rising = (~btn_state_) & btn_state;
         unsigned falling = btn_state_ & (~btn_state);
-        *btns = (falling << 16) | (rising << 8) | btn_state;
+        *state = (encoder_value < 24) | (falling << 16) | (rising << 8) | btn_state;
         btn_state_ = btn_state;
     }
 

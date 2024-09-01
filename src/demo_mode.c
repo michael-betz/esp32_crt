@@ -12,7 +12,6 @@
 #include "encoder.h"
 #include "main.h"
 
-
 static void demo_text(unsigned font)
 {
 	char tmp_str[64];
@@ -79,10 +78,10 @@ static void test_image()
 		for (int y = -1; y < size + 1; y++) {
 			for (int x = -1; x < size + 1; x++) {
 				if (x < 0 || y < 0 || x > (size - 1) || y > (size - 1)) {
-					draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
+					draw_filled_box((x - size / 2) * 50 + 25, (-y + size / 2) * 50, 30, 100);
 				} else {
 					if (!(tmp & (1 << n_bits))) {
-						draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
+						draw_filled_box((x - size / 2) * 50 + 25, (-y + size / 2) * 50, 30, 100);
 					}
 					if (n_bits++ >= 7) {
 						tmp = *p++;
@@ -94,17 +93,17 @@ static void test_image()
 	}
 
 	// concentric circles
-	// for (unsigned i=1; i<=10; i++) {
-	// 	push_circle(
-	// 		0,
-	// 		0,
-	// 		i * 200,
-	// 		i * 200,
-	// 		i <= 5 ? 0 : -280,
-	// 		i <= 5 ? MAX_ANGLE : MAX_ANGLE - 1500,
-	// 		100
-	// 	);
-	// }
+	for (unsigned i=5; i<=10; i++) {
+		push_circle(
+			0,
+			0,
+			i * 200,
+			i * 200,
+			i <= 5 ? 0 : -280,
+			i <= 5 ? MAX_ANGLE : MAX_ANGLE - 1500,
+			100
+		);
+	}
 
 	set_font_name(NULL);
 	push_str(0, -1800, qr_code_str, sizeof(qr_code_str), A_CENTER, 700, 200);
@@ -114,6 +113,14 @@ void demo_mode()
 {
 	static int demo_text_font = 0, mode = 0;
 	static time_t ticks_ = 0;
+
+	mode += get_encoder(NULL);
+
+	time_t ticks = time(NULL);
+	if ((ticks - ticks_) > 60) {
+		mode++;
+		ticks_ = ticks;
+	}
 
 	switch (mode) {
 		case 0:
@@ -146,23 +153,23 @@ void demo_mode()
 			rain_temp_plot(mode - 5);
 			break;
 
+		case 11:
+			draw_blob(
+				svg_switzerland_simple_simple_svg,
+				sizeof(svg_switzerland_simple_simple_svg),
+				0, 0,
+				1, 1,
+				150
+			);
+			break;
+
 		default:
 			if (mode < 0) {
-				mode = 10;
+				mode = 11;
 				demo_text_font--;
 			} else {
 				mode = 0;
 				demo_text_font++;
 			}
-	}
-
-	unsigned btns = 0;
-	mode += get_encoder(&btns, NULL);
-	// printf("%08x\n", btns);
-
-	time_t ticks = time(NULL);
-	if ((ticks - ticks_) > 60) {
-		mode++;
-		ticks_ = ticks;
 	}
 }

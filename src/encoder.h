@@ -11,6 +11,9 @@ void clear_encoder();
 // the lowest 8 bits are high (and stay high) when the corresponding button is pressed
 // the next 8 bits are set for one cycle on the rising edge (on pushed)
 // the next 8 bits are set for one cycle on the falling edge (on released)
+// the next 8 bits are the encoder steps since the last call as int8_t
 //
 // If encoder_absolute is given, the raw, absolute, full resolution encoder value is written there
-int get_encoder(unsigned *btns, int *encoder_absolute);
+//
+// also returns the encoder steps
+int8_t get_encoder(unsigned *state);
