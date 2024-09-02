@@ -16,6 +16,6 @@ extern const font_t f_weather_icons;
 extern const font_t* f_all[];
 extern const unsigned N_FONTS;
 
-extern const uint8_t svg_switzerland_simple_simple_svg[2224];
+extern const uint8_t switzerland_map[2224];
 
 #endif

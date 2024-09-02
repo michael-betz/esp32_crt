@@ -1,4 +1,4 @@
-from numpy import *
+import numpy as np
 from matplotlib.pyplot import plot
 from fontTools.pens.basePen import BasePen
 
@@ -24,6 +24,7 @@ class CoordinateEncoder:
         '''
         self.prev = [0] * N
         self.N = N
+        self.min_max = [MinMax() for _ in range(N)]
 
     def encode(self, vals, flag_or=0):
         flags = 0
@@ -31,6 +32,7 @@ class CoordinateEncoder:
 
         for i in range(self.N):  # For each dimension (X and Y for N = 2)
             val = round(vals[i])
+            self.min_max[i].add(val)
             d_val = val - self.prev[i]
 
             if d_val == 0:
@@ -91,14 +93,14 @@ def get_points(pt0, pt1, pt2):
     ''' render a quadratic bezier for preview in plot window '''
     dx = pt2[0] - pt0[0]
     dy = pt2[1] - pt0[1]
-    dist = sqrt(dx**2 + dy**2)
-    N_POINTS = round(dist * DENSITY)
+    dist = np.sqrt(dx**2 + dy**2)
+    N_POINTS = np.round(dist * DENSITY)
     if N_POINTS < 3:
-        xs = array([pt0[0], (pt0[0] + pt2[0]) / 4 + pt1[0] / 2, pt2[0]])
-        ys = array([pt0[1], (pt0[1] + pt2[1]) / 4 + pt1[1] / 2, pt2[1]])
+        xs = np.array([pt0[0], (pt0[0] + pt2[0]) / 4 + pt1[0] / 2, pt2[0]])
+        ys = np.array([pt0[1], (pt0[1] + pt2[1]) / 4 + pt1[1] / 2, pt2[1]])
         return xs, ys
 
-    t = linspace(0, 1, N_POINTS)
+    t = np.linspace(0, 1, N_POINTS)
     xs = (1 - t)**2 * pt0[0] + 2 * (1 - t) * t * pt1[0] + t**2 * pt2[0]
     ys = (1 - t)**2 * pt0[1] + 2 * (1 - t) * t * pt1[1] + t**2 * pt2[1]
     return xs, ys
@@ -108,14 +110,14 @@ def get_points_c(pt0, pt1, pt2, pt3):
     ''' render a cubic bezier for preview in plot window '''
     dx = pt2[0] - pt0[0]
     dy = pt2[1] - pt0[1]
-    dist = sqrt(dx**2 + dy**2)
+    dist = np.sqrt(dx**2 + dy**2)
     N_POINTS = round(dist * DENSITY)
     if N_POINTS < 3:
-        xs = array([pt0[0], (pt0[0] + 3 * (pt1[0] + pt2[0]) + pt3[0]) / 8, pt3[0]])
-        ys = array([pt0[1], (pt0[1] + 3 * (pt1[1] + pt2[1]) + pt3[1]) / 8, pt3[1]])
+        xs = np.array([pt0[0], (pt0[0] + 3 * (pt1[0] + pt2[0]) + pt3[0]) / 8, pt3[0]])
+        ys = np.array([pt0[1], (pt0[1] + 3 * (pt1[1] + pt2[1]) + pt3[1]) / 8, pt3[1]])
         return xs, ys
 
-    t = linspace(0, 1, N_POINTS)
+    t = np.linspace(0, 1, N_POINTS)
 
     xs = (1 - t)**3 * pt0[0] + 3 * (1 - t)**2 * t * pt1[0] + 3 * (1 - t) * t**2 * pt2[0] + t**3 * pt3[0]
     ys = (1 - t)**3 * pt0[1] + 3 * (1 - t)**2 * t * pt1[1] + 3 * (1 - t) * t**2 * pt2[1] + t**3 * pt3[1]
@@ -138,7 +140,7 @@ class CrtPen(BasePen):
 
     def _lineTo(self, pt):
         if self.do_plot:
-            pts = vstack((self.last_point, pt))
+            pts = np.vstack((self.last_point, pt))
             pts += self.cursor
             pts[:, 0] += self.lsb
             plot(pts[:, 0], pts[:, 1], 'k.-')
@@ -158,7 +160,7 @@ class CrtPen(BasePen):
         pt0 = self.last_point
 
         if self.do_plot:
-            pts = vstack((pt0, pt1, pt2, pt3))
+            pts = np.vstack((pt0, pt1, pt2, pt3))
             pts += self.cursor
             pts[:, 0] += self.lsb
             plot(pts[:, 0], pts[:, 1], 'o')
@@ -178,7 +180,7 @@ class CrtPen(BasePen):
         ''' draw a quadratic bezier '''
         pt0 = self.last_point
         if self.do_plot:
-            pts = vstack((pt0, pt1, pt2))
+            pts = np.vstack((pt0, pt1, pt2))
             pts += self.cursor
             pts[:, 0] += self.lsb
             plot(pts[:, 0], pts[:, 1], 'o')

@@ -6,8 +6,8 @@ import re
 import argparse
 import pathlib
 from matplotlib.pyplot import plot, close, show, axis
-from numpy import *
-from svgpathtools import svg2paths, Path, Line, QuadraticBezier, CubicBezier, Arc
+import numpy as np
+from svgpathtools import Document, Path, Line, QuadraticBezier, CubicBezier, Arc
 
 from font_helpers import *
 
@@ -26,7 +26,7 @@ class Drawer:
 
     def _lineTo(self, pt):
         if self.do_plot:
-            pts = vstack((self.last_point, pt))
+            pts = np.vstack((self.last_point, pt))
             pts += self.cursor
             pts[:, 0] += self.lsb
             plot(pts[:, 0], pts[:, 1], 'k.-')
@@ -46,7 +46,7 @@ class Drawer:
         pt0 = self.last_point
 
         if self.do_plot:
-            pts = vstack((pt0, pt1, pt2, pt3))
+            pts = np.vstack((pt0, pt1, pt2, pt3))
             pts += self.cursor
             pts[:, 0] += self.lsb
             plot(pts[:, 0], pts[:, 1], '.')
@@ -66,7 +66,7 @@ class Drawer:
         ''' draw a quadratic bezier '''
         pt0 = self.last_point
         if self.do_plot:
-            pts = vstack((pt0, pt1, pt2))
+            pts = np.vstack((pt0, pt1, pt2))
             pts += self.cursor
             pts[:, 0] += self.lsb
             plot(pts[:, 0], pts[:, 1], 'o')
@@ -89,16 +89,14 @@ class Drawer:
 
 
 def c2t(val):
-    return round(real(val)), round(-imag(val))
-
+    return round(val.real), round(-val.imag)
 
 def convert(args):
-    paths, attributes = svg2paths(args.svg_file)
-    print([a["id"] for a in attributes])
+    svg_doc = Document(args.svg_file)
 
     d = Drawer(args.plot)
 
-    for p in paths:
+    for p in svg_doc.paths():
         for i, e in enumerate(p):
             pts = e.bpoints()
 
@@ -121,8 +119,8 @@ def convert(args):
         axis("equal")
         show()
 
-    combined_path = Path(*[seg for p in paths for seg in p._segments])
-    bbox = combined_path.bbox()
+    # Keeps track of the bounding box
+    mm = d.ce.min_max
 
     name = pathlib.Path(args.svg_file).name
     name = re.sub('[^A-Za-z0-9]+', '_', name)
@@ -133,7 +131,7 @@ def convert(args):
 #include <stdint.h>
 // -----------------------------------
 //  {name}
-// xmin, xmax, ymin, ymax: {bbox[0]:.0f}, {bbox[1]:.0f}, {-bbox[3]:.0f}, {-bbox[2]:.0f},
+// xmin, xmax, ymin, ymax: {mm[0].get_min():.0f}, {mm[0].get_max():.0f}, {mm[1].get_min():.0f}, {mm[1].get_max():.0f},
 // -----------------------------------
 
 const uint8_t svg_{name}[{len(d.bs)}] = {{''', file=f)

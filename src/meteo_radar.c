@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "fonts/font_data.h"
 #include "draw.h"
+#include "fast_sin.h"
 
 // Measured radar data and predictions are given in separate files ...
 //
@@ -23,12 +24,17 @@
 
 void meteo_radar()
 {
+	// Map with a scale of .1 km / unit, centered at Bern
 	draw_blob(
-		svg_switzerland_simple_simple_svg,
-		sizeof(svg_switzerland_simple_simple_svg),
+		switzerland_map,
+		sizeof(switzerland_map),
 		0, 0,
-		1, 1,
+		16, 16,
 		200
 	);
+	push_goto(0, 50);
+	push_line(0, -50, 100);
+	push_goto(50, 0);
+	push_line(-50, 0, 100);
+	push_circle(0, 0, 30, 30, 0, MAX_ANGLE, 100);
 }
-
