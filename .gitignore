@@ -4,3 +4,4 @@
 dependencies.lock
 managed_components/
 sdkconfig.dac_esp32
+sdkconfig.dac_esp32.old
