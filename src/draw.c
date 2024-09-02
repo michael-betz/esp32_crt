@@ -335,6 +335,9 @@ void push_line(int x_b, int y_b, unsigned density)
 	bool last_off_screen = is_off_screen(x_last, y_last);
 	bool b_off_screen = is_off_screen(x_b, y_b);
 
+	if (last_off_screen && b_off_screen)
+		goto exit;
+
 	// Check how many points to produce
 	unsigned dist = get_dist(x_b, y_b);
 	int n = (dist * density) >> 11;
@@ -342,11 +345,9 @@ void push_line(int x_b, int y_b, unsigned density)
 	// printf("push_line(%d, %d), n: %d\n", x_b, y_b, n);
 
 	// Don't interpolate points, just output the final point
-	if (n <= 1 || (last_off_screen && b_off_screen)) {
-		x_last = x_b;
-		y_last = y_b;
+	if (n <= 1) {
 		output_sample(x_b, y_b, true, 0);
-		return;
+		goto exit;
 	}
 
 	int dx = ((x_b - x_last) << 8) / n;
@@ -362,6 +363,8 @@ void push_line(int x_b, int y_b, unsigned density)
 		if (is_clipped && b_off_screen)
 			break;
 	}
+
+exit:
 	x_last = x_b;
 	y_last = y_b;
 }

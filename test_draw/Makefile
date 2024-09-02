@@ -24,5 +24,8 @@ wasm: meteo_data.json $(SRCS)
 meteo_data.json:
 	curl -o $@ "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=120200"
 
+meteo_radar.json:
+	curl -o $@ "https://www.meteoswiss.admin.ch/product/output/radar/rzc/radar_rzc.20240902_1515.json"
+
 clean:
 	rm -rf dist/ test $(OBJS) meteo_data.json test.js test.html test.wasm test.data
