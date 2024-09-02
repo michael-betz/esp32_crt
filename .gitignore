@@ -3,3 +3,4 @@
 *.o
 dependencies.lock
 managed_components/
+sdkconfig.dac_esp32
