@@ -13,3 +13,6 @@ void http_request(const char *url, http_on_data_cb on_data);
 // (to minimize ram usage)
 void http_request_parse_json(const char *url, lwjson_stream_parser_callback_fn evt_fn);
 
+// Use this for opening a file and decoding the .json on the fly
+// (to minimize ram usage)
+void file_parse_json(const char *filename, lwjson_stream_parser_callback_fn evt_fn);

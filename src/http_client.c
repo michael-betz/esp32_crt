@@ -68,3 +68,33 @@ void http_request_parse_json(const char *url, lwjson_stream_parser_callback_fn e
 	lwjson_stream_init(&stream_parser, evt_fn);
 	http_request(url, parse_json_cb);
 }
+
+void file_parse_json(const char *filename, lwjson_stream_parser_callback_fn evt_fn)
+{
+	FILE *fp = fopen(filename, "r");
+	if (fp == NULL) {
+		printf("failed to open %s\n", filename);
+		return;
+	}
+
+	lwjson_stream_init(&stream_parser, evt_fn);
+
+	char c = '\0';
+	while (1) {
+		size_t N = fread(&c, 1, 1, fp);
+		if (N < 1)
+			return;
+
+		lwjsonr_t res = lwjson_stream_parse(&stream_parser, c);
+		if (res == lwjsonSTREAMINPROG) {
+		} else if (res == lwjsonSTREAMWAITFIRSTCHAR) {
+			printf("lwjson_stream_parse waiting for first character\n");
+		} else if (res == lwjsonSTREAMDONE) {
+			printf("lwjson_stream_parse done\n");
+			return;
+		} else {
+			printf("lwjson_stream_parse error: %d\n", res);
+			return;
+		}
+	}
+}

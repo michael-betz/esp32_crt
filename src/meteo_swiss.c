@@ -434,34 +434,8 @@ static void json_cb_plz(lwjson_stream_parser_t* jsp, lwjson_stream_type_t type) 
 void request_weather_data()
 {
 	// GET to another domain is not allowed (CORS)
-	// so keep weather data in a file for demonstration purposes
-	FILE *fp = fopen("meteo_data.json", "r");
-	if (fp == NULL) {
-		printf("failed to open meteo_data.json\n");
-		return;
-	}
-
-	static lwjson_stream_parser_t stream_parser;
-	lwjson_stream_init(&stream_parser, json_cb_plz);
-
-	char c = '\0';
-	while (true) {
-		size_t N = fread(&c, 1, 1, fp);
-		if (N < 1)
-			return;
-
-		lwjsonr_t res = lwjson_stream_parse(&stream_parser, c);
-		if (res == lwjsonSTREAMINPROG) {
-		} else if (res == lwjsonSTREAMWAITFIRSTCHAR) {
-			printf("lwjson_stream_parse waiting for first character\n");
-		} else if (res == lwjsonSTREAMDONE) {
-			printf("lwjson_stream_parse done\n");
-			return;
-		} else {
-			printf("lwjson_stream_parse error: %d\n", res);
-			return;
-		}
-	}
+	// so keep weather data in a local file for demonstration purposes
+	file_parse_json("meteo_data.json", json_cb_plz);
 }
 #else
 void request_weather_data()

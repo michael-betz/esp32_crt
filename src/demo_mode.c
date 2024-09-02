@@ -7,6 +7,7 @@
 #include "draw.h"
 #include "wireframe_draw.h"
 #include "meteo_swiss.h"
+#include "meteo_radar.h"
 #include "fast_sin.h"
 #include "dds.h"
 #include "encoder.h"
@@ -154,13 +155,7 @@ void demo_mode()
 			break;
 
 		case 11:
-			draw_blob(
-				svg_switzerland_simple_simple_svg,
-				sizeof(svg_switzerland_simple_simple_svg),
-				0, 0,
-				1, 1,
-				150
-			);
+			meteo_radar();
 			break;
 
 		default:
