@@ -7,11 +7,11 @@
 #include "draw.h"
 #include "wireframe_draw.h"
 #include "meteo_swiss.h"
-#include "meteo_radar.h"
 #include "fast_sin.h"
 #include "dds.h"
 #include "encoder.h"
 #include "main.h"
+
 
 static void demo_text(unsigned font)
 {
@@ -50,7 +50,7 @@ static void demo_text(unsigned font)
 	);
 }
 
-static void test_image()
+static void test_image(unsigned *btns)
 {
 	// a square around the screen
 	push_goto(-2000, -2000);
@@ -60,41 +60,41 @@ static void test_image()
 	push_line(-2000, -2000, 30);
 
 	// inner cross
-	// push_goto(-200, -200);
-	// push_line(200, 200, 255);
-	// push_goto(-200, 200);
-	// push_line(200, -200, 255);
+	push_goto(-200, -200);
+	push_line(200, 200, 255);
+	push_goto(-200, 200);
+	push_line(200, -200, 255);
 
 	// inner +
-	// push_goto(-500, 0);
-	// push_line(500, 0, 50);
-	// push_goto(0, 500);
-	// push_line(0, -500, 50);
+	push_goto(-500, 0);
+	push_line(500, 0, 50);
+	push_goto(0, 500);
+	push_line(0, -500, 50);
 
 	// Draw a QR code
-	if (qr_code_w > 0 && qr_code != NULL) {
-		int size = qr_code_w, n_bits = 0;
-		char *p = qr_code;
-		unsigned tmp = *p++;
-		for (int y = -1; y < size + 1; y++) {
-			for (int x = -1; x < size + 1; x++) {
-				if (x < 0 || y < 0 || x > (size - 1) || y > (size - 1)) {
-					draw_filled_box((x - size / 2) * 50 + 25, (-y + size / 2) * 50, 30, 100);
-				} else {
-					if (!(tmp & (1 << n_bits))) {
-						draw_filled_box((x - size / 2) * 50 + 25, (-y + size / 2) * 50, 30, 100);
-					}
-					if (n_bits++ >= 7) {
-						tmp = *p++;
-						n_bits = 0;
-					}
-				}
-			}
-		}
-	}
+	// if (qr_code_w > 0 && qr_code != NULL) {
+	// 	int size = qr_code_w, n_bits = 0;
+	// 	char *p = qr_code;
+	// 	unsigned tmp = *p++;
+	// 	for (int y = -1; y < size + 1; y++) {
+	// 		for (int x = -1; x < size + 1; x++) {
+	// 			if (x < 0 || y < 0 || x > (size - 1) || y > (size - 1)) {
+	// 				draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
+	// 			} else {
+	// 				if (!(tmp & (1 << n_bits))) {
+	// 					draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
+	// 				}
+	// 				if (n_bits++ >= 7) {
+	// 					tmp = *p++;
+	// 					n_bits = 0;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	// concentric circles
-	for (unsigned i=5; i<=10; i++) {
+	for (unsigned i=1; i<=10; i++) {
 		push_circle(
 			0,
 			0,
@@ -115,17 +115,12 @@ void demo_mode()
 	static int demo_text_font = 0, mode = 0;
 	static time_t ticks_ = 0;
 
-	mode += get_encoder(NULL);
-
-	time_t ticks = time(NULL);
-	if ((ticks - ticks_) > 60) {
-		mode++;
-		ticks_ = ticks;
-	}
+	unsigned btns = 0;
+	get_encoder(&btns, NULL);
 
 	switch (mode) {
 		case 0:
-			test_image();
+			test_image(&btns);
 			break;
 
 		case 1:
@@ -154,17 +149,17 @@ void demo_mode()
 			rain_temp_plot(mode - 5);
 			break;
 
-		case 11:
-			meteo_radar();
-			break;
-
 		default:
 			if (mode < 0) {
-				mode = 11;
+				mode = 10;
 				demo_text_font--;
 			} else {
 				mode = 0;
 				demo_text_font++;
 			}
 	}
+
+	mode += (int8_t)(btns >> 24);
+
+	// time_t ticks = time(NULLki
 }

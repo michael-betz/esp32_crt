@@ -151,7 +151,7 @@ int8_t get_encoder(unsigned *state)
 
         unsigned rising = (~btn_state_) & btn_state;
         unsigned falling = btn_state_ & (~btn_state);
-        *state = (encoder_value < 24) | (falling << 16) | (rising << 8) | btn_state;
+        *btns = (((int8_t)(encoder_value)) << 24) | (falling << 16) | (rising << 8) | btn_state;
         btn_state_ = btn_state;
     }
 

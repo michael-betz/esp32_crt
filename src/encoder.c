@@ -60,7 +60,6 @@ int8_t get_encoder(unsigned *state)
     static int pulse_count_ = 0;
     static unsigned btn_state_ = 0;
     int pulse_count = 0;
-
     ESP_ERROR_CHECK(pcnt_unit_get_count(pcnt_unit, &pulse_count));
 
     pulse_count >>= 2;
