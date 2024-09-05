@@ -50,7 +50,7 @@ static void demo_text(unsigned font)
 	);
 }
 
-static void test_image(unsigned *btns)
+static void test_image(unsigned *enc)
 {
 	// a square around the screen
 	push_goto(-2000, -2000);
@@ -115,12 +115,12 @@ void demo_mode()
 	static int demo_text_font = 0, mode = 0;
 	static time_t ticks_ = 0;
 
-	unsigned btns = 0;
-	get_encoder(&btns, NULL);
+	unsigned enc = 0;
+	get_encoder(&enc);
 
 	switch (mode) {
 		case 0:
-			test_image(&btns);
+			test_image(&enc);
 			break;
 
 		case 1:
@@ -159,7 +159,7 @@ void demo_mode()
 			}
 	}
 
-	mode += (int8_t)(btns >> 24);
+	mode += (int8_t)(enc >> 24);
 
 	// time_t ticks = time(NULLki
 }
