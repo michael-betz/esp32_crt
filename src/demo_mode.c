@@ -11,6 +11,7 @@
 #include "dds.h"
 #include "encoder.h"
 #include "main.h"
+#include "i2s.h"
 
 
 static void demo_text(unsigned font)
@@ -50,51 +51,85 @@ static void demo_text(unsigned font)
 	);
 }
 
+static void square_wave()
+{
+	// a square-wave amplifier bandwidth test pattern
+	const int n = 0x100;
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0, 0, 0, 0);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0xFFF, 0, 0, 0);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0xFFF, 0xFFF, 0, 0);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0xFFF, 0xFFF, 0xFFF, 0);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0xFFF, 0xFFF, 0xFFF, 0xFFF);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0, 0xFFF, 0xFFF, 0xFFF);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0, 0, 0xFFF, 0xFFF);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0, 0, 0, 0xFFF);
+
+	for (unsigned i=0; i<n; i++)
+		push_sample(0, 0, 0, 0);
+}
+
+
 static void test_image(unsigned *enc)
 {
 	// a square around the screen
-	push_goto(-2000, -2000);
-	push_line(-2000, 2000, 30);
-	push_line(2000, 2000, 30);
-	push_line(2000, -2000, 30);
-	push_line(-2000, -2000, 30);
+	push_goto(-2040, -2040);
+	push_line(-2040, 2040, 30);
+	push_line(2040, 2040, 30);
+	push_line(2040, -2040, 30);
+	push_line(-2040, -2040, 30);
 
-	// inner cross
-	push_goto(-200, -200);
-	push_line(200, 200, 255);
-	push_goto(-200, 200);
-	push_line(200, -200, 255);
+	// // inner cross
+	// push_goto(-200, -200);
+	// push_line(200, 200, 255);
+	// push_goto(-200, 200);
+	// push_line(200, -200, 255);
 
-	// inner +
-	push_goto(-500, 0);
-	push_line(500, 0, 50);
-	push_goto(0, 500);
-	push_line(0, -500, 50);
+	// // inner +
+	// push_goto(-500, 0);
+	// push_line(500, 0, 50);
+	// push_goto(0, 500);
+	// push_line(0, -500, 50);
 
 	// Draw a QR code
-	// if (qr_code_w > 0 && qr_code != NULL) {
-	// 	int size = qr_code_w, n_bits = 0;
-	// 	char *p = qr_code;
-	// 	unsigned tmp = *p++;
-	// 	for (int y = -1; y < size + 1; y++) {
-	// 		for (int x = -1; x < size + 1; x++) {
-	// 			if (x < 0 || y < 0 || x > (size - 1) || y > (size - 1)) {
-	// 				draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
-	// 			} else {
-	// 				if (!(tmp & (1 << n_bits))) {
-	// 					draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
-	// 				}
-	// 				if (n_bits++ >= 7) {
-	// 					tmp = *p++;
-	// 					n_bits = 0;
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	if (qr_code_w > 0 && qr_code != NULL) {
+		int size = qr_code_w, n_bits = 0;
+		char *p = qr_code;
+		unsigned tmp = *p++;
+		for (int y = -1; y < size + 1; y++) {
+			for (int x = -1; x < size + 1; x++) {
+				if (x < 0 || y < 0 || x > (size - 1) || y > (size - 1)) {
+					draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
+				} else {
+					if (!(tmp & (1 << n_bits))) {
+						draw_filled_box((x - size / 2) * 50, (-y + size / 2) * 50, 30, 100);
+					}
+					if (n_bits++ >= 7) {
+						tmp = *p++;
+						n_bits = 0;
+					}
+				}
+			}
+		}
+	}
 
 	// concentric circles
-	for (unsigned i=1; i<=10; i++) {
+	for (unsigned i=5; i<=10; i++) {
 		push_circle(
 			0,
 			0,
@@ -120,6 +155,7 @@ void demo_mode()
 
 	switch (mode) {
 		case 0:
+			// square_wave();
 			test_image(&enc);
 			break;
 
@@ -161,5 +197,12 @@ void demo_mode()
 
 	mode += (int8_t)(enc >> 24);
 
-	// time_t ticks = time(NULLki
+	if (ticks_ == 0)
+		ticks_ = time(NULL);
+
+	time_t ticks = time(NULL);
+	if (ticks - ticks_ > 60) {
+		mode++;
+		ticks_ = ticks;
+	}
 }
