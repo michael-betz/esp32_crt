@@ -14,12 +14,16 @@
 #include "i2s.h"
 #include "draw.h"
 
+// If set, the DAC output voltage is 0 .. 2 V, otherwise 0 .. 4.1 V
+#define HALF_GAIN 0
+
+// Size of DMA buffer in 1 kByte blocks
+#define N_DMA_BUFFERS 32
+
 // MCP4922 bit definitions
 #define A_N 15
 #define GA_N 13
 #define SHDN_N 12
-
-#define CHUNK_SIZE 4096
 
 static const char *T = "I2S";
 
@@ -40,7 +44,7 @@ void i2s_init(void)
 		.id = I2S_NUM_1,
 		.role = I2S_ROLE_MASTER,
 		// Allocate N kB of DMA memory
-		.dma_desc_num = 16,  // Number of DMA buffers
+		.dma_desc_num = N_DMA_BUFFERS,  // Number of DMA buffers
 		.dma_frame_num = 1023,  // Size of one DMA buffer in 4 byte frames
 		.auto_clear = true,
 	};
@@ -114,16 +118,17 @@ void i2s_init(void)
 
 void push_sample(uint16_t val_x, uint16_t val_y, uint16_t val_blank, uint16_t val_foc)
 {
+	#define CHUNK_SIZE 4096
 	static uint8_t chunk_buf[CHUNK_SIZE];  // buffer of one chunk of data
 	static uint16_t *w_buf = (uint16_t *)chunk_buf;
 	static unsigned n_written = 0;
 	static unsigned n_underflows_ = 0;
 
 	// output the sample-data for 4 channels over the next 64 clocks
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_x;  // DACA
-	*w_buf++ = (0 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_y;  // DACB
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_blank;  // DACA
-	*w_buf++ = (1 << A_N) | (0 << GA_N) | (1 << SHDN_N) | val_foc;  // DACB
+	*w_buf++ = (0 << A_N) | (HALF_GAIN << GA_N) | (1 << SHDN_N) | val_x;  // DACA
+	*w_buf++ = (0 << A_N) | (HALF_GAIN << GA_N) | (1 << SHDN_N) | val_y;  // DACB
+	*w_buf++ = (1 << A_N) | (HALF_GAIN << GA_N) | (1 << SHDN_N) | val_blank;  // DACA
+	*w_buf++ = (1 << A_N) | (HALF_GAIN << GA_N) | (1 << SHDN_N) | val_foc;  // DACB
 	n_written += 4 * 2;
 
 	if (n_written >= CHUNK_SIZE) {

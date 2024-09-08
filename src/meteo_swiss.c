@@ -206,16 +206,17 @@ static void draw_plot_y_axis(int x_offset, int y_offset, float dy, int16_t min_v
 	}
 }
 
-void rain_temp_plot(unsigned zoom)
+void rain_temp_plot(unsigned *enc)
 {
-	int x_end = 0;
-
-	zoom++;  // lowest zoom level shall be 1.0
-
 	// distance between 10m samples [pixel / sample]
 	// for x_scale = 1.0  a sample of 10 min corresponds to one 1 pixel
 	// for x_scale = 10.0  a sample of 10 min corresponds to 10 pixels
-	const float x_scale = 4.0f * zoom;
+	static int x_scale = 10;
+
+	if (encoder_helper(enc, &x_scale, 4, 25))
+		return;
+
+	int x_end = 0;
 	const float y_scale = 60.0f;
 	const float x_min = -1500.0f;  // pixels
 	const float x_max = 1900.0f;  // pixels

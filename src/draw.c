@@ -9,11 +9,33 @@
 #include "font_draw.h"
 #include "fast_sin.h"
 
-#define BLANK_OFF_TIME 8  // How long it takes to enable / disable the beam [n_samples]
+#define BLANK_OFF_TIME 4  // How long it takes to enable / disable the beam [n_samples]
 
 // current beam position. Use push_goto() to modify these values.
 static int x_last = 0;
 static int y_last = 0;
+
+// Helps with screen switching
+bool encoder_helper(unsigned *enc, int *val, int min, int max)
+{
+	bool is_out = false;
+	int8_t enc_diff = 0;
+	int tmp_val = *val + (int8_t)(*enc >> 24);
+
+	if (tmp_val > max) {
+		is_out = true;
+		enc_diff = tmp_val - max;
+		tmp_val = max;
+	} else if (tmp_val < min) {
+		is_out = true;
+		enc_diff = tmp_val - min;
+		tmp_val = min;
+	}
+
+	*enc = (enc_diff << 24) | (*enc & 0xFFFFFF);
+	*val = tmp_val;
+	return is_out;
+}
 
 // Draw a QR-code pixel
 void draw_filled_box(int x, int y, int w, int density)

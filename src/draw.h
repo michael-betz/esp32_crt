@@ -1,5 +1,4 @@
-#ifndef DRAW_H
-#define DRAW_H
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -76,4 +75,5 @@ bool output_sample(int x, int y, bool beam_on, int focus);
 // Draw a QR-code pixel
 void draw_filled_box(int x, int y, int w, int density);
 
-#endif
+// Helps with screen switching
+bool encoder_helper(unsigned *enc, int *val, int min, int max);

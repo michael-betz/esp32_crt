@@ -7,19 +7,21 @@
 #include "draw.h"
 #include "wireframe_draw.h"
 #include "meteo_swiss.h"
+#include "meteo_radar.h"
 #include "fast_sin.h"
 #include "dds.h"
 #include "encoder.h"
 #include "main.h"
 #include "i2s.h"
 
-
-static void demo_text(unsigned font)
+static void demo_text(unsigned *enc)
 {
 	char tmp_str[64];
-	static int frame = 0;
+	static int frame=0, font=0;
 
-	font %= N_FONTS;
+	if (encoder_helper(enc, &font, 0, N_FONTS - 2))
+		return;
+
 	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
 	set_font_name(NULL);
@@ -84,9 +86,15 @@ static void square_wave()
 		push_sample(0, 0, 0, 0);
 }
 
-
 static void test_image(unsigned *enc)
 {
+	static int n_circles = 3;
+
+	if (encoder_helper(enc, &n_circles, 4, 10))
+		return;
+
+	printf("%d\n", n_circles);
+
 	// a square around the screen
 	push_goto(-2040, -2040);
 	push_line(-2040, 2040, 30);
@@ -129,7 +137,7 @@ static void test_image(unsigned *enc)
 	}
 
 	// concentric circles
-	for (unsigned i=5; i<=10; i++) {
+	for (unsigned i=n_circles; i<=10; i++) {
 		push_circle(
 			0,
 			0,
@@ -147,7 +155,7 @@ static void test_image(unsigned *enc)
 
 void demo_mode()
 {
-	static int demo_text_font = 0, mode = 0;
+	static int mode = 0;
 	static time_t ticks_ = 0;
 
 	unsigned enc = 0;
@@ -164,7 +172,7 @@ void demo_mode()
 			break;
 
 		case 2:
-			demo_text(demo_text_font);
+			demo_text(&enc);
 			break;
 
 		case 3:
@@ -177,22 +185,18 @@ void demo_mode()
 			break;
 
 		case 5:
+			rain_temp_plot(&enc);
+			break;
+
 		case 6:
-		case 7:
-		case 8:
-		case 9:
-		case 10:
-			rain_temp_plot(mode - 5);
+			meteo_radar();
 			break;
 
 		default:
-			if (mode < 0) {
-				mode = 10;
-				demo_text_font--;
-			} else {
+			if (mode < 0)
+				mode = 6;
+			else
 				mode = 0;
-				demo_text_font++;
-			}
 	}
 
 	mode += (int8_t)(enc >> 24);
