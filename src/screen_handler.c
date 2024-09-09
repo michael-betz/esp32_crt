@@ -13,14 +13,97 @@
 #include "encoder.h"
 #include "main.h"
 #include "i2s.h"
+#include "screen_handler.h"
 
-static void demo_text(unsigned *enc)
+typedef struct {
+	const int par_min;
+	const int par_max;
+	int (*functionPtr)(int);
+} t_screen;
+
+static int current_screen = 0, current_par = 0;
+
+// Define the list of screens to show here ...
+static const t_screen screens[] = {
+	{5, 10, test_image},
+	{0,  6, demo_text},
+	{0,  0, wf_test},
+	{0,  0, draw_weather_grid},
+	{5, 25, rain_temp_plot},
+	{0,  0, square_wave},
+};
+#define N_SCREENS (sizeof(screens) / sizeof(screens[0]))
+
+
+static void inc_screen()
+{
+	current_screen++;
+	if (current_screen >= N_SCREENS)
+		current_screen = 0;
+	current_par = screens[current_screen].par_min;
+}
+
+static void dec_screen()
+{
+	current_screen--;
+	if (current_screen < 0)
+		current_screen = N_SCREENS - 1;
+	current_par = screens[current_screen].par_max;
+}
+
+void screen_handler()
+{
+	static time_t ticks_ = 0;
+	if (ticks_ == 0) {
+		ticks_ = time(NULL);
+		current_screen = 0;
+		current_par = screens[current_screen].par_min;
+	}
+
+	unsigned enc = 0;
+	get_encoder(&enc);
+	int8_t diff = (int8_t)(enc >> 24);
+
+	// The encoder switches between screens, so we need to select one of the
+	// drawing functions. Each screen has a parameter which also changes
+	// with encoder position. If the parameter reaches its max / min value
+	// the screen shall be switched
+
+	// Handle all accumulated encoder ticks
+	while (diff != 0) {
+		if (diff > 0) {
+			current_par++;
+			if (current_par > screens[current_screen].par_max)
+				inc_screen();
+			diff--;
+		} else {
+			current_par--;
+			if (current_par < screens[current_screen].par_min)
+				dec_screen();
+			diff++;
+		}
+	}
+
+	// Auto advance screens every N seconds
+	time_t ticks = time(NULL);
+	if (ticks - ticks_ > 60) {
+		inc_screen();
+		ticks_ = ticks;
+	}
+
+	// Actually draw the screens
+	screens[current_screen].functionPtr(current_par);
+}
+
+
+// ----------------------------------
+//  Some more demo screens for fun
+// ----------------------------------
+
+int demo_text(int font)
 {
 	char tmp_str[64];
-	static int frame=0, font=0;
-
-	if (encoder_helper(enc, &font, 0, N_FONTS - 2))
-		return;
+	static int frame=0;
 
 	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
@@ -51,9 +134,10 @@ static void demo_text(unsigned *enc)
 		font_size,
 		200
 	);
+	return 0;
 }
 
-static void square_wave()
+int square_wave(int par)
 {
 	// a square-wave amplifier bandwidth test pattern
 	const int n = 0x100;
@@ -86,14 +170,9 @@ static void square_wave()
 		push_sample(0, 0, 0, 0);
 }
 
-static void test_image(unsigned *enc)
+int test_image(int n_circles)
 {
-	static int n_circles = 3;
-
-	if (encoder_helper(enc, &n_circles, 4, 10))
-		return;
-
-	printf("%d\n", n_circles);
+	printf("ncircles %d\n", n_circles);
 
 	// a square around the screen
 	push_goto(-2040, -2040);
@@ -137,7 +216,7 @@ static void test_image(unsigned *enc)
 	}
 
 	// concentric circles
-	for (unsigned i=n_circles; i<=10; i++) {
+	for (unsigned i=5; i<=n_circles; i++) {
 		push_circle(
 			0,
 			0,
@@ -151,62 +230,5 @@ static void test_image(unsigned *enc)
 
 	set_font_name(NULL);
 	push_str(0, -1800, qr_code_str, sizeof(qr_code_str), A_CENTER, 700, 200);
-}
-
-void demo_mode()
-{
-	static int mode = 0;
-	static time_t ticks_ = 0;
-
-	unsigned enc = 0;
-	get_encoder(&enc);
-
-	switch (mode) {
-		case 0:
-			// square_wave();
-			test_image(&enc);
-			break;
-
-		case 1:
-			wf_test();
-			break;
-
-		case 2:
-			demo_text(&enc);
-			break;
-
-		case 3:
-			draw_dds(5000);
-			nudge_dds();
-			break;
-
-		case 4:
-			draw_weather_grid();
-			break;
-
-		case 5:
-			rain_temp_plot(&enc);
-			break;
-
-		case 6:
-			meteo_radar();
-			break;
-
-		default:
-			if (mode < 0)
-				mode = 6;
-			else
-				mode = 0;
-	}
-
-	mode += (int8_t)(enc >> 24);
-
-	if (ticks_ == 0)
-		ticks_ = time(NULL);
-
-	time_t ticks = time(NULL);
-	if (ticks - ticks_ > 60) {
-		mode++;
-		ticks_ = ticks;
-	}
+	return 0;
 }

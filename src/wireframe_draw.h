@@ -51,6 +51,6 @@ typedef struct {
 } edges_3d_t;
 
 
-void wf_test(void);
+int wf_test(int par);
 
 extern const edges_3d_t wf_numbers;

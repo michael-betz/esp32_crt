@@ -206,15 +206,11 @@ static void draw_plot_y_axis(int x_offset, int y_offset, float dy, int16_t min_v
 	}
 }
 
-void rain_temp_plot(unsigned *enc)
+int rain_temp_plot(int x_scale)
 {
 	// distance between 10m samples [pixel / sample]
 	// for x_scale = 1.0  a sample of 10 min corresponds to one 1 pixel
 	// for x_scale = 10.0  a sample of 10 min corresponds to 10 pixels
-	static int x_scale = 10;
-
-	if (encoder_helper(enc, &x_scale, 4, 25))
-		return;
 
 	int x_end = 0;
 	const float y_scale = 60.0f;
@@ -224,7 +220,7 @@ void rain_temp_plot(unsigned *enc)
 	if (meteo_graphs.graphs[temperatureMean1h].len <= 0) {
 		set_font_name(NULL);
 		push_str(0, 0, "No\nweather\ndata", 17, A_CENTER, 600, 200);
-		return;
+		return -1;
 	}
 
 	int16_t rain_min = MIN(meteo_graphs.graphs[precipitation10m].min, meteo_graphs.graphs[precipitation1h].min);
@@ -254,9 +250,11 @@ void rain_temp_plot(unsigned *enc)
 
 	// x-axis: Try to fit a good number of ticks
 	draw_plot_x_axis(x_min, x_scale, x_max, y_offset_b - 50);
+
+	return 0;
 }
 
-int draw_weather_grid()
+int draw_weather_grid(int par)
 {
 	char label[32];
 	struct tm timeinfo;

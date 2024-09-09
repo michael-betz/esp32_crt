@@ -13,7 +13,7 @@
 #include "fonts/font_data.h"
 #include "fast_sin.h"
 #include "dds.h"
-#include "demo_mode.h"
+#include "screen_handler.h"
 #include "meteo_swiss.h"
 
 #ifdef __EMSCRIPTEN__
@@ -190,7 +190,7 @@ void one_iter()
 	SDL_RenderClear(rr);
 
 	every_second();
-	demo_mode();
+	screen_handler();
 	SDL_RenderPresent(rr);
 }
 

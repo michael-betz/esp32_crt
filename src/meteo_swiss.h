@@ -2,6 +2,6 @@
 
 void request_weather_data();
 
-int draw_weather_grid();
+int draw_weather_grid(int par);
 
-void rain_temp_plot(unsigned *enc);
+int rain_temp_plot(int x_scale);

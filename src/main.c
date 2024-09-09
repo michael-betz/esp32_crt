@@ -23,7 +23,7 @@
 #include "static_ws.h"
 #include "json_settings.h"
 #include "encoder.h"
-#include "demo_mode.h"
+#include "screen_handler.h"
 #include "meteo_swiss.h"
 #include "main.h"
 
@@ -76,7 +76,7 @@ static void i2s_stream_task(void *args)
 	init_lut();
 
 	while (true)
-		demo_mode();
+		screen_handler();
 
 	vTaskDelete(NULL);
 }

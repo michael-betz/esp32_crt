@@ -184,7 +184,7 @@ void obj_3d_draw(obj_3d_t *obj, unsigned density)
 #define N_DIGITS 5
 #define DIGIT_DIST 0xC00
 
-void wf_test(void)
+int wf_test(int par)
 {
 	static int frame = 0, last_minute = -1;
 	static obj_3d_t objs[N_DIGITS];
@@ -233,4 +233,5 @@ void wf_test(void)
 		obj_3d_draw(&objs[i], 300);
 
 	frame++;
+	return 0;
 }
