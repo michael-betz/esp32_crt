@@ -25,8 +25,8 @@ static int current_screen = 0, current_par = 0;
 
 // Define the list of screens to show here ...
 static const t_screen screens[] = {
-	{5, 10, test_image},
 	{0,  6, demo_text},
+	{5, 10, test_image},
 	{0,  0, wf_test},
 	{0,  0, draw_weather_grid},
 	{5, 25, rain_temp_plot},
@@ -105,6 +105,8 @@ int demo_text(int font)
 	char tmp_str[64];
 	static int frame=0;
 
+	set_rotation((3 - font) * 32);
+
 	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 
 	set_font_name(NULL);
@@ -134,6 +136,9 @@ int demo_text(int font)
 		font_size,
 		200
 	);
+
+	set_rotation(0);
+
 	return 0;
 }
 

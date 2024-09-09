@@ -107,13 +107,19 @@ static bool is_off_screen(int x, int y)
 }
 
 int sin_alpha = 0;
-int cos_alpha = INT_MAX >> 20;
+int cos_alpha = 0;
 
-void set_sample_rotation(int alpha)
+void set_rotation(int alpha)
 {
-	// 12.20 fixed point
-	sin_alpha = get_sin(alpha) / (1 << 20);
-	cos_alpha = get_cos(alpha) / (1 << 20);
+	if (alpha == 0) {
+		sin_alpha = 0;
+		cos_alpha = 0;
+		return;
+	}
+
+	// internally used angle resolution: 12 bit
+	sin_alpha = get_sin(alpha) >> 20;
+	cos_alpha = get_cos(alpha) >> 20;
 }
 
 // Handles clipping and the blanking delay-time
@@ -127,10 +133,12 @@ bool output_sample(int x, int y, bool beam_on, int focus)
 	static int l_x = 0, l_y = 0, l_focus = 0;
 
 	// Rotate the sample
-	// if (sin_alpha != 0) {
-		x = (cos_alpha * x - sin_alpha * y) / (1 << 11);
-		y = (sin_alpha * x + cos_alpha * y) / (1 << 11);
-	// }
+	if (sin_alpha != 0) {
+		int x_r = (cos_alpha * x - sin_alpha * y) >> 11;
+		int y_r = (sin_alpha * x + cos_alpha * y) >> 11;
+		x = x_r;
+		y = y_r;
+	}
 
 	bool is_out = is_off_screen(x, y);
 
