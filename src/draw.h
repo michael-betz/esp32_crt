@@ -77,3 +77,6 @@ void draw_filled_box(int x, int y, int w, int density);
 
 // Helps with screen switching
 bool encoder_helper(unsigned *enc, int *val, int min, int max);
+
+// Rotate the whole screen
+void set_sample_rotation(int alpha);

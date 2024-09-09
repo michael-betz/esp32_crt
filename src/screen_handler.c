@@ -172,8 +172,6 @@ int square_wave(int par)
 
 int test_image(int n_circles)
 {
-	printf("ncircles %d\n", n_circles);
-
 	// a square around the screen
 	push_goto(-2040, -2040);
 	push_line(-2040, 2040, 30);
