@@ -25,11 +25,12 @@ static int current_screen = 0, current_par = 0;
 
 // Define the list of screens to show here ...
 static const t_screen screens[] = {
-	{0,  6, demo_text},
+	{0, 16, draw_weather_symbol},
+	{0,  6 * 4, demo_text},
 	{5, 10, test_image},
 	{0,  0, wf_test},
 	{0,  0, draw_weather_grid},
-	{5, 25, rain_temp_plot},
+	{5, 15, rain_temp_plot},
 	{0,  0, square_wave},
 };
 #define N_SCREENS (sizeof(screens) / sizeof(screens[0]))
@@ -92,7 +93,11 @@ void screen_handler()
 	}
 
 	// Actually draw the screens
-	screens[current_screen].functionPtr(current_par);
+	int ret = screens[current_screen].functionPtr(current_par);
+	if (ret < 0) {
+		printf("Warning, screen_%d(%d) returned %d\n", current_screen, current_par, ret);
+		inc_screen();
+	}
 }
 
 
@@ -105,7 +110,9 @@ int demo_text(int font)
 	char tmp_str[64];
 	static int frame=0;
 
-	set_rotation((3 - font) * 32);
+	set_rotation((12 - font) * 8);
+
+	font /= 4;
 
 	snprintf(tmp_str, sizeof(tmp_str), "f: %d", font);
 

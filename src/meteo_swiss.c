@@ -223,6 +223,11 @@ int rain_temp_plot(int x_scale)
 		return -1;
 	}
 
+	// re-calculate the min/max values of the visible data, if x_scale changed
+	static int x_scale_ = 0;
+	if (x_scale != x_scale_) {
+		x_scale_ = x_scale;
+	}
 	int16_t rain_min = MIN(meteo_graphs.graphs[precipitation10m].min, meteo_graphs.graphs[precipitation1h].min);
 	int16_t rain_max = MAX(meteo_graphs.graphs[precipitationMax10m].max, meteo_graphs.graphs[precipitationMax1h].max);
 
@@ -253,6 +258,49 @@ int rain_temp_plot(int x_scale)
 
 	return 0;
 }
+
+int draw_weather_symbol(int par)
+{
+	char label[32];
+	struct tm timeinfo;
+	// timestamp for when the first weather symbol is valid
+	time_t ts_start = meteo_graphs.graph_start;
+
+	// Never show weather icons from the past
+	// For par == 0: show the symbol for the current time + 3 h
+	time_t now = time(NULL);
+	int t_offset = (now - ts_start) / (60 * 60 * 3);
+	par += t_offset + 1;
+
+	graph_array_t *g = &meteo_graphs.graphs[weatherIcon3h];
+
+	if (g->len <= 0) {
+		set_font_name(NULL);
+		push_str(0, 0, "No\nweather\ndata", 17, A_CENTER, 600, 200);
+		return -1;
+	}
+
+	if (par < 0 || par > g->len)
+		return -2;
+
+	// Draw the icon
+	int icon = g->data[par] / 100;
+	unsigned cp = cp_from_meteo_swiss_key(icon);
+
+	set_font_name(&f_weather_icons);
+	push_char_at_pos(0, -400, cp, 2000, 200);
+
+	// Draw time label (Monday 13:00)
+	// There's a forecast for every 3 hours, starting at 0:00
+	ts_start += par * 3 * 60 * 60;
+	localtime_r(&ts_start, &timeinfo);
+	strftime(label, sizeof(label), "%a %H:%M", &timeinfo);
+	set_font_name(NULL);
+	push_str(0, -1600, label, sizeof(label), A_CENTER, 500, 200);
+
+	return 0;
+}
+
 
 int draw_weather_grid(int par)
 {
