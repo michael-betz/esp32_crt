@@ -200,7 +200,7 @@ EM_BOOL touch_callback(int eventType, const EmscriptenTouchEvent *touchEvent, vo
 {
 	printf("touch [%d] ", touchEvent->numTouches);
 	for (int i=0; i<touchEvent->numTouches; i++) {
-		printf("(%d, %d) ", touchEvent->touches[i].canvasX, touchEvent->touches[i].canvasY);
+		printf("(%d, %d) ", touchEvent->touches[i].clientX, touchEvent->touches[i].clientY);
 	}
 	printf("\n");
 	return true;
