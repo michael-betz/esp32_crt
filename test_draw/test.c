@@ -201,7 +201,14 @@ EM_BOOL touch_callback(int eventType, const EmscriptenTouchEvent *touchEvent, vo
 	printf("touch [%d] ", touchEvent->numTouches);
 	for (int i=0; i<touchEvent->numTouches; i++) {
 		const EmscriptenTouchPoint *t = &touchEvent->touches[i];
-		printf("(%d, %d, %d, %d, %d) ", t->identifier, t->screenX, t->screenY, t->pageX, t->pageY);
+		printf("(%d, %d, %d) ", t->identifier, t->canvasX, t->canvasY);
+		if (t->canvasX < DISPLAY_WIDTH / 3) {
+			printf("<-- ");
+			encoder_value = -1;
+		} else if (t->canvasX > DISPLAY_WIDTH * 2 / 3) {
+			printf("--> ");
+			encoder_value = 1;
+		}
 	}
 	printf("\n");
 	return true;
