@@ -164,7 +164,6 @@ bool is_running = true;
 void one_iter()
 {
 	SDL_Event e;
-	encoder_value = 0;
 
 	while (SDL_PollEvent(&e)) {
 		switch (e.type) {
@@ -192,6 +191,7 @@ void one_iter()
 
 	every_second();
 	screen_handler();
+	encoder_value = 0;
 	SDL_RenderPresent(rr);
 }
 
@@ -201,7 +201,7 @@ EM_BOOL touch_callback(int eventType, const EmscriptenTouchEvent *touchEvent, vo
 	printf("touch [%d] ", touchEvent->numTouches);
 	for (int i=0; i<touchEvent->numTouches; i++) {
 		const EmscriptenTouchPoint *t = &touchEvent->touches[i];
-		printf("(%d, %d, %d) ", t->identifier, t->canvasX, t->canvasY);
+		printf("(%d, %d, %d) ", t->identifier, t->screenX, t->screenY);
 		if (t->canvasX < DISPLAY_WIDTH / 3) {
 			printf("<-- ");
 			encoder_value = -1;
