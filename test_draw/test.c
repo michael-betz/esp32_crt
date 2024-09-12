@@ -18,6 +18,7 @@
 
 #ifdef __EMSCRIPTEN__
 	#include "emscripten.h"
+	#include "emscripten/html5.h"
 #endif
 
 #define DISPLAY_WIDTH 1024
@@ -194,6 +195,18 @@ void one_iter()
 	SDL_RenderPresent(rr);
 }
 
+#ifdef __EMSCRIPTEN__
+EM_BOOL touch_callback(int eventType, const EmscriptenTouchEvent *touchEvent, void *userData)
+{
+	printf("touch [%d] ", touchEvent->numTouches);
+	for (int i=0; i<touchEvent->numTouches; i++) {
+		printf("(%d, %d) ", touchEvent->touches[i].canvasX, touchEvent->touches[i].canvasY);
+	}
+	printf("\n");
+	return true;
+}
+#endif
+
 int main(int argc, char* args[])
 {
 	init_lut();
@@ -203,6 +216,7 @@ int main(int argc, char* args[])
 	request_weather_data();
 
 	#ifdef __EMSCRIPTEN__
+		emscripten_set_touchstart_callback("#canvas", NULL, false, touch_callback);
 		emscripten_set_main_loop(one_iter, 0, 1);
 	#else
 		while (is_running) {

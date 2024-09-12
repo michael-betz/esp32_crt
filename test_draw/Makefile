@@ -16,7 +16,7 @@ all: test
 test: $(SRCS)
 	clang $(CFLAGS) $^ $(LDLIBS) -lcurl -o $@
 
-# Web-assembly build. Run it locally with `emrun index.html`
+# Web-assembly build. Run it locally with `emrun dist/index.html`
 wasm: meteo_data.json $(SRCS)
 	mkdir -p dist && \
 	emcc -s USE_SDL=2 -s TOTAL_MEMORY=32MB --preload-file $< $(CFLAGS) $(filter-out meteo_data.json,$^) $(LDLIBS) -o dist/index.html

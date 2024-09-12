@@ -180,6 +180,8 @@ int square_wave(int par)
 
 	for (unsigned i=0; i<n; i++)
 		push_sample(0, 0, 0, 0);
+
+	return 0;
 }
 
 int test_image(int n_circles)
