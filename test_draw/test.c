@@ -199,19 +199,22 @@ void one_iter()
 EM_BOOL touch_callback(int eventType, const EmscriptenTouchEvent *touchEvent, void *userData)
 {
 	printf("touch [%d] ", touchEvent->numTouches);
+	bool hit = false;
 	for (int i=0; i<touchEvent->numTouches; i++) {
 		const EmscriptenTouchPoint *t = &touchEvent->touches[i];
 		printf("(%d, %d) ", t->targetX, t->targetY);
 		if (t->targetX < DISPLAY_WIDTH / 3) {
 			printf("<-- ");
 			encoder_value = -1;
+			hit = true;
 		} else if (t->targetX > DISPLAY_WIDTH * 2 / 3) {
 			printf("--> ");
 			encoder_value = 1;
+			hit = true;
 		}
 	}
 	printf("\n");
-	return true;
+	return hit;
 }
 #endif
 
