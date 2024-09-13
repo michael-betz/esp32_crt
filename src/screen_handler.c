@@ -25,13 +25,13 @@ static int current_screen = 0, current_par = 0;
 
 // Define the list of screens to show here ...
 static const t_screen screens[] = {
-	{0, 16, draw_weather_symbol},
 	{0,  6 * 4, demo_text},
 	{5, 10, test_image},
 	{0,  0, wf_test},
 	{0,  0, draw_weather_grid},
 	{5, 15, rain_temp_plot},
-	{0,  0, square_wave},
+	{0, 16, draw_weather_symbol},
+	// {0,  0, square_wave},
 };
 #define N_SCREENS (sizeof(screens) / sizeof(screens[0]))
 

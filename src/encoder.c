@@ -68,7 +68,7 @@ int8_t get_encoder(unsigned *state)
     pulse_count_ = pulse_count;
 
     if (state != NULL) {
-        unsigned btn_state = gpio_get_level(PIN_BUTTON);
+        unsigned btn_state = !gpio_get_level(PIN_BUTTON);
         unsigned rising = (~btn_state_) & btn_state;
         unsigned falling = btn_state_ & (~btn_state);
         *state = (enc_diff << 24) | (falling << 16) | (rising << 8) | btn_state;
