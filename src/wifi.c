@@ -276,27 +276,23 @@ void initWifi()
 
 void tryJsonConnect()
 {
-	wifi_state = WIFI_SCANNING;
-
 	// Initialize and start WiFi scan
 	E(esp_wifi_set_mode(WIFI_MODE_STA));
 	E(esp_wifi_scan_start(NULL, false));
 	// fires SYSTEM_EVENT_SCAN_DONE when done, calls scan_done() ...
+	wifi_state = WIFI_SCANNING;
 }
 
 void tryApMode()
 {
-	wifi_state = WIFI_AP_MODE;
-
 	E(esp_wifi_set_mode(WIFI_MODE_AP));
 	E(esp_wifi_set_config(WIFI_IF_AP, &wifi_ap_config));
 	ESP_LOGI(T, "started AP mode. SSID: %s", WIFI_HOST_NAME);
+	wifi_state = WIFI_AP_MODE;
 }
 
 void tryEasyConnect()
 {
-	wifi_state = WIFI_DPP_LISTENING;
-
 	// nice idea but doesn't work
 	E(esp_wifi_set_mode(WIFI_MODE_STA));
 	E(esp_supp_dpp_init(dpp_enrollee_event_cb));
@@ -309,4 +305,5 @@ void tryEasyConnect()
 
 	E(esp_supp_dpp_start_listen());
 	ESP_LOGI(T, "Started listening for DPP Authentication");
+	wifi_state = WIFI_DPP_LISTENING;
 }

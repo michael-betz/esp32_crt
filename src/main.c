@@ -12,6 +12,7 @@
 #include "esp_log.h"
 #include "qrcode.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "fonts/font_data.h"
 
 #include "i2s.h"
@@ -86,22 +87,92 @@ static void init_io()
 	gpio_set_level(PIN_HVPS_DIS, 0);
 	gpio_set_direction(PIN_HVPS_DIS, GPIO_MODE_OUTPUT);
 
-	gpio_set_direction(PIN_LED_R, GPIO_MODE_OUTPUT);
-	gpio_set_direction(PIN_LED_G, GPIO_MODE_OUTPUT);
-	gpio_set_direction(PIN_LED_B, GPIO_MODE_OUTPUT);
+	// gpio_set_direction(PIN_LED_0, GPIO_MODE_OUTPUT);
+	// gpio_set_direction(PIN_LED_1, GPIO_MODE_OUTPUT);
+	// gpio_set_direction(PIN_LED_2, GPIO_MODE_OUTPUT);
 
-	gpio_set_level(PIN_LED_R, 0);
-	gpio_set_level(PIN_LED_G, 0);
-	gpio_set_level(PIN_LED_B, 0);
+	// gpio_set_level(PIN_LED_0, 0);
+	// gpio_set_level(PIN_LED_1, 0);
+	// gpio_set_level(PIN_LED_2, 0);
 
 	gpio_set_direction(PIN_PD_BAD, GPIO_MODE_INPUT);
 	gpio_set_direction(PIN_BUTTON, GPIO_MODE_INPUT);
+	gpio_set_direction(PIN_WIFI_BUTTON, GPIO_MODE_INPUT);
 	gpio_set_direction(PIN_KNOB_A, GPIO_MODE_INPUT);
 	gpio_set_direction(PIN_KNOB_B, GPIO_MODE_INPUT);
 
+	gpio_set_pull_mode(PIN_PD_BAD, GPIO_PULLDOWN_ONLY);
 	gpio_set_pull_mode(PIN_BUTTON, GPIO_PULLUP_ONLY);
 	gpio_set_pull_mode(PIN_KNOB_A, GPIO_PULLUP_ONLY);
 	gpio_set_pull_mode(PIN_KNOB_B, GPIO_PULLUP_ONLY);
+
+	// Led PWM
+	ledc_timer_config_t ledc_timer = {
+		.speed_mode       = LEDC_LOW_SPEED_MODE,
+		.timer_num        = LEDC_TIMER_0,
+		.duty_resolution  = LEDC_TIMER_12_BIT,
+		.freq_hz          = 4000,  // Set output frequency at 4 kHz
+		.clk_cfg          = LEDC_AUTO_CLK
+	};
+	ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+
+	uint8_t pins[] = {PIN_LED_0, PIN_LED_1, PIN_LED_2};
+
+	for (unsigned i=0; i<sizeof(pins); i++) {
+		ledc_channel_config_t ledc_channel = {
+			.speed_mode     = LEDC_LOW_SPEED_MODE,
+			.channel        = i,
+			.timer_sel      = LEDC_TIMER_0,
+			.intr_type      = LEDC_INTR_DISABLE,
+			.gpio_num       = pins[i],
+			.duty           = 0, // Set duty to 0%
+			.hpoint         = 0
+		};
+		ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+	}
+
+}
+
+// set brightness of led with index 0 .. 2 to val 0 .. 1023
+void set_led(unsigned index, unsigned val)
+{
+	// Set duty to val
+	ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, index, val));
+	// Update duty to apply the new value
+	ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, index));
+}
+
+void update_leds(int i)
+{
+	if (gpio_get_level(PIN_PD_BAD))
+		set_led(0, 0);
+	else
+		set_led(0, LED_BRIGHTNESS_0);
+
+	switch (wifi_state) {
+	case WIFI_NOT_CONNECTED:
+		set_led(1, 0);
+		break;
+
+	case WIFI_SCANNING:
+		// When wifi is trying to connect, make the second LED `breathe`
+		set_led(1, (get_sin(i * 500) >> 25) + 64);
+		break;
+
+	case WIFI_AP_MODE:
+		set_led(1, (get_sin(i * 150) >> 25) + 64);
+		break;
+
+	case WIFI_DPP_LISTENING:
+		set_led(1, ((i % 20) > 10) * 64);
+		break;
+
+	case WIFI_CONNECTED:
+		set_led(1, LED_BRIGHTNESS_1);
+		break;
+
+	default:
+	}
 }
 
 void every_second()
@@ -116,11 +187,11 @@ void every_second()
 		localtime_r(&now, &timeinfo);
 		strftime(qr_code_str, sizeof(qr_code_str), "%H:%M:%S", &timeinfo);
 
-		esp_qrcode_config_t cfg;
-		cfg.qrcode_ecc_level = ESP_QRCODE_ECC_MED;
-		cfg.max_qrcode_version = 40;
-		cfg.display_func = esp_qrcode_store;
-		esp_qrcode_generate(&cfg, qr_code_str);
+		// esp_qrcode_config_t cfg;
+		// cfg.qrcode_ecc_level = ESP_QRCODE_ECC_MED;
+		// cfg.max_qrcode_version = 40;
+		// cfg.display_func = esp_qrcode_store;
+		// esp_qrcode_generate(&cfg, qr_code_str);
 
 		now_ = now;
 	}
@@ -155,15 +226,20 @@ void app_main(void)
 	int i = 0;
 	static int wifi_state_ = WIFI_NOT_CONNECTED;
 	while (1) {
-		gpio_set_level(PIN_LED_B, (i % 20) == 0);
-		// gpio_set_level(PIN_LED_G, gpio_get_level(PIN_KNOB_A));
-		// gpio_set_level(PIN_LED_B, gpio_get_level(PIN_KNOB_B));
+		update_leds(i);
 
-		if ((i % (10 * 60 * 2)) == 0 && wifi_state == WIFI_NOT_CONNECTED)  // every 2 min
+		if (gpio_get_level(PIN_WIFI_BUTTON) == 0) {
+			// tryEasyConnect();
+			tryApMode();
+		}
+
+		// every 2 min
+		if ((i % (10 * 60 * 2)) == 0 && wifi_state == WIFI_NOT_CONNECTED)
 			tryJsonConnect();
 
 		if (wifi_state == WIFI_CONNECTED) {
-			if ((i % (10 * 60 * 60)) == 0) {  // every hour
+			// every hour
+			if ((i % (10 * 60 * 60)) == 0) {
 				request_weather_data();
 			}
 		}

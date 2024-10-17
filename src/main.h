@@ -11,14 +11,18 @@
 #define PIN_CS_N_B_NAME IO_MUX_GPIO4_REG
 
 // LEDs
-#define PIN_LED_R 16  // D1
-#define PIN_LED_G 17  // D2
-#define PIN_LED_B 5   // D3
+#define PIN_LED_0 16  // White
+#define PIN_LED_1 17  // Orange
+#define PIN_LED_2 5   // Red
+#define LED_BRIGHTNESS_0 10
+#define LED_BRIGHTNESS_1 40
+#define LED_BRIGHTNESS_2 40
 
 // UI
 #define PIN_KNOB_A 33
 #define PIN_KNOB_B 32
 #define PIN_BUTTON 35
+#define PIN_WIFI_BUTTON 15
 
 // Power
 #define PIN_PD_BAD 26  // High when 12 V is likely not present from USB-PD
